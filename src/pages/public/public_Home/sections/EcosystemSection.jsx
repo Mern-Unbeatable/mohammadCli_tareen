@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   User,
 } from 'lucide-react';
+import Container from '../../../../components/ui/Container';
 
 const networkNodes = [
   {
@@ -60,7 +61,7 @@ const cardText =
 const EcosystemSection = () => {
   return (
     <section id="marketplace" className="scroll-mt-[72px] bg-[#F7F8FA] py-14 lg:scroll-mt-[76px] lg:py-16 xl:scroll-mt-[84px] xl:py-24">
-      <div className="container mx-auto px-6 lg:px-8">
+      <Container>
         {/* Header */}
         <div className="mb-10 lg:mb-12 xl:mb-14">
           <p className={`${cardLabel} text-pink-light`}>One professional ecosystem</p>
@@ -257,7 +258,7 @@ const EcosystemSection = () => {
             </article>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 };

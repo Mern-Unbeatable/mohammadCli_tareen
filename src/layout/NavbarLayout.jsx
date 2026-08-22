@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import logo from '../assets/logo.png';
+import Container from '../components/ui/Container';
 
 const navLinks = [
   { label: 'Platform', sectionId: 'platform', active: true },
@@ -55,7 +56,7 @@ const NavbarLayout = () => {
   return (
     <>
       <nav className="sticky top-0 z-[70] w-full border-b border-[#F0F0F0] bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto flex h-[72px] items-center justify-between px-6 lg:h-[76px] lg:px-8 xl:h-[84px]">
+        <Container className="flex h-[72px] items-center justify-between lg:h-[76px] xl:h-[84px]">
           <div className="flex items-center gap-10 lg:gap-8 xl:gap-14">
             <Link
               to="/"
@@ -118,7 +119,7 @@ const NavbarLayout = () => {
           >
             {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
-        </div>
+        </Container>
       </nav>
 
       <div
@@ -138,7 +139,7 @@ const NavbarLayout = () => {
             : 'pointer-events-none -translate-y-full opacity-0'
         }`}
       >
-        <div className="px-6 py-5">
+        <Container className="py-5">
           <ul className="flex flex-col gap-4">
             {navLinks.map(({ label, sectionId, active }) => (
               <li key={label}>
@@ -172,7 +173,7 @@ const NavbarLayout = () => {
               Join Lab Unity
             </Link>
           </div>
-        </div>
+        </Container>
       </div>
     </>
   );

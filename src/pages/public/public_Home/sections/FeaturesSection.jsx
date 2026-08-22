@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Newspaper,
 } from 'lucide-react';
+import Container from '../../../../components/ui/Container';
 
 const discoverTags = [
   { label: 'Research', icon: FlaskConical, color: 'text-pink-light', bg: 'bg-[#FDF0F6]' },
@@ -34,7 +35,7 @@ const cardBody =
 const FeaturesSection = () => {
   return (
     <section id="community" className="scroll-mt-[72px] bg-white py-14 lg:scroll-mt-[76px] lg:py-16 xl:scroll-mt-[84px] xl:py-24">
-      <div className="container mx-auto px-6 lg:px-8">
+      <Container>
         {/* Header */}
         <div className="mb-10 grid grid-cols-1 items-start gap-6 lg:mb-12 lg:grid-cols-[minmax(0,1.28fr)_minmax(0,0.72fr)] lg:gap-x-10 lg:gap-y-0 xl:mb-14 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:gap-x-16">
           <div>
@@ -173,7 +174,7 @@ const FeaturesSection = () => {
             </article>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 };

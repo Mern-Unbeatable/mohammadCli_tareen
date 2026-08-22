@@ -1,10 +1,11 @@
 import { Link } from 'react-router';
 import { ArrowRight } from 'lucide-react';
+import Container from '../../../../components/ui/Container';
 
 const CtaSection = () => {
   return (
     <section className="bg-deep-blue py-16 lg:py-20">
-      <div className="container mx-auto px-6 text-center lg:px-8">
+      <Container className="text-center">
         <h2 className="mx-auto  text-[28px] font-bold leading-[1.2] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[36px] xl:text-[40px]">
           Join the Laboratory Professional Network
         </h2>
@@ -21,7 +22,7 @@ const CtaSection = () => {
           Create your free account
           <ArrowRight className="h-4 w-4 stroke-[2.5]" />
         </Link>
-      </div>
+      </Container>
     </section>
   );
 };

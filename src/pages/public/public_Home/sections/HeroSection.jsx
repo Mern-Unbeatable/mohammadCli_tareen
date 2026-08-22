@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Check } from 'lucide-react';
 import heroImage from '../../../../assets/hero.png';
+import Container from '../../../../components/ui/Container';
 
 const features = [
   'Research-focused',
@@ -16,7 +17,7 @@ const HeroSection = () => {
         className="pointer-events-none absolute -left-24 top-0 h-full w-[55%] bg-[radial-gradient(ellipse_at_left,rgba(8,118,196,0.08)_0%,rgba(240,246,252,0.6)_45%,transparent_75%)] lg:w-[48%] xl:w-[55%]"
       />
 
-      <div className="container relative mx-auto grid grid-cols-1 items-center gap-10 px-6 py-14 sm:gap-12 lg:grid-cols-2 lg:items-start lg:gap-8 lg:py-16 lg:px-8 xl:grid-cols-[1fr_1.08fr] xl:items-center xl:gap-12 xl:py-28">
+      <Container className="relative grid grid-cols-1 items-center gap-10 py-14 sm:gap-12 lg:grid-cols-2 lg:items-start lg:gap-8 lg:py-16 xl:grid-cols-[1fr_1.08fr] xl:items-center xl:gap-12 xl:py-28">
         <div className="w-full max-w-[540px] lg:max-w-[420px] xl:max-w-none">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] px-3.5 py-1.5 xl:mb-8 xl:gap-2.5 xl:px-4 xl:py-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-pink-light xl:h-2.5 xl:w-2.5" />
@@ -73,7 +74,7 @@ const HeroSection = () => {
             className="w-full rounded-2xl object-cover shadow-[0_20px_50px_rgba(10,26,68,0.08)] lg:aspect-[5/4] lg:max-h-[360px] lg:rounded-2xl xl:max-h-none xl:min-h-[520px] xl:rounded-3xl xl:aspect-[5/4]"
           />
         </div>
-      </div>
+      </Container>
     </section>
   );
 };

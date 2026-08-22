@@ -10,6 +10,11 @@
     --color-deep-blue: #0A1A44;
 }
 
+:root {
+    /* Change this once — navbar, feed, landing sections all follow it */
+    --app-container-max: 75rem;
+}
+
 html {
     scroll-behavior: smooth;
 }
