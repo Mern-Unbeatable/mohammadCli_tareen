@@ -1,27 +1,38 @@
 import { Bell, Briefcase, Home, SquarePlus, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useFeedActions } from '../../context/FeedActionsContext';
+import { useLayoutChrome } from '../../context/LayoutChromeContext';
 
 const tabs = [
   { id: 'home', label: 'Home', icon: Home, to: '/feed' },
-  { id: 'network', label: 'Network', icon: Users, to: '/feed', badge: 2 },
+  { id: 'network', label: 'Network', icon: Users, to: '/contacts', badge: 2 },
   { id: 'post', label: 'Post', icon: SquarePlus, action: 'create' },
-  { id: 'notifications', label: 'Notifications', icon: Bell, to: '/feed', badge: 5 },
+  { id: 'notifications', label: 'Notifications', icon: Bell, to: '/notifications', badge: 5 },
   { id: 'jobs', label: 'Jobs', icon: Briefcase, to: '/feed' },
 ];
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
   const { openCreatePost } = useFeedActions();
+  const { bottomNavHidden } = useLayoutChrome();
+
+  if (bottomNavHidden) return null;
+
+  const isTabActive = (tab) => {
+    if (tab.id === 'home') return pathname === '/feed';
+    if (tab.id === 'network') return pathname.startsWith('/contacts');
+    if (tab.id === 'notifications') return pathname.startsWith('/notifications');
+    return pathname === tab.to;
+  };
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4E7EC] bg-white pb-[env(safe-area-inset-bottom)] xl:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4E7EC] bg-white pb-[env(safe-area-inset-bottom)] sm:hidden"
       aria-label="Mobile navigation"
     >
       <ul className="mx-auto flex h-14 max-w-lg items-stretch">
         {tabs.map(({ id, label, icon: Icon, to, badge, action }) => {
-          const isActive = id === 'home' && pathname === '/feed';
+          const isActive = isTabActive({ id, to });
           const isPost = action === 'create';
 
           const content = (

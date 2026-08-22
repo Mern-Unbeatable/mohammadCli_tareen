@@ -1,27 +1,47 @@
 export const currentUser = {
   initials: 'EM',
+  firstName: 'Élise',
+  lastName: 'Moreau',
   name: 'Élise Moreau',
   title: 'Quality Control Manager',
   company: 'Novalab Diagnostics',
   location: 'Belgium',
+  country: 'Belgium',
+  email: 'elise.moreau@novalab.eu',
+  phone: '+32 471 22 88 04',
   connections: 248,
-  trialDaysLeft: 74,
+  trialDaysLeft: 67,
   trialDaysTotal: 90,
+  membershipStatus: 'trial',
+  about:
+    'I am a Quality Control Manager at Novalab Diagnostics, responsible for analytical method validation, equipment qualification and GMP compliance across our QC laboratory in Belgium.',
+  aboutExtended:
+    'I am passionate about building robust quality systems that protect patients and support laboratory teams. On Lab Unity I share practical insights on HPLC troubleshooting, environmental monitoring and audit readiness.',
   coverPhoto:
     'https://images.unsplash.com/photo-1504805572947-34fad45aed93?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8bGlua2VkaW4lMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww',
   avatar:
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqy5ShEFSxwHTFMoD48GNhTteRdlLb51azWU0ibObL5g&s=10',
+  subscription: {
+    planName: 'Lab Unity Membership',
+    status: 'Active',
+    startDate: '13 March 2026',
+    renewalDate: '13 April 2026',
+    amount: '€19.99',
+    billingCycle: 'Monthly',
+    nextPayment: '13 April 2026',
+    paymentMethod: 'Visa ending 9427',
+  },
 };
 
 export const navItems = [
-  { id: 'home', label: 'Home', icon: 'home', active: true },
-  { id: 'contacts', label: 'Contacts', icon: 'contacts' },
-  { id: 'marketplace', label: 'Marketplace', icon: 'marketplace' },
-  { id: 'recruitment', label: 'Recruitment', icon: 'recruitment' },
-  { id: 'general', label: 'General', icon: 'general' },
-  { id: 'messages', label: 'Messages', icon: 'messages' },
-  { id: 'blogs', label: 'Blogs', icon: 'blogs' },
-  { id: 'notifications', label: 'Notifications', icon: 'notifications' },
+  { id: 'home', label: 'Home', icon: 'home', to: '/feed' },
+  { id: 'contacts', label: 'Contacts', icon: 'contacts', to: '/contacts' },
+  { id: 'marketplace', label: 'Marketplace', icon: 'marketplace', to: '/marketplace' },
+  { id: 'recruitment', label: 'Recruitment', icon: 'recruitment', to: '/recruitment' },
+  { id: 'general', label: 'General', icon: 'general', to: '/general' },
+  { id: 'messages', label: 'Messages', icon: 'messages', to: '/messages' },
+  { id: 'blogs', label: 'Blogs', icon: 'blogs', to: '/blogs' },
+  { id: 'notifications', label: 'Notifications', icon: 'notifications', to: '/notifications' },
 ];
 
 export const quickLinks = [

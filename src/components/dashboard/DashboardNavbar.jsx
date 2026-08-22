@@ -13,11 +13,12 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import logo from '../../assets/logo.png';
 import Avatar from '../ui/Avatar';
 import Container from '../ui/Container';
-import { navItems } from '../../data/dashboard';
+import ProfileDropdown from './ProfileDropdown';
+import { currentUser, navItems } from '../../data/dashboard';
 
 const iconMap = {
   home: Home,
@@ -32,8 +33,21 @@ const iconMap = {
 
 const DashboardNavbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
 
   const closeMenu = () => setMenuOpen(false);
+
+  const isNavActive = (item) => {
+    if (item.id === 'home') return pathname === '/feed';
+    if (item.id === 'contacts') return pathname.startsWith('/contacts');
+    if (item.id === 'marketplace') return pathname.startsWith('/marketplace');
+    if (item.id === 'recruitment') return pathname.startsWith('/recruitment');
+    if (item.id === 'general') return pathname.startsWith('/general');
+    if (item.id === 'messages') return pathname.startsWith('/messages');
+    if (item.id === 'blogs') return pathname.startsWith('/blogs');
+    if (item.id === 'notifications') return pathname.startsWith('/notifications');
+    return pathname === item.to;
+  };
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -47,11 +61,16 @@ const DashboardNavbar = () => {
       <header className="sticky top-0 z-[70] border-b border-[#E4E7EC] bg-white">
         {/* Mobile & tablet */}
         <div className="mx-auto flex h-14 w-full items-center gap-1.5 px-4 sm:gap-2 sm:px-6 xl:hidden">
-          <Link to="/feed" className="shrink-0" onClick={closeMenu}>
+          <Link to="/feed" className="flex shrink-0 items-center gap-2" onClick={closeMenu}>
             <img src={logo} alt="Lab Unity" className="h-7 w-auto sm:h-8" />
+            <span className="hidden text-[16px] font-bold text-deep-blue sm:inline lg:text-[17px]">
+              Lab Unity
+            </span>
           </Link>
 
-          <div className="relative min-w-0 flex-1">
+          <div className="hidden flex-1 sm:block" aria-hidden="true" />
+
+          <div className="relative min-w-0 flex-1 sm:w-[200px] sm:flex-none md:w-[240px] lg:w-[280px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
               type="search"
@@ -61,13 +80,13 @@ const DashboardNavbar = () => {
             />
           </div>
 
-          <button
-            type="button"
+          <Link
+            to="/messages"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#64748B] hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
             aria-label="Messages"
           >
             <MessageSquare className="h-5 w-5" />
-          </button>
+          </Link>
 
           <button
             type="button"
@@ -97,12 +116,13 @@ const DashboardNavbar = () => {
           </div>
 
           <nav className="flex items-center gap-0.5">
-            {navItems.map(({ id, label, icon, active }) => {
+            {navItems.map(({ id, label, icon, to }) => {
               const Icon = iconMap[icon];
+              const active = isNavActive({ id, to });
               return (
-                <button
+                <Link
                   key={id}
-                  type="button"
+                  to={to}
                   className={`flex min-w-[68px] flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     active
                       ? 'text-primary'
@@ -111,12 +131,14 @@ const DashboardNavbar = () => {
                 >
                   <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
                   <span>{label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
 
-          <Avatar initials="A" size="sm" className="bg-[#FEF3C7] text-[#B45309]" />
+          <div className="mx-1 h-8 w-px shrink-0 bg-[#E4E7EC]" aria-hidden="true" />
+
+          <ProfileDropdown />
         </Container>
       </header>
 
@@ -130,22 +152,31 @@ const DashboardNavbar = () => {
           />
 
           <div className="fixed inset-x-0 top-14 bottom-0 z-[65] overflow-y-auto bg-white xl:hidden">
-            <Container className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] pt-4">
+            <Container className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] pt-4 sm:pb-4">
               <div className="mb-4 flex items-center gap-3 border-b border-[#E4E7EC] pb-4">
-                <Avatar initials="A" size="md" className="bg-[#FEF3C7] text-[#B45309]" />
+                <Avatar
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  initials={currentUser.initials}
+                  size="md"
+                  className="bg-[#FEF3C7] text-[#B45309]"
+                />
                 <div>
-                  <p className="text-[14px] font-semibold text-deep-blue">Your profile</p>
-                  <p className="text-[12px] text-[#64748B]">View settings & account</p>
+                  <p className="text-[14px] font-semibold text-deep-blue">{currentUser.name}</p>
+                  <p className="text-[12px] text-[#64748B]">
+                    {currentUser.title} · {currentUser.company}
+                  </p>
                 </div>
               </div>
 
               <ul className="grid grid-cols-2 gap-2">
-                {navItems.map(({ id, label, icon, active }) => {
+                {navItems.map(({ id, label, icon, to }) => {
                   const Icon = iconMap[icon];
+                  const active = isNavActive({ id, to });
                   return (
                     <li key={id}>
-                      <button
-                        type="button"
+                      <Link
+                        to={to}
                         onClick={closeMenu}
                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-[13px] font-medium transition-colors ${
                           active
@@ -155,7 +186,7 @@ const DashboardNavbar = () => {
                       >
                         <Icon className="h-5 w-5 shrink-0" />
                         {label}
-                      </button>
+                      </Link>
                     </li>
                   );
                 })}

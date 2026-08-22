@@ -2,6 +2,7 @@ const sizes = {
   sm: 'h-9 w-9 text-[12px]',
   md: 'h-11 w-11 text-[13px]',
   lg: 'h-14 w-14 text-[16px]',
+  xl: 'h-[104px] w-[104px] text-[28px]',
 };
 
 const Avatar = ({ initials, src, alt = '', size = 'md', className = '' }) => (
