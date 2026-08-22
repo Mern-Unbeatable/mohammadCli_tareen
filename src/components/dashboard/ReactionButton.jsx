@@ -1,31 +1,66 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { reactions } from '../../data/reactions';
 
 const LONG_PRESS_MS = 450;
 const HOVER_DELAY_MS = 350;
+const PICKER_WIDTH = 300;
 
-const ReactionPicker = ({ open, onSelect, onClose }) => {
+const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
+  const [position, setPosition] = useState({ left: 0, bottom: 0 });
+
+  useEffect(() => {
+    if (!open || !anchorRef.current) return;
+
+    const updatePosition = () => {
+      const rect = anchorRef.current.getBoundingClientRect();
+      let left = rect.left + rect.width / 2;
+      const edge = PICKER_WIDTH / 2 + 12;
+      left = Math.max(edge, Math.min(left, window.innerWidth - edge));
+
+      setPosition({
+        left,
+        bottom: window.innerHeight - rect.top + 10,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open, anchorRef]);
+
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
-      className="absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2"
+      className="fixed z-[110]"
+      style={{
+        left: position.left,
+        bottom: position.bottom,
+        transform: 'translateX(-50%)',
+      }}
       onMouseLeave={onClose}
     >
-      <div className="flex items-center gap-1 rounded-full border border-[#E4E7EC] bg-white px-2 py-1.5 shadow-[0_8px_24px_rgba(10,26,68,0.12)]">
+      <div className="flex items-center gap-0.5 rounded-full border border-[#E4E7EC] bg-white px-2 py-1.5 shadow-[0_8px_24px_rgba(10,26,68,0.15)] sm:gap-1">
         {reactions.map((reaction) => (
           <button
             key={reaction.id}
             type="button"
             title={reaction.label}
             onClick={() => onSelect(reaction.id)}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[26px] transition-transform hover:scale-125 hover:bg-[#F9FAFB]"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[22px] transition-transform hover:scale-110 hover:bg-[#F9FAFB] sm:h-10 sm:w-10 sm:text-[26px]"
           >
             {reaction.emoji}
           </button>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -85,6 +120,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
   };
 
   const handleClick = () => {
+    if (pickerOpen) return;
     if (selected) {
       onReact(null);
       return;
@@ -119,7 +155,12 @@ const ReactionButton = ({ reactionId, onReact }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <ReactionPicker open={pickerOpen} onSelect={handleSelect} onClose={closePicker} />
+      <ReactionPicker
+        open={pickerOpen}
+        anchorRef={wrapRef}
+        onSelect={handleSelect}
+        onClose={closePicker}
+      />
       <button
         type="button"
         onClick={handleClick}

@@ -38,9 +38,30 @@ export const feedFilters = [
 ];
 
 export const suggestedPeople = [
-  { id: 1, initials: 'TV', name: 'Thomas Vermeulen', company: 'BioLab Corp' },
-  { id: 2, initials: 'AH', name: 'Amina Haddad', company: 'Institut Pasteur Lille' },
-  { id: 3, initials: 'RK', name: 'Ravi Kumar', company: 'SynLab Diagnostics' },
+  {
+    id: 1,
+    initials: 'TV',
+    name: 'Thomas Vermeulen',
+    company: 'BioLab Corp',
+    avatar:
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=face',
+  },
+  {
+    id: 2,
+    initials: 'AH',
+    name: 'Amina Haddad',
+    company: 'Institut Pasteur Lille',
+    avatar:
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=160&h=160&fit=crop&crop=face',
+  },
+  {
+    id: 3,
+    initials: 'RK',
+    name: 'Ravi Kumar',
+    company: 'SynLab Diagnostics',
+    avatar:
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqy5ShEFSxwHTFMoD48GNhTteRdlLb51azWU0ibObL5g&s=10',
+  },
 ];
 
 export const marketplaceItems = [
@@ -88,7 +109,53 @@ export const feedPosts = [
     },
     content:
       'Does anyone have experience with Agilent 1260 Infinity II maintenance contracts in Belgium? We are evaluating renewal options and would appreciate recommendations.',
-    stats: { reactions: 87, comments: 1, shares: 21 },
+    stats: { reactions: 12, comments: 3, shares: 4 },
+    comments: [
+      {
+        id: 'q1-c1',
+        author: {
+          initials: 'RK',
+          name: 'Ravi Kumar',
+          subtitle: 'Lab Director · SynLab Diagnostics',
+          avatar:
+            'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqy5ShEFSxwHTFMoD48GNhTteRdlLb51azWU0ibObL5g&s=10',
+        },
+        content:
+          'We renewed with Agilent last year through their Benelux partner — response times improved a lot compared to our previous vendor.',
+        time: '1h',
+        replies: 0,
+        liked: false,
+      },
+      {
+        id: 'q1-c2',
+        author: {
+          initials: 'SL',
+          name: 'Sofia Lindström',
+          subtitle: 'Validation Specialist · PharmaNord AB',
+          avatar:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=face',
+        },
+        content:
+          'Happy to share our SLA comparison sheet if useful — we benchmarked three providers in the EU.',
+        time: '45m',
+        replies: 1,
+        liked: false,
+      },
+      {
+        id: 'q1-c3',
+        author: {
+          initials: 'MD',
+          name: 'Marc Dubois',
+          subtitle: 'QC Manager · Eurofins Ghent',
+          avatar:
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=160&h=160&fit=crop&crop=face',
+        },
+        content: 'Seconding Ravi — make sure uptime clauses are explicit in the contract.',
+        time: '20m',
+        replies: 0,
+        liked: false,
+      },
+    ],
   },
   {
     id: 'i1',
@@ -114,11 +181,14 @@ export const feedPosts = [
           initials: 'MD',
           name: 'Marc Dubois',
           subtitle: 'QC Manager · Eurofins Ghent',
+          avatar:
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=160&h=160&fit=crop&crop=face',
         },
         content:
           'Very helpful — we had similar auditor questions on documentation trails last quarter. Saving this for our next internal review.',
         time: '1h',
         replies: 1,
+        liked: false,
       },
       {
         id: 'c2',
@@ -126,11 +196,14 @@ export const feedPosts = [
           initials: 'SL',
           name: 'Sofia Lindström',
           subtitle: 'Validation Specialist · PharmaNord AB',
+          avatar:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=face',
         },
         content:
           'Could you share whether your sampling frequency table covers both passive and active air monitoring?',
         time: '45m',
         replies: 0,
+        liked: false,
       },
     ],
   },
@@ -151,7 +224,37 @@ export const feedPosts = [
       'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop',
     price: '€8,450 / unit',
     cta: 'Contact Seller',
-    stats: { reactions: 87, comments: 1, shares: 21 },
+    stats: { reactions: 34, comments: 2, shares: 9 },
+    comments: [
+      {
+        id: 's1-c1',
+        author: {
+          initials: 'TV',
+          name: 'Thomas Vermeulen',
+          subtitle: 'Laboratory Manager · BioLab Corp',
+          avatar:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=face',
+        },
+        content: 'Does this model support GLP-compliant audit trails out of the box?',
+        time: '3h',
+        replies: 0,
+        liked: false,
+      },
+      {
+        id: 's1-c2',
+        author: {
+          initials: 'AH',
+          name: 'Amina Haddad',
+          subtitle: 'Senior Microbiologist · Institut Pasteur Lille',
+          avatar:
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=160&h=160&fit=crop&crop=face',
+        },
+        content: 'We use a similar unit in our QC lab — very reliable for daily runs.',
+        time: '2h',
+        replies: 0,
+        liked: true,
+      },
+    ],
   },
   {
     id: 'p1',
@@ -173,7 +276,23 @@ export const feedPosts = [
     discount: 'Save 25%',
     validUntil: 'Valid until Sep 7, 2026',
     cta: 'Contact Seller',
-    stats: { reactions: 87, comments: 1, shares: 21 },
+    stats: { reactions: 56, comments: 1, shares: 14 },
+    comments: [
+      {
+        id: 'p1-c1',
+        author: {
+          initials: 'RK',
+          name: 'Ravi Kumar',
+          subtitle: 'Lab Director · SynLab Diagnostics',
+          avatar:
+            'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqy5ShEFSxwHTFMoD48GNhTteRdlLb51azWU0ibObL5g&s=10',
+        },
+        content: 'Is bulk pricing available for orders above 50 kits?',
+        time: '4h',
+        replies: 0,
+        liked: false,
+      },
+    ],
   },
 ];
 
