@@ -10,6 +10,10 @@
     --color-deep-blue: #0A1A44;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 button {
     cursor: pointer;
 }

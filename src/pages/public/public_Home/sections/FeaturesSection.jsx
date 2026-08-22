@@ -29,11 +29,11 @@ const avatars = [
 const cardTitle =
   'text-[18px] font-bold leading-[1.3] text-deep-blue lg:text-[17px] xl:text-[20px]';
 const cardBody =
-  'mt-2 text-[14px] leading-[1.65] text-[#64748B] lg:text-[13px] xl:mt-2.5 xl:text-[15px] xl:leading-[1.7]';
+  'mt-2 text-[14px] text-[#64748B] xl:mt-2.5 xl:text-base';
 
 const FeaturesSection = () => {
   return (
-    <section className="bg-white py-14 lg:py-16 xl:py-24">
+    <section id="community" className="scroll-mt-[72px] bg-white py-14 lg:scroll-mt-[76px] lg:py-16 xl:scroll-mt-[84px] xl:py-24">
       <div className="container mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 grid grid-cols-1 items-start gap-6 lg:mb-12 lg:grid-cols-[minmax(0,1.28fr)_minmax(0,0.72fr)] lg:gap-x-10 lg:gap-y-0 xl:mb-14 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:gap-x-16">

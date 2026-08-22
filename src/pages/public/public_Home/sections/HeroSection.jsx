@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { Check } from 'lucide-react';
-import heroImage from '../../../assets/hero.png';
+import heroImage from '../../../../assets/hero.png';
 
 const features = [
   'Research-focused',
@@ -10,7 +10,7 @@ const features = [
 
 const HeroSection = () => {
   return (
-    <section className="relative overflow-hidden bg-white">
+    <section id="platform" className="relative scroll-mt-[72px] overflow-hidden bg-white lg:scroll-mt-[76px] xl:scroll-mt-[84px]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-24 top-0 h-full w-[55%] bg-[radial-gradient(ellipse_at_left,rgba(8,118,196,0.08)_0%,rgba(240,246,252,0.6)_45%,transparent_75%)] lg:w-[48%] xl:w-[55%]"

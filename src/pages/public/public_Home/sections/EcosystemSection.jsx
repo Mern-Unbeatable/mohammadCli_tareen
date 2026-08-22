@@ -53,13 +53,13 @@ const knowledgeTags = ['Analytica 2026 · Munich', 'GMP Training · Online'];
 const cardLabel =
   'text-[10px] font-semibold uppercase tracking-[0.12em] xl:text-[11px]';
 const cardHeading =
-  'mt-2 text-[17px] font-bold leading-snug text-deep-blue lg:text-[16px] xl:text-[18px]';
+  'mt-2 text-base font-bold leading-snug text-deep-blue xl:text-[18px]';
 const cardText =
-  'mt-2 text-[13px] leading-[1.65] text-[#64748B] xl:text-[14px] xl:leading-[1.7]';
+  'mt-1 text-sm text-[#64748B] xl:text-base';
 
 const EcosystemSection = () => {
   return (
-    <section className="bg-[#F7F8FA] py-14 lg:py-16 xl:py-24">
+    <section id="marketplace" className="scroll-mt-[72px] bg-[#F7F8FA] py-14 lg:scroll-mt-[76px] lg:py-16 xl:scroll-mt-[84px] xl:py-24">
       <div className="container mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 lg:mb-12 xl:mb-14">
@@ -160,10 +160,10 @@ const EcosystemSection = () => {
                       strokeWidth={2.25}
                     />
                     <div>
-                      <p className="text-[13px] font-semibold text-deep-blue xl:text-[14px]">
+                      <p className="text-[14px] font-semibold text-deep-blue xl:text-[15px]">
                         {title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[#64748B] xl:text-[12px]">
+                      <p className="mt-0.5 text-[12px] text-[#64748B] xl:text-[13px]">
                         {price}
                       </p>
                     </div>
@@ -184,10 +184,10 @@ const EcosystemSection = () => {
                 qualified professionals.
               </p>
               <div className="mt-4 rounded-lg bg-secondary p-3.5 xl:mt-5 xl:p-4">
-                <p className="text-[13px] font-semibold text-deep-blue xl:text-[14px]">
+                <p className="text-[13px] font-semibold text-deep-blue xl:text-[15px]">
                   QC Laboratory Manager
                 </p>
-                <p className="mt-0.5 text-[11px] text-[#64748B] xl:text-[12px]">
+                <p className="mt-0.5 text-[12px] text-[#64748B] xl:text-[13px]">
                   Basel · Full-time
                 </p>
                 <div className="my-3 border-t border-[#DDE8F2]" />

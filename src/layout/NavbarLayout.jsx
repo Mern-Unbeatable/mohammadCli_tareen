@@ -1,19 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const navLinks = [
-  { label: 'Platform', to: '/', active: true },
-  { label: 'Community', to: '/community' },
-  { label: 'Marketplace', to: '/marketplace' },
+  { label: 'Platform', sectionId: 'platform', active: true },
+  { label: 'Community', sectionId: 'community' },
+  { label: 'Marketplace', sectionId: 'marketplace' },
 ];
 
 const NavbarLayout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const closeMenu = () => setMenuOpen(false);
   const toggleMenu = () => setMenuOpen((prev) => !prev);
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.replaceState(null, '', `#${sectionId}`);
+    }
+  };
+
+  const handleSectionNav = (sectionId) => (event) => {
+    event.preventDefault();
+    closeMenu();
+
+    if (location.pathname === '/') {
+      scrollToSection(sectionId);
+      return;
+    }
+
+    navigate(`/#${sectionId}`);
+  };
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -22,12 +44,30 @@ const NavbarLayout = () => {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (location.pathname !== '/' || !location.hash) return;
+
+    const sectionId = location.hash.replace('#', '');
+    const timer = window.setTimeout(() => scrollToSection(sectionId), 0);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, location.hash]);
+
   return (
     <>
-      <nav className="sticky top-0 z-[70] w-full border-b border-[#F0F0F0] bg-white">
+      <nav className="sticky top-0 z-[70] w-full border-b border-[#F0F0F0] bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto flex h-[72px] items-center justify-between px-6 lg:h-[76px] lg:px-8 xl:h-[84px]">
           <div className="flex items-center gap-10 lg:gap-8 xl:gap-14">
-            <Link to="/" className="shrink-0" onClick={closeMenu}>
+            <Link
+              to="/"
+              className="shrink-0"
+              onClick={(event) => {
+                if (location.pathname === '/') {
+                  event.preventDefault();
+                  scrollToSection('platform');
+                }
+                closeMenu();
+              }}
+            >
               <img
                 src={logo}
                 alt="Lab Unity"
@@ -36,10 +76,11 @@ const NavbarLayout = () => {
             </Link>
 
             <ul className="hidden items-center gap-8 lg:flex lg:gap-6 xl:gap-10">
-              {navLinks.map(({ label, to, active }) => (
+              {navLinks.map(({ label, sectionId, active }) => (
                 <li key={label}>
-                  <Link
-                    to={to}
+                  <a
+                    href={`/#${sectionId}`}
+                    onClick={handleSectionNav(sectionId)}
                     className={`text-[15px] leading-none transition-colors xl:text-[16px] ${
                       active
                         ? 'font-medium text-primary'
@@ -47,7 +88,7 @@ const NavbarLayout = () => {
                     }`}
                   >
                     {label}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -80,7 +121,6 @@ const NavbarLayout = () => {
         </div>
       </nav>
 
-      {/* Backdrop overlay — full screen */}
       <div
         aria-hidden="true"
         onClick={closeMenu}
@@ -91,7 +131,6 @@ const NavbarLayout = () => {
         }`}
       />
 
-      {/* Mobile menu — fixed full width, slides down from navbar */}
       <div
         className={`fixed left-0 right-0 top-[72px] z-[65] w-full border-b border-[#F0F0F0] bg-white shadow-[0_12px_32px_rgba(10,26,68,0.1)] transition-all duration-300 ease-out lg:hidden ${
           menuOpen
@@ -101,11 +140,11 @@ const NavbarLayout = () => {
       >
         <div className="px-6 py-5">
           <ul className="flex flex-col gap-4">
-            {navLinks.map(({ label, to, active }) => (
+            {navLinks.map(({ label, sectionId, active }) => (
               <li key={label}>
-                <Link
-                  to={to}
-                  onClick={closeMenu}
+                <a
+                  href={`/#${sectionId}`}
+                  onClick={handleSectionNav(sectionId)}
                   className={`block text-[16px] leading-none transition-colors ${
                     active
                       ? 'font-medium text-primary'
@@ -113,7 +152,7 @@ const NavbarLayout = () => {
                   }`}
                 >
                   {label}
-                </Link>
+                </a>
               </li>
             ))}
           </ul>
