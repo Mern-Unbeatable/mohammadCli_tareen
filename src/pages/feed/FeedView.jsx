@@ -21,10 +21,10 @@ const FeedView = () => {
   return (
     <>
       <main className="py-5">
-        <Container className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_280px]">
+        <Container className="flex gap-6">
           <LeftSidebar />
 
-          <section className="min-w-0 space-y-4">
+          <section className="mx-auto min-w-0 w-full max-w-[620px] flex-1 space-y-4">
             <FeedComposer onCreatePost={() => setCreateOpen(true)} />
             <FeedFilters
               filters={feedFilters}

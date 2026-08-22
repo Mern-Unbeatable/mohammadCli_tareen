@@ -106,7 +106,33 @@ export const feedPosts = [
       name: 'EM-Programme-Revision-2026.pdf',
       meta: 'PDF · 2.4 MB · 18 pages',
     },
-    stats: { reactions: 87, comments: 1, shares: 21 },
+    stats: { reactions: 87, comments: 2, shares: 21 },
+    comments: [
+      {
+        id: 'c1',
+        author: {
+          initials: 'MD',
+          name: 'Marc Dubois',
+          subtitle: 'QC Manager · Eurofins Ghent',
+        },
+        content:
+          'Very helpful — we had similar auditor questions on documentation trails last quarter. Saving this for our next internal review.',
+        time: '1h',
+        replies: 1,
+      },
+      {
+        id: 'c2',
+        author: {
+          initials: 'SL',
+          name: 'Sofia Lindström',
+          subtitle: 'Validation Specialist · PharmaNord AB',
+        },
+        content:
+          'Could you share whether your sampling frequency table covers both passive and active air monitoring?',
+        time: '45m',
+        replies: 0,
+      },
+    ],
   },
   {
     id: 's1',

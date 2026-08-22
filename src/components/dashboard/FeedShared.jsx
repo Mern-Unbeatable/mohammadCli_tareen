@@ -1,34 +1,8 @@
-import { FileText, MessageCircle, Share2, ThumbsUp } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import { currentUser } from '../../data/dashboard';
 
-export const PostStats = ({ stats }) => (
-  <div className="flex items-center justify-between border-b border-[#E4E7EC] px-4 py-2 text-[12px] text-[#64748B]">
-    <span>
-      {stats.reactions} reactions · {stats.comments} comments
-    </span>
-    <span>{stats.shares} shares</span>
-  </div>
-);
-
-export const PostActions = () => (
-  <div className="grid grid-cols-3 divide-x divide-[#E4E7EC]">
-    {[
-      { label: 'Like', icon: ThumbsUp },
-      { label: 'Comment', icon: MessageCircle },
-      { label: 'Share', icon: Share2 },
-    ].map(({ label, icon: Icon }) => (
-      <button
-        key={label}
-        type="button"
-        className="flex items-center justify-center gap-2 py-3 text-[13px] font-medium text-[#475467] transition-colors hover:bg-[#F9FAFB]"
-      >
-        <Icon className="h-4 w-4" />
-        {label}
-      </button>
-    ))}
-  </div>
-);
+export { PostStats, PostActions } from './PostActionsBar';
 
 export const AttachmentCard = ({ attachment }) => (
   <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-3">

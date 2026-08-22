@@ -65,11 +65,13 @@ const JobsList = ({ items }) => (
 );
 
 const RightSidebar = () => (
-  <aside className="hidden w-[280px] shrink-0 space-y-3 xl:block">
-    <PeopleYouMayKnow people={suggestedPeople} />
-    <MarketplaceList items={marketplaceItems} />
-    <JobsList items={jobItems} />
-  </aside>
+  <div className="hidden w-[280px] shrink-0 xl:block">
+    <div className="sticky top-[70px] space-y-3">
+      <PeopleYouMayKnow people={suggestedPeople} />
+      <MarketplaceList items={marketplaceItems} />
+      <JobsList items={jobItems} />
+    </div>
+  </div>
 );
 
 export default RightSidebar;

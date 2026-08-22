@@ -88,11 +88,13 @@ const QuickLinksCard = () => (
 );
 
 const LeftSidebar = () => (
-  <aside className="hidden w-[240px] shrink-0 space-y-3 lg:block">
-    <ProfileCard />
-    <TrialCard />
-    <QuickLinksCard />
-  </aside>
+  <div className="hidden w-60 shrink-0 lg:block">
+    <div className="sticky top-[70px] space-y-3">
+      <ProfileCard />
+      <TrialCard />
+      <QuickLinksCard />
+    </div>
+  </div>
 );
 
 export default LeftSidebar;

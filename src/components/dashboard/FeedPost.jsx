@@ -1,9 +1,10 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { MoreHorizontal, Tag } from 'lucide-react';
 import Card from '../ui/Card';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
-import { AttachmentCard, PostActions, PostStats } from './FeedShared';
+import { AttachmentCard, PostStats, PostActions } from './FeedShared';
+import PostComments from './PostComments';
 
 const badgeByType = {
   question: { variant: 'question', label: 'Question' },
@@ -21,9 +22,7 @@ const PostHeader = ({ post, onReport }) => {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[14px] font-bold text-deep-blue">{post.author.name}</h3>
-          {badge && (
-            <Badge variant={badge.variant}>{badge.label}</Badge>
-          )}
+          {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
           {post.type === 'promo' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-secondary px-2 py-0.5 text-[10px] font-semibold text-pink-light">
               <Tag className="h-3 w-3" />
@@ -67,58 +66,74 @@ const PromoPricing = ({ post }) => (
   </div>
 );
 
-const FeedPost = ({ post, onReport }) => (
-  <Card>
-    <PostHeader post={post} onReport={onReport} />
+const FeedPost = ({ post, onReport }) => {
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [reactionId, setReactionId] = useState(null);
 
-    <div className="p-4">
-      {post.title && (
-        <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
+  const toggleComments = () => setCommentsOpen((prev) => !prev);
+
+  return (
+    <Card>
+      <PostHeader post={post} onReport={onReport} />
+
+      <div className="p-4">
+        {post.title && (
+          <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
+        )}
+        <p className="text-base leading-relaxed text-[#475467]">{post.content}</p>
+
+        {post.attachment && <AttachmentCard attachment={post.attachment} />}
+
+        {post.image && (
+          <div className="relative mt-3 overflow-hidden rounded-lg">
+            <img
+              src={post.image}
+              alt=""
+              className="aspect-[16/9] w-full object-cover"
+              loading="lazy"
+            />
+            {post.discount && post.type === 'promo' && (
+              <>
+                <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                  {post.discount}
+                </span>
+                <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                  Ends in 29 days
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
+        {post.type === 'sponsored' && post.price && (
+          <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
+        )}
+
+        {post.type === 'promo' && <PromoPricing post={post} />}
+
+        {post.cta && (
+          <button
+            type="button"
+            className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {post.cta}
+          </button>
+        )}
+      </div>
+
+      <PostStats stats={post.stats} />
+      <PostActions
+        reactionId={reactionId}
+        onReact={setReactionId}
+        commentsOpen={commentsOpen}
+        onToggleComments={toggleComments}
+      />
+
+      {commentsOpen && (
+        <PostComments comments={post.comments} count={post.stats.comments} />
       )}
-      <p className="text-[14px] leading-relaxed text-[#475467]">{post.content}</p>
-
-      {post.attachment && <AttachmentCard attachment={post.attachment} />}
-
-      {post.image && (
-        <div className="relative mt-3 overflow-hidden rounded-lg">
-          <img
-            src={post.image}
-            alt=""
-            className="aspect-[16/9] w-full object-cover"
-            loading="lazy"
-          />
-          {post.discount && post.type === 'promo' && (
-            <>
-              <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                {post.discount}
-              </span>
-              <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                Ends in 29 days
-              </span>
-            </>
-          )}
-        </div>
-      )}
-
-      {post.type === 'sponsored' && post.price && (
-        <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
-      )}
-
-      {post.type === 'promo' && <PromoPricing post={post} />}
-
-      {post.cta && (
-        <button
-          type="button"
-          className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          {post.cta}
-        </button>
-      )}
-    </div>
-
-    <PostStats stats={post.stats} />
-    <PostActions />
-  </Card>
-);
+    </Card>
+  );
+};
 
 export default memo(FeedPost);
