@@ -8,7 +8,7 @@ const tabs = [
   { id: 'network', label: 'Network', icon: Users, to: '/contacts', badge: 2 },
   { id: 'post', label: 'Post', icon: SquarePlus, action: 'create' },
   { id: 'notifications', label: 'Notifications', icon: Bell, to: '/notifications', badge: 5 },
-  { id: 'jobs', label: 'Jobs', icon: Briefcase, to: '/feed' },
+  { id: 'jobs', label: 'Jobs', icon: Briefcase, to: '/recruitment' },
 ];
 
 const MobileBottomNav = () => {
@@ -21,6 +21,7 @@ const MobileBottomNav = () => {
   const isTabActive = (tab) => {
     if (tab.id === 'home') return pathname === '/feed';
     if (tab.id === 'network') return pathname.startsWith('/contacts');
+    if (tab.id === 'jobs') return pathname.startsWith('/recruitment');
     if (tab.id === 'notifications') return pathname.startsWith('/notifications');
     return pathname === tab.to;
   };

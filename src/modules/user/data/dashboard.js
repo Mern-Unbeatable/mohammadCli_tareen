@@ -45,9 +45,9 @@ export const navItems = [
 ];
 
 export const quickLinks = [
-  { id: 'sell', label: 'Sell equipment', icon: 'package' },
-  { id: 'job', label: 'Post a job', icon: 'briefcase' },
-  { id: 'network', label: 'Grow your network', icon: 'users' },
+  { id: 'sell', label: 'Sell equipment', icon: 'package', to: '/marketplace/create' },
+  { id: 'job', label: 'Post a job', icon: 'briefcase', to: '/recruitment/create' },
+  { id: 'network', label: 'Grow your network', icon: 'users', to: '/contacts' },
 ];
 
 export const feedFilters = [
@@ -59,26 +59,29 @@ export const feedFilters = [
 
 export const suggestedPeople = [
   {
-    id: 1,
+    id: 'thomas-vermeulen',
     initials: 'TV',
     name: 'Thomas Vermeulen',
     company: 'BioLab Corp',
+    to: '/contacts/thomas-vermeulen',
     avatar:
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&h=160&fit=crop&crop=face',
   },
   {
-    id: 2,
+    id: 'amina-haddad',
     initials: 'AH',
     name: 'Amina Haddad',
     company: 'Institut Pasteur Lille',
+    to: '/contacts/amina-haddad',
     avatar:
       'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=160&h=160&fit=crop&crop=face',
   },
   {
-    id: 3,
+    id: 'ravi-kumar',
     initials: 'RK',
     name: 'Ravi Kumar',
     company: 'SynLab Diagnostics',
+    to: '/contacts/ravi-kumar',
     avatar:
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqy5ShEFSxwHTFMoD48GNhTteRdlLb51azWU0ibObL5g&s=10',
   },
@@ -86,33 +89,37 @@ export const suggestedPeople = [
 
 export const marketplaceItems = [
   {
-    id: 1,
+    id: 'agilent-1260-hplc',
     title: 'Agilent 1260 Infinity II HPLC System',
     meta: 'Refurbished · Munich, Germany',
     price: '€14,500',
+    to: '/marketplace/agilent-1260-hplc',
   },
   {
-    id: 2,
+    id: 'thermo-sorvall-centrifuge',
     title: 'Benchtop Centrifuge 5810R',
     meta: 'Used · Brussels, Belgium',
     price: '€3,200',
+    to: '/marketplace/thermo-sorvall-centrifuge',
   },
 ];
 
 export const jobItems = [
   {
-    id: 1,
+    id: 'analytical-chemist-eurofins',
     title: 'Senior QC Analyst',
     company: 'Eurofins Scientific',
     location: 'Ghent, Belgium',
     type: 'Full-time',
+    to: '/recruitment/analytical-chemist-eurofins',
   },
   {
-    id: 2,
+    id: 'microbiology-technician',
     title: 'Microbiology Laboratory Technician',
     company: 'Institut Pasteur Lille',
     location: 'Lille, France',
     type: 'Full-time',
+    to: '/recruitment/microbiology-technician',
   },
 ];
 

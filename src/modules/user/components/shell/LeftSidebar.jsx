@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { Briefcase, Package, Users } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
@@ -11,30 +12,34 @@ const iconMap = {
 
 const ProfileCard = () => (
   <Card className="text-center">
-    <div className="h-16 overflow-hidden">
-      <img
-        src={currentUser.coverPhoto}
-        alt=""
-        className="h-full w-full object-cover"
-      />
-    </div>
-    <div className="-mt-8 px-4 pb-4">
-      <Avatar
-        src={currentUser.avatar}
-        alt={currentUser.name}
-        initials={currentUser.initials}
-        size="lg"
-        className="mx-auto border-4 border-white bg-[#E8F3FB]"
-      />
-      <h2 className="mt-3 text-[15px] font-bold text-deep-blue">{currentUser.name}</h2>
-      <p className="mt-0.5 text-[13px] text-[#64748B]">{currentUser.title}</p>
-      <p className="text-[12px] text-[#98A2B3]">
-        {currentUser.company} · {currentUser.location}
-      </p>
-      <div className="mt-3 border-t border-[#E4E7EC] pt-3 flex items-center justify-between">
-        <p className="text-[12px] text-[#64748B]">Connections</p>
-        <p className="text-[15px] font-bold text-primary">{currentUser.connections}</p>
+    <Link to="/profile" className="block">
+      <div className="h-16 overflow-hidden">
+        <img
+          src={currentUser.coverPhoto}
+          alt=""
+          className="h-full w-full object-cover"
+        />
       </div>
+      <div className="-mt-8 px-4 pb-4">
+        <Avatar
+          src={currentUser.avatar}
+          alt={currentUser.name}
+          initials={currentUser.initials}
+          size="lg"
+          className="mx-auto border-4 border-white bg-[#E8F3FB]"
+        />
+        <h2 className="mt-3 text-[15px] font-bold text-deep-blue transition-colors hover:text-primary">
+          {currentUser.name}
+        </h2>
+        <p className="mt-0.5 text-[13px] text-[#64748B]">{currentUser.title}</p>
+        <p className="text-[12px] text-[#98A2B3]">
+          {currentUser.company} · {currentUser.location}
+        </p>
+      </div>
+    </Link>
+    <div className="mx-4 mb-4 border-t border-[#E4E7EC] pt-3 flex items-center justify-between">
+      <p className="text-[12px] text-[#64748B]">Connections</p>
+      <p className="text-[15px] font-bold text-primary">{currentUser.connections}</p>
     </div>
   </Card>
 );
@@ -59,29 +64,29 @@ const TrialCard = () => {
           style={{ width: `${100 - progress}%` }}
         />
       </div>
-      <button
-        type="button"
-        className="mt-3 w-full rounded-md border border-primary py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+      <Link
+        to="/subscription"
+        className="mt-3 flex w-full items-center justify-center rounded-md border border-primary py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
       >
         View plans
-      </button>
+      </Link>
     </Card>
   );
 };
 
 const QuickLinksCard = () => (
   <Card className="p-2">
-    {quickLinks.map(({ id, label, icon }) => {
+    {quickLinks.map(({ id, label, icon, to }) => {
       const Icon = iconMap[icon];
       return (
-        <button
+        <Link
           key={id}
-          type="button"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#475467] transition-colors hover:bg-[#F9FAFB]"
+          to={to}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#475467] transition-colors hover:bg-[#F9FAFB] hover:text-deep-blue"
         >
           <Icon className="h-4 w-4 text-primary" />
           {label}
-        </button>
+        </Link>
       );
     })}
   </Card>

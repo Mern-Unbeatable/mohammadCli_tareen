@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { Check } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
@@ -26,15 +27,22 @@ const PeopleYouMayKnow = ({ people }) => {
     <Card>
       <SectionTitle>People you may know</SectionTitle>
       <ul className="divide-y divide-[#E4E7EC]">
-        {people.map(({ id, initials, name, company, avatar }) => {
+        {people.map(({ id, initials, name, company, avatar, to }) => {
           const isConnected = connected[id];
           const isPending = pending[id];
 
           return (
             <li key={id} className="flex items-center gap-3 px-4 py-3">
-              <Avatar src={avatar} alt={name} initials={initials} size="sm" />
+              <Link to={to} className="shrink-0">
+                <Avatar src={avatar} alt={name} initials={initials} size="sm" />
+              </Link>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold text-deep-blue">{name}</p>
+                <Link
+                  to={to}
+                  className="block truncate text-[13px] font-semibold text-deep-blue hover:text-primary"
+                >
+                  {name}
+                </Link>
                 <p className="truncate text-[12px] text-[#64748B]">{company}</p>
               </div>
               <button
@@ -72,11 +80,18 @@ const MarketplaceList = ({ items }) => (
   <Card>
     <SectionTitle>Latest in the marketplace</SectionTitle>
     <ul className="divide-y divide-[#E4E7EC]">
-      {items.map(({ id, title, meta, price }) => (
-        <li key={id} className="px-4 py-3">
-          <p className="text-[13px] font-semibold text-deep-blue">{title}</p>
-          <p className="mt-0.5 text-[12px] text-[#64748B]">{meta}</p>
-          <p className="mt-1 text-[13px] font-bold text-primary">{price}</p>
+      {items.map(({ id, title, meta, price, to }) => (
+        <li key={id}>
+          <Link
+            to={to}
+            className="block px-4 py-3 transition-colors hover:bg-[#F9FAFB]"
+          >
+            <p className="text-[13px] font-semibold text-deep-blue hover:text-primary">
+              {title}
+            </p>
+            <p className="mt-0.5 text-[12px] text-[#64748B]">{meta}</p>
+            <p className="mt-1 text-[13px] font-bold text-primary">{price}</p>
+          </Link>
         </li>
       ))}
     </ul>
@@ -87,15 +102,22 @@ const JobsList = ({ items }) => (
   <Card>
     <SectionTitle>Jobs for you</SectionTitle>
     <ul className="divide-y divide-[#E4E7EC]">
-      {items.map(({ id, title, company, location, type }) => (
-        <li key={id} className="px-4 py-3">
-          <p className="text-[13px] font-semibold text-deep-blue">{title}</p>
-          <p className="mt-0.5 text-[12px] text-[#64748B]">
-            {company} · {location}
-          </p>
-          <Badge variant="fulltime" className="mt-2 normal-case">
-            {type}
-          </Badge>
+      {items.map(({ id, title, company, location, type, to }) => (
+        <li key={id}>
+          <Link
+            to={to}
+            className="block px-4 py-3 transition-colors hover:bg-[#F9FAFB]"
+          >
+            <p className="text-[13px] font-semibold text-deep-blue hover:text-primary">
+              {title}
+            </p>
+            <p className="mt-0.5 text-[12px] text-[#64748B]">
+              {company} · {location}
+            </p>
+            <Badge variant="fulltime" className="mt-2 normal-case">
+              {type}
+            </Badge>
+          </Link>
         </li>
       ))}
     </ul>
