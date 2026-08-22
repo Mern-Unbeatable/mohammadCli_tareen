@@ -1,10 +1,9 @@
-import React from 'react';
-import Demo from '../../../Demo/Demo';
+import HeroSection from './HeroSection';
 
 const HomeView = () => {
   return (
-    <div className='h-screen flex items-center justify-center'>
-      <Demo/>
+    <div>
+      <HeroSection />
     </div>
   );
 };
