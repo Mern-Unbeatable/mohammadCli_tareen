@@ -9,3 +9,7 @@
     --color-green-primary: #5CB85C;
     --color-deep-blue: #0A1A44;
 }
+
+button {
+    cursor: pointer;
+}
