@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Container from '@/components/ui/Container';
-import GeneralPostCard from '@/modules/user/components/general/GeneralPostCard';
+import GeneralPostCard from '@/components/data-display/GeneralPostCard/GeneralPostCard';
 import GeneralToolbar from '@/modules/user/components/general/GeneralToolbar';
 import CreateGeneralPostModal from '@/modules/user/components/general/CreateGeneralPostModal';
 import { filterGeneralPosts, generalPosts } from '@/modules/user/data/general';

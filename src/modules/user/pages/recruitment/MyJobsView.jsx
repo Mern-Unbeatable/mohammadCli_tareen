@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Container from '@/components/ui/Container';
-import JobCard from '@/modules/user/components/recruitment/JobCard';
+import JobCard from '@/components/data-display/JobCard/JobCard';
 import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
 import { filterJobs, getMyJobs } from '@/modules/user/data/recruitment';
 

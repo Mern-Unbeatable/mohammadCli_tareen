@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { CreditCard, LogOut, User } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import Avatar from '@/components/ui/Avatar';
+import { useAuth } from '@/shared/auth/AuthContext';
 import { currentUser } from '@/modules/user/data/dashboard';
 
 const ProfileDropdown = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const profile = user ?? currentUser;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -32,6 +36,12 @@ const ProfileDropdown = () => {
 
   const close = () => setOpen(false);
 
+  const handleLogout = () => {
+    close();
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div ref={rootRef} className="relative shrink-0">
       <button
@@ -43,9 +53,9 @@ const ProfileDropdown = () => {
         className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
       >
         <Avatar
-          src={currentUser.avatar}
-          alt={currentUser.name}
-          initials={currentUser.initials}
+          src={profile.avatar}
+          alt={profile.name}
+          initials={profile.initials}
           size="sm"
           className="bg-[#FEF3C7] text-[#B45309]"
         />
@@ -57,9 +67,9 @@ const ProfileDropdown = () => {
           className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[290px] overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
         >
           <div className="border-b border-[#E4E7EC] px-4 py-4">
-            <p className="text-[15px] font-bold text-deep-blue">{currentUser.name}</p>
+            <p className="text-[15px] font-bold text-deep-blue">{profile.name}</p>
             <p className="mt-1 text-[12px] leading-snug text-[#64748B]">
-              {currentUser.title} · {currentUser.company}
+              {profile.title ?? currentUser.title} · {currentUser.company}
             </p>
           </div>
 
@@ -104,15 +114,15 @@ const ProfileDropdown = () => {
           </ul>
 
           <div className="border-t border-[#E4E7EC]">
-            <Link
-              to="/login"
+            <button
+              type="button"
               role="menuitem"
-              onClick={close}
-              className="flex items-center gap-3 bg-[#FEF2F2] px-4 py-3 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEE2E2]"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 bg-[#FEF2F2] px-4 py-3 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEE2E2]"
             >
               <LogOut className="h-[18px] w-[18px]" strokeWidth={1.8} />
               Log out
-            </Link>
+            </button>
           </div>
         </div>
       )}

@@ -1,14 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import Container from '@/components/ui/Container';
-import FeedPost from '@/modules/user/components/feed/FeedPost';
+import ProfilePageContent from '@/components/data-display/ProfilePageContent/ProfilePageContent';
 import ReportPostModal from '@/modules/user/components/feed/ReportPostModal';
-import {
-  ContactInfoCard,
-  ProfessionalInfoCard,
-  ProfileHero,
-  SubscriptionDetailsCard,
-} from '@/modules/user/components/profile/ProfileSections';
+import { SubscriptionDetailsCard } from '@/modules/user/components/profile/ProfileSections';
 import { currentUser, feedPosts } from '@/modules/user/data/dashboard';
 
 const ProfileView = () => {
@@ -24,39 +19,22 @@ const ProfileView = () => {
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
         <Container className="max-w-[760px]">
-          <div className="space-y-4">
-            <ProfileHero />
+          <ProfilePageContent
+            user={currentUser}
+            posts={activity}
+            onReport={setReportPost}
+            isPremium={isPremium}
+            subscriptionSlot={isPremium ? <SubscriptionDetailsCard /> : null}
+          />
 
-            {isPremium ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-                <SubscriptionDetailsCard />
-                <ContactInfoCard showProfessional />
-              </div>
-            ) : (
-              <>
-                <ProfessionalInfoCard extended />
-                <ContactInfoCard />
-              </>
-            )}
-
-            <section>
-              <h2 className="mb-4 px-1 text-[18px] font-bold text-deep-blue">Activity</h2>
-              <div className="space-y-4">
-                {activity.map((post) => (
-                  <FeedPost key={post.id} post={post} onReport={setReportPost} />
-                ))}
-              </div>
-            </section>
-
-            {!isPremium && (
-              <p className="text-center text-[13px] text-[#64748B]">
-                Want full access?{' '}
-                <Link to="/subscription" className="font-semibold text-primary hover:underline">
-                  View membership plans
-                </Link>
-              </p>
-            )}
-          </div>
+          {!isPremium && (
+            <p className="mt-6 text-center text-[13px] text-[#64748B]">
+              Want full access?{' '}
+              <Link to="/subscription" className="font-semibold text-primary hover:underline">
+                View membership plans
+              </Link>
+            </p>
+          )}
         </Container>
       </main>
 

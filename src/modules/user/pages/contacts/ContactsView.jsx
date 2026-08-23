@@ -1,70 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { Clock, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 import Container from '@/components/ui/Container';
-import Avatar from '@/components/ui/Avatar';
+import ContactCard from '@/components/data-display/ContactCard/ContactCard';
 import { contacts, countries } from '@/modules/user/data/contacts';
-
-const ContactCard = ({ contact, connected, pending, onConnect }) => {
-  const isConnected = connected[contact.id];
-  const isPending = pending[contact.id] || contact.pending;
-
-  return (
-    <article className="flex flex-col rounded-xl border border-[#E4E7EC] bg-white p-5 text-center shadow-sm">
-      <Avatar
-        src={contact.avatar}
-        alt={contact.name}
-        initials={contact.initials}
-        size="lg"
-        className={`mx-auto ${contact.avatarClass}`}
-      />
-      <Link
-        to={`/contacts/${contact.id}`}
-        className="mt-3 text-[15px] font-semibold text-primary hover:underline"
-      >
-        {contact.name}
-      </Link>
-      <p className="mt-1 text-[13px] text-[#475467]">{contact.title}</p>
-      <p className="mt-0.5 text-[13px] font-semibold text-deep-blue">{contact.company}</p>
-      <p className="text-[13px] text-[#64748B]">{contact.country}</p>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Link
-          to={`/contacts/${contact.id}`}
-          className="rounded-md bg-pink-secondary px-3 py-2 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
-        >
-          Profile
-        </Link>
-        <button
-          type="button"
-          onClick={() => onConnect(contact.id)}
-          disabled={isConnected || isPending}
-          className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
-            isConnected
-              ? 'bg-green-secondary text-green-primary'
-              : isPending
-                ? 'bg-green-secondary text-green-primary'
-                : 'bg-primary text-white hover:opacity-90'
-          }`}
-        >
-          {isConnected ? (
-            'Connected'
-          ) : isPending ? (
-            <>
-              <Clock className="h-3.5 w-3.5" />
-              Pending
-            </>
-          ) : (
-            <>
-              <UserPlus className="h-3.5 w-3.5" />
-              Connect
-            </>
-          )}
-        </button>
-      </div>
-    </article>
-  );
-};
 
 const ContactsView = () => {
   const [query, setQuery] = useState('');
@@ -72,18 +9,16 @@ const ContactsView = () => {
   const [connected, setConnected] = useState({});
   const [pending, setPending] = useState({});
 
-  const filtered = useMemo(() => {
+  const filtered = contacts.filter((contact) => {
     const q = query.trim().toLowerCase();
-    return contacts.filter((contact) => {
-      const matchesCountry = country === 'All countries' || contact.country === country;
-      const matchesQuery =
-        !q ||
-        contact.name.toLowerCase().includes(q) ||
-        contact.company.toLowerCase().includes(q) ||
-        contact.title.toLowerCase().includes(q);
-      return matchesCountry && matchesQuery;
-    });
-  }, [query, country]);
+    const matchesCountry = country === 'All countries' || contact.country === country;
+    const matchesQuery =
+      !q ||
+      contact.name.toLowerCase().includes(q) ||
+      contact.company.toLowerCase().includes(q) ||
+      contact.title.toLowerCase().includes(q);
+    return matchesCountry && matchesQuery;
+  });
 
   const handleConnect = (id) => {
     if (connected[id] || pending[id]) return;
@@ -136,8 +71,8 @@ const ContactsView = () => {
             <ContactCard
               key={contact.id}
               contact={contact}
-              connected={connected}
-              pending={pending}
+              connected={Boolean(connected[contact.id])}
+              pending={Boolean(pending[contact.id] || contact.pending)}
               onConnect={handleConnect}
             />
           ))}

@@ -1,4 +1,6 @@
 import { Navigate } from 'react-router';
+import RequireRole from '@/shared/auth/RequireRole';
+import { USER_ROLES } from '@/shared/constants/roles';
 import UserDashboardLayout from '@/modules/user/layout/UserDashboardLayout';
 import FeedView from '@/modules/user/pages/feed/FeedView';
 import ContactsView from '@/modules/user/pages/contacts/ContactsView';
@@ -24,30 +26,35 @@ import ProfileView from '@/modules/user/pages/profile/ProfileView';
 import ProfileSetupView from '@/modules/user/pages/profile/ProfileSetupView';
 
 export const userRoutes = {
-  element: <UserDashboardLayout />,
+  element: <RequireRole allowedRoles={[USER_ROLES.USER]} />,
   children: [
-    { path: '/feed', element: <FeedView /> },
-    { path: '/contacts', element: <ContactsView /> },
-    { path: '/contacts/:contactId', element: <ContactProfileView /> },
-    { path: '/marketplace', element: <MarketplaceView /> },
-    { path: '/marketplace/saved', element: <SavedListingsView /> },
-    { path: '/marketplace/my-listings', element: <MyListingsView /> },
-    { path: '/marketplace/create', element: <CreateListingView /> },
-    { path: '/marketplace/:listingId', element: <ListingDetailView /> },
-    { path: '/recruitment', element: <RecruitmentView /> },
-    { path: '/recruitment/my-jobs', element: <MyJobsView /> },
-    { path: '/recruitment/create', element: <PostJobView /> },
-    { path: '/recruitment/:jobId', element: <JobDetailView /> },
-    { path: '/general', element: <GeneralView /> },
-    { path: '/general/my-posts', element: <MyGeneralPostsView /> },
-    { path: '/general/:postId', element: <GeneralPostDetailView /> },
-    { path: '/messages', element: <MessagesView /> },
-    { path: '/blogs', element: <BlogsView /> },
-    { path: '/blogs/:slug', element: <BlogDetailView /> },
-    { path: '/notifications', element: <NotificationsView /> },
-    { path: '/subscription', element: <SubscriptionView /> },
-    { path: '/profile', element: <ProfileView /> },
-    { path: '/profile/edit', element: <ProfileSetupView /> },
-    { path: '/dashboard', element: <Navigate to="/feed" replace /> },
+    {
+      element: <UserDashboardLayout />,
+      children: [
+        { path: '/feed', element: <FeedView /> },
+        { path: '/contacts', element: <ContactsView /> },
+        { path: '/contacts/:contactId', element: <ContactProfileView /> },
+        { path: '/marketplace', element: <MarketplaceView /> },
+        { path: '/marketplace/saved', element: <SavedListingsView /> },
+        { path: '/marketplace/my-listings', element: <MyListingsView /> },
+        { path: '/marketplace/create', element: <CreateListingView /> },
+        { path: '/marketplace/:listingId', element: <ListingDetailView /> },
+        { path: '/recruitment', element: <RecruitmentView /> },
+        { path: '/recruitment/my-jobs', element: <MyJobsView /> },
+        { path: '/recruitment/create', element: <PostJobView /> },
+        { path: '/recruitment/:jobId', element: <JobDetailView /> },
+        { path: '/general', element: <GeneralView /> },
+        { path: '/general/my-posts', element: <MyGeneralPostsView /> },
+        { path: '/general/:postId', element: <GeneralPostDetailView /> },
+        { path: '/messages', element: <MessagesView /> },
+        { path: '/blogs', element: <BlogsView /> },
+        { path: '/blogs/:slug', element: <BlogDetailView /> },
+        { path: '/notifications', element: <NotificationsView /> },
+        { path: '/subscription', element: <SubscriptionView /> },
+        { path: '/profile', element: <ProfileView /> },
+        { path: '/profile/edit', element: <ProfileSetupView /> },
+        { path: '/dashboard', element: <Navigate to="/feed" replace /> },
+      ],
+    },
   ],
 };

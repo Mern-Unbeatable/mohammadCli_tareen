@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Container from '@/components/ui/Container';
-import ListingCard from '@/modules/user/components/marketplace/ListingCard';
+import ListingCard from '@/components/data-display/ListingCard/ListingCard';
 import MarketplaceToolbar from '@/modules/user/components/marketplace/MarketplaceToolbar';
 import { filterListings, getMyListings } from '@/modules/user/data/marketplace';
 

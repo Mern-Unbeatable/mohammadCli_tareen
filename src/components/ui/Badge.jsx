@@ -9,7 +9,7 @@ const variants = {
 
 const Badge = ({ children, variant = 'post', className = '' }) => (
   <span
-    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${variants[variant]} ${className}`}
+    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide sm:text-[11px] lg:text-[12px] ${variants[variant]} ${className}`}
   >
     {children}
   </span>

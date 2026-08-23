@@ -1,20 +1,20 @@
 import Card from '@/components/ui/Card';
+import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
+import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
 
 const SupplierListingsView = () => (
-  <div className="space-y-4">
-    <div>
-      <h2 className="text-[24px] font-bold text-deep-blue">My Listings</h2>
-      <p className="mt-1 text-[14px] text-[#64748B]">
-        Create, edit and track your marketplace equipment listings.
-      </p>
-    </div>
+  <PanelPage>
+    <PanelPageHeader
+      title="My Listings"
+      subtitle="Create, edit and track your marketplace equipment listings."
+    />
 
-    <Card className="p-6">
+    <Card className="p-4 sm:p-5">
       <p className="text-[14px] text-[#64748B]">
         Supplier listing management will be implemented here.
       </p>
     </Card>
-  </div>
+  </PanelPage>
 );
 
 export default SupplierListingsView;
