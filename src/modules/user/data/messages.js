@@ -1,9 +1,11 @@
-export const groupMembers = [
+export const messageRecipients = [
   { id: 'marcus-weber', name: 'Dr. Marcus Weber' },
   { id: 'isabelle-fontaine', name: 'Isabelle Fontaine' },
   { id: 'james-thornton', name: 'James Thornton' },
   { id: 'carlos-rodrigues', name: 'Carlos Rodrigues' },
 ];
+
+export const groupMembers = messageRecipients;
 
 export const directChats = [
   {

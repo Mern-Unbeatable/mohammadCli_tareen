@@ -100,6 +100,8 @@ const Messenger = ({
   onDraftChange,
   onSend,
   showOnlineIndicator = true,
+  showNewMessageButton = false,
+  onNewMessage,
   showCreateGroupButton = false,
   onCreateGroup,
   mobilePanel = 'list',
@@ -162,6 +164,17 @@ const Messenger = ({
               className="w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] py-2.5 pl-10 pr-4 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10"
             />
           </div>
+
+          {showNewMessageButton ? (
+            <button
+              type="button"
+              onClick={onNewMessage}
+              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
+            >
+              <Plus className="h-4 w-4" />
+              New Message
+            </button>
+          ) : null}
 
           {showCreateGroupButton ? (
             <button

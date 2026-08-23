@@ -27,6 +27,9 @@ import ContactProfileHero from '@/components/data-display/ContactProfileHero/Con
 import ActivitySection from '@/components/data-display/ActivitySection/ActivitySection';
 import ProfilePageContent from '@/components/data-display/ProfilePageContent/ProfilePageContent';
 import ContactProfilePageContent from '@/components/data-display/ContactProfilePageContent/ContactProfilePageContent';
+import BlogsPageContent from '@/shared/pages/blogs/BlogsPageContent';
+import BlogDetailPageContent from '@/shared/pages/blogs/BlogDetailPageContent';
+import NotificationsPageContent from '@/shared/pages/notifications/NotificationsPageContent';
 import { SubscriptionDetailsCard } from '@/modules/user/components/profile/ProfileSections';
 import {
   DEMO_ADMIN_PASSWORD,
@@ -55,6 +58,7 @@ import {
   feedPosts,
 } from '@/data/demoData';
 import { generalPosts } from '@/modules/user/data/general';
+import { featuredArticle } from '@/modules/user/data/blogs';
 import { profileCountries } from '@/modules/user/data/subscription';
 
 function AvatarPreview({ variantId }) {
@@ -496,6 +500,33 @@ function ContactProfilePageContentPreview({ variantId }) {
   );
 }
 
+function BlogsPageContentPreview() {
+  return (
+    <div className="-mx-4 max-h-[720px] overflow-y-auto sm:-mx-6">
+      <BlogsPageContent blogBasePath="/developer/blogs" />
+    </div>
+  );
+}
+
+function BlogDetailPageContentPreview() {
+  return (
+    <div className="-mx-4 max-h-[720px] overflow-y-auto sm:-mx-6">
+      <BlogDetailPageContent
+        blogBasePath="/developer/blogs"
+        slug={featuredArticle.slug}
+      />
+    </div>
+  );
+}
+
+function NotificationsPageContentPreview() {
+  return (
+    <div className="max-w-[760px]">
+      <NotificationsPageContent />
+    </div>
+  );
+}
+
 /** Live preview for a catalog component id (+ optional variantId) */
 export default function ComponentPreview({ previewId, variantId }) {
   switch (previewId) {
@@ -547,6 +578,12 @@ export default function ComponentPreview({ previewId, variantId }) {
       return <ProfilePageContentPreview variantId={variantId || 'trial'} />;
     case 'contact-profile-page-content':
       return <ContactProfilePageContentPreview variantId={variantId || 'with-activity'} />;
+    case 'blogs-page-content':
+      return <BlogsPageContentPreview />;
+    case 'blog-detail-page-content':
+      return <BlogDetailPageContentPreview />;
+    case 'notifications-page-content':
+      return <NotificationsPageContentPreview />;
     default:
       return <p className="text-sm text-[#64748B]">No preview available.</p>;
   }

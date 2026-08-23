@@ -1,10 +1,10 @@
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import GeneralPageContent from '@/shared/pages/general/GeneralPageContent';
 
-const SupplierGeneralView = () => (
+const SupplierMyGeneralPostsView = () => (
   <PanelPage>
-    <GeneralPageContent basePath="/supplier/general" activeView="browse" />
+    <GeneralPageContent basePath="/supplier/general" activeView="mine" />
   </PanelPage>
 );
 
-export default SupplierGeneralView;
+export default SupplierMyGeneralPostsView;

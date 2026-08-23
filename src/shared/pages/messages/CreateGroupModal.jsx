@@ -40,7 +40,7 @@ const CreateGroupModal = ({ open, onClose, onCreate }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -60,12 +60,15 @@ const CreateGroupModal = ({ open, onClose, onCreate }) => {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h2 id="create-group-title" className="text-[17px] font-bold text-deep-blue">
+          <h2 id="create-group-title" className="text-[17px] font-bold text-deep-blue sm:text-[18px]">
             Create Group Chat
           </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+        >
           <label htmlFor="groupName" className="mb-1.5 block text-[13px] font-semibold text-deep-blue">
             Group Name
           </label>

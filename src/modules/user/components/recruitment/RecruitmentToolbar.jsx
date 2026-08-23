@@ -11,37 +11,48 @@ const RecruitmentToolbar = ({
   level,
   onLevelChange,
   activeView = 'browse',
+  basePath = '/recruitment',
+  showTitle = true,
+  showActions = true,
 }) => (
   <div className="space-y-4">
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h1 className="text-[28px] font-bold text-deep-blue sm:text-[32px]">Recruitment</h1>
-        <p className="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">
-          Find your next laboratory-industry role or discover qualified candidates.
-        </p>
-      </div>
+    {(showTitle || showActions) && (
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        {showTitle ? (
+          <div>
+            <h1 className="text-[28px] font-bold text-deep-blue sm:text-[32px]">Recruitment</h1>
+            <p className="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">
+              Find your next laboratory-industry role or discover qualified candidates.
+            </p>
+          </div>
+        ) : (
+          <div />
+        )}
 
-      <div className="flex flex-wrap gap-2">
-        <Link
-          to="/recruitment/my-jobs"
-          className={`${actionBtn} ${
-            activeView === 'mine'
-              ? 'bg-green-secondary text-green-primary'
-              : 'border border-green-primary/30 text-green-primary hover:bg-green-secondary'
-          }`}
-        >
-          <List className="h-3.5 w-3.5" />
-          My Job Post
-        </Link>
-        <Link
-          to="/recruitment/create"
-          className={`${actionBtn} bg-primary text-white hover:bg-[#066BB0]`}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Post Job
-        </Link>
+        {showActions ? (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`${basePath}/my-jobs`}
+              className={`${actionBtn} ${
+                activeView === 'mine'
+                  ? 'bg-green-secondary text-green-primary'
+                  : 'border border-green-primary/30 text-green-primary hover:bg-green-secondary'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              My Job Post
+            </Link>
+            <Link
+              to={`${basePath}/create`}
+              className={`${actionBtn} bg-primary text-white hover:bg-[#066BB0]`}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Post Job
+            </Link>
+          </div>
+        ) : null}
       </div>
-    </div>
+    )}
 
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="relative flex-1">

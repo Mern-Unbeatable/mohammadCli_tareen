@@ -9,6 +9,7 @@ export const DOC_CATEGORIES = [
   { id: 'all', label: 'All' },
   { id: 'ui', label: 'UI Primitives' },
   { id: 'common', label: 'Common' },
+  { id: 'pages', label: 'Shared Pages' },
   { id: 'data-display', label: 'Data Display' },
   { id: 'forms', label: 'Forms' },
 ];
@@ -539,7 +540,7 @@ export const COMPONENT_DOCS = [
     id: 'blog-admin-card',
     name: 'BlogAdminCard',
     category: 'data-display',
-    summary: 'Admin blog grid card with Edit and Delete actions.',
+    summary: 'Admin blog grid card with Edit and Delete actions. Typography matches BlogGridCard via blogCardTheme.',
     path: 'src/components/data-display/BlogAdminCard/',
     importExample:
       "import BlogAdminCard from '@/components/data-display/BlogAdminCard/BlogAdminCard'\nimport { DEMO_BLOG_ADMIN } from '@/data/demoData'",
@@ -808,6 +809,67 @@ export const COMPONENT_DOCS = [
       { id: 'with-activity', name: 'With activity', description: 'Contact with feed posts.' },
       { id: 'empty-activity', name: 'Empty activity', description: 'No posts yet.' },
     ],
+  },
+  {
+    id: 'blogs-page-content',
+    name: 'BlogsPageContent',
+    category: 'pages',
+    summary: 'Shared blogs hub: hero search, latest carousel/grid, and archive grid. Used by user and supplier routes.',
+    path: 'src/shared/pages/blogs/BlogsPageContent.jsx',
+    importExample:
+      "import BlogsPageContent from '@/shared/pages/blogs/BlogsPageContent'\n\n<BlogsPageContent blogBasePath=\"/supplier/blogs\" />",
+    props: [
+      {
+        name: 'blogBasePath',
+        type: 'string',
+        required: false,
+        defaultValue: "'/blogs'",
+        description: 'Route prefix for article links (e.g. /blogs or /supplier/blogs).',
+      },
+    ],
+    requiredExample: `<BlogsPageContent blogBasePath="/blogs" />`,
+    optionalExample: `<div className="-m-4 sm:-m-5 lg:-m-6">\n  <BlogsPageContent blogBasePath="/supplier/blogs" />\n</div>`,
+    previewId: 'blogs-page-content',
+  },
+  {
+    id: 'blog-detail-page-content',
+    name: 'BlogDetailPageContent',
+    category: 'pages',
+    summary: 'Shared article detail with sidebar popular posts. Reads slug from route params.',
+    path: 'src/shared/pages/blogs/BlogDetailPageContent.jsx',
+    importExample:
+      "import BlogDetailPageContent from '@/shared/pages/blogs/BlogDetailPageContent'\n\n<BlogDetailPageContent blogBasePath=\"/blogs\" />",
+    props: [
+      {
+        name: 'blogBasePath',
+        type: 'string',
+        required: false,
+        defaultValue: "'/blogs'",
+        description: 'Route prefix for back link and popular post links.',
+      },
+      {
+        name: 'slug',
+        type: 'string',
+        required: false,
+        description: 'Optional slug override for previews outside a routed context.',
+      },
+    ],
+    requiredExample: `<BlogDetailPageContent blogBasePath="/blogs" />`,
+    optionalExample: `<BlogDetailPageContent blogBasePath="/supplier/blogs" />`,
+    previewId: 'blog-detail-page-content',
+  },
+  {
+    id: 'notifications-page-content',
+    name: 'NotificationsPageContent',
+    category: 'pages',
+    summary: 'Shared notifications list card with mark-read actions. Wrap in Container or PanelPage per layout.',
+    path: 'src/shared/pages/notifications/NotificationsPageContent.jsx',
+    importExample:
+      "import NotificationsPageContent from '@/shared/pages/notifications/NotificationsPageContent'\n\n<PanelPage className=\"max-w-[760px]\">\n  <NotificationsPageContent />\n</PanelPage>",
+    props: [],
+    requiredExample: `<NotificationsPageContent />`,
+    optionalExample: `<Container className="max-w-[760px]">\n  <NotificationsPageContent />\n</Container>`,
+    previewId: 'notifications-page-content',
   },
 ];
 

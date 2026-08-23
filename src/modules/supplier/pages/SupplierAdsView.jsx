@@ -8,7 +8,7 @@ import CreateAdModal from '@/modules/supplier/components/CreateAdModal';
 import { SUPPLIER_AD_ROWS } from '@/modules/supplier/data/advertisements';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import { panelPageTheme, panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
+import { panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 
 const PAGE_SIZE = 7;
 

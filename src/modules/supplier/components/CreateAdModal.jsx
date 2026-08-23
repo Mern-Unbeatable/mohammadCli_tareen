@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import {
   Check,
   CheckCircle2,
+  ChevronLeft,
   Clock,
   GraduationCap,
   ImageIcon,
@@ -13,8 +14,6 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import CategoryPill from '@/components/data-display/CategoryPill/CategoryPill';
 import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
 import AdDetailCard from '@/modules/supplier/components/AdDetailCard';
 import {
@@ -25,7 +24,14 @@ import {
 } from '@/modules/supplier/data/advertisements';
 import { panelPrimaryBtn, panelSecondaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 
-const STEPS = [
+const STEPPER_STEPS_INITIAL = [
+  { id: 'type', label: 'Type' },
+  { id: 'details', label: 'Details' },
+  { id: 'media', label: 'Media' },
+  { id: 'duration', label: 'Duration' },
+];
+
+const STEPPER_STEPS_FULL = [
   { id: 'type', label: 'Type' },
   { id: 'details', label: 'Details' },
   { id: 'media', label: 'Media' },
@@ -34,7 +40,15 @@ const STEPS = [
   { id: 'payment', label: 'Payment' },
 ];
 
-const STEP_ORDER = STEPS.map((step) => step.id);
+const STEP_ORDER = ['type', 'details', 'media', 'duration', 'preview', 'payment'];
+
+const WEBINAR_DEFAULTS = {
+  title: 'Advanced Mass Spectrometry Webinar 2026',
+  location: 'Online (Zoom) / Dublin Convention Centre',
+  organizer: 'BioLab Corp',
+  description:
+    'Describe your advertisement in detail. Explain the key benefits and features of your webinar or event.',
+};
 
 const CATEGORY_ICONS = {
   product: Microscope,
@@ -134,6 +148,16 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
         setError('Please enter an advertisement title.');
         return false;
       }
+      if (form.categoryId === 'webinar') {
+        if (!form.eventDate) {
+          setError('Please select an event date.');
+          return false;
+        }
+        if (!form.eventTime) {
+          setError('Please select an event time.');
+          return false;
+        }
+      }
       if (!form.description.trim()) {
         setError('Please enter a description.');
         return false;
@@ -163,6 +187,26 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
       setStep(targetStep);
     }
   };
+
+  const handleCategorySelect = (categoryId) => {
+    setError('');
+    setForm((prev) => {
+      if (categoryId === 'webinar') {
+        return {
+          ...prev,
+          categoryId,
+          title: prev.title || WEBINAR_DEFAULTS.title,
+          location: prev.location || WEBINAR_DEFAULTS.location,
+          organizer: prev.organizer || WEBINAR_DEFAULTS.organizer,
+          description: prev.description || WEBINAR_DEFAULTS.description,
+        };
+      }
+      return { ...prev, categoryId };
+    });
+  };
+
+  const stepperSteps = step === 'type' ? STEPPER_STEPS_INITIAL : STEPPER_STEPS_FULL;
+  const stepperCurrent = step;
 
   const handlePay = () => {
     setSuccess(true);
@@ -199,22 +243,22 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
         aria-labelledby="create-ad-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[#E4E7EC] px-4 py-4 sm:px-6">
-          <div className="min-w-0">
+        <div className="flex shrink-0 items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-6 sm:pt-5">
+          <div className="min-w-0 pr-2">
             <h2 id="create-ad-title" className="text-[18px] font-bold text-deep-blue sm:text-[20px]">
               Create Advertisement
             </h2>
-            <p className="mt-1 text-[13px] text-[#64748B] sm:text-[14px]">
+            <p className="mt-1 text-[13px] leading-relaxed text-[#64748B] sm:text-[14px]">
               Promote your products and services to laboratory professionals on Lab Unity.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#64748B] hover:bg-[#F9FAFB]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] text-[#64748B] hover:bg-[#E4E7EC]"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -227,11 +271,11 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
           />
         ) : (
           <>
-            <Stepper current={step} onStepClick={goToStep} />
+            <Stepper steps={stepperSteps} current={stepperCurrent} onStepClick={goToStep} />
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               {step === 'type' ? (
-                <TypeStep categoryId={form.categoryId} onSelect={(id) => setField('categoryId', id)} />
+                <TypeStep categoryId={form.categoryId} onSelect={handleCategorySelect} />
               ) : null}
               {step === 'details' ? (
                 <DetailsStep categoryId={form.categoryId} form={form} onChange={setField} />
@@ -267,31 +311,36 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
               ) : null}
             </div>
 
-            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#E4E7EC] px-4 py-4 sm:px-6">
+            <div className="flex shrink-0 border-t border-[#E4E7EC] px-4 py-4 sm:px-6">
               {step === 'type' ? (
-                <div />
-              ) : (
-                <button type="button" onClick={goBack} className={panelSecondaryBtn}>
-                  Back
+                <button type="button" onClick={goNext} className={`${panelPrimaryBtn} w-full py-3`}>
+                  Continue
                 </button>
-              )}
+              ) : (
+                <div className="flex w-full items-center gap-3">
+                  <button type="button" onClick={goBack} className={`${panelSecondaryBtn} shrink-0`}>
+                    <ChevronLeft className="mr-1 inline h-4 w-4" />
+                    Back
+                  </button>
 
-              {step === 'payment' ? (
-                <button type="button" onClick={handlePay} className={panelPrimaryBtn}>
-                  Pay {duration?.price || '€60'}
-                </button>
-              ) : (
-                <button type="button" onClick={goNext} className={panelPrimaryBtn}>
-                  {step === 'type'
-                    ? 'Continue'
-                    : step === 'details'
-                      ? 'Continue to Media'
-                      : step === 'media'
-                        ? 'Continue to Duration'
-                        : step === 'duration'
-                          ? 'Continue to Preview'
-                          : 'Continue to Payment'}
-                </button>
+                  {step === 'payment' ? (
+                    <button type="button" onClick={handlePay} className={`${panelPrimaryBtn} min-w-0 flex-1`}>
+                      Pay {duration?.price || '€60'}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={goNext} className={`${panelPrimaryBtn} min-w-0 flex-1`}>
+                      {step === 'details'
+                        ? 'Continue to Media'
+                        : step === 'media'
+                          ? 'Continue to Duration'
+                          : step === 'duration'
+                            ? 'Continue to Preview'
+                            : step === 'preview'
+                              ? 'Continue to payment'
+                              : 'Continue'}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </>
@@ -302,74 +351,102 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
   );
 };
 
-const Stepper = ({ current, onStepClick }) => (
-  <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-[#E4E7EC] px-4 sm:px-6">
-    {STEPS.map((item) => {
-      const active = item.id === current;
-      const currentIndex = STEP_ORDER.indexOf(current);
-      const itemIndex = STEP_ORDER.indexOf(item.id);
-      const passed = itemIndex < currentIndex;
+const Stepper = ({ steps, current, onStepClick }) => {
+  const currentIndex = steps.findIndex((s) => s.id === current);
 
-      return (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => (passed || active ? onStepClick(item.id) : undefined)}
-          disabled={!passed && !active}
-          className={`shrink-0 border-b-2 px-3 py-3 text-[12px] font-semibold transition-colors sm:text-[13px] ${
-            active
-              ? 'border-primary text-primary'
-              : passed
-                ? 'border-transparent text-primary/70 hover:text-primary'
-                : 'cursor-default border-transparent text-[#98A2B3]'
-          }`}
-        >
-          {item.label}
-        </button>
-      );
-    })}
-  </div>
-);
+  return (
+    <div
+      className={`grid shrink-0 border-b border-[#E4E7EC] px-4 sm:px-6`}
+      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+    >
+      {steps.map((item, index) => {
+        const active = item.id === current;
+        const passed = index < currentIndex;
 
-const TypeStep = ({ categoryId, onSelect }) => (
-  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-    {AD_CATEGORIES.map((item) => {
-      const Icon = CATEGORY_ICONS[item.id] || Tag;
-      const selected = categoryId === item.id;
-      return (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onSelect(item.id)}
-          className={`rounded-xl border p-4 text-left transition-colors ${
-            selected
-              ? 'border-primary bg-secondary/40'
-              : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
-          }`}
-        >
-          <div
-            className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg ${
-              selected ? 'bg-primary text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => (passed || active ? onStepClick(item.id) : undefined)}
+            disabled={!passed && !active}
+            className={`border-b-2 py-3 text-center text-[12px] font-semibold transition-colors sm:text-[13px] ${
+              active
+                ? 'border-primary text-primary'
+                : passed
+                  ? 'border-green-primary text-green-primary hover:opacity-80'
+                  : 'cursor-default border-transparent text-[#98A2B3]'
             }`}
           >
-            <Icon className="h-4 w-4" />
-          </div>
-          <p className="text-[14px] font-bold text-deep-blue sm:text-[15px]">{item.label}</p>
-          <p className="mt-1 text-[12px] leading-relaxed text-[#64748B] sm:text-[13px]">
-            {item.description}
-          </p>
-        </button>
-      );
-    })}
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const CategoryBadge = ({ categoryId }) => {
+  const category = getCategoryById(categoryId);
+  const Icon = CATEGORY_ICONS[categoryId] || Tag;
+
+  return (
+    <span className="inline-flex items-center gap-2 rounded-lg bg-secondary px-3 py-1.5 text-[13px] font-semibold text-primary sm:text-[14px]">
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+      {category?.label}
+    </span>
+  );
+};
+
+const TypeStep = ({ categoryId, onSelect }) => (
+  <div className="space-y-4">
+    <h3 className="text-[15px] font-bold text-deep-blue sm:text-[16px]">Advertisement Category</h3>
+
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {AD_CATEGORIES.map((item) => {
+        const Icon = CATEGORY_ICONS[item.id] || Tag;
+        const selected = categoryId === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelect(item.id)}
+            className={`rounded-xl border p-4 text-left transition-colors ${
+              selected
+                ? 'border-primary bg-secondary/60'
+                : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
+            }`}
+          >
+            <Icon
+              className={`mb-3 h-6 w-6 ${selected ? 'text-primary' : 'text-[#64748B]'}`}
+              strokeWidth={1.8}
+            />
+            <p
+              className={`text-[14px] font-bold sm:text-[15px] ${
+                selected ? 'text-primary' : 'text-deep-blue'
+              }`}
+            >
+              {item.label}
+            </p>
+            <p
+              className={`mt-1 text-[12px] leading-relaxed sm:text-[13px] ${
+                selected ? 'text-primary/80' : 'text-[#64748B]'
+              }`}
+            >
+              {item.description}
+            </p>
+          </button>
+        );
+      })}
+    </div>
   </div>
 );
 
 const DetailsStep = ({ categoryId, form, onChange }) => {
-  const category = getCategoryById(categoryId);
+  const isWebinar = categoryId === 'webinar';
 
   return (
     <div className="space-y-4">
-      <CategoryPill label={category?.label} />
+      <CategoryBadge categoryId={categoryId} />
 
       <div>
         <label htmlFor="ad-title" className={labelClass}>
@@ -380,17 +457,21 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
           type="text"
           value={form.title}
           onChange={(e) => onChange('title', e.target.value)}
-          placeholder="e.g. ProSpec Elite Series Spectrophotometer"
+          placeholder={
+            isWebinar
+              ? 'Advanced Mass Spectrometry Webinar 2026'
+              : 'e.g. ProSpec Elite Series Spectrophotometer'
+          }
           className={fieldClass}
         />
       </div>
 
-      {categoryId === 'webinar' ? (
+      {isWebinar ? (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="event-date" className={labelClass}>
-                Event Date
+                Event Date <span className="text-pink-light">*</span>
               </label>
               <input
                 id="event-date"
@@ -402,7 +483,7 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
             </div>
             <div>
               <label htmlFor="event-time" className={labelClass}>
-                Event Time
+                Event Time <span className="text-pink-light">*</span>
               </label>
               <input
                 id="event-time"
@@ -422,9 +503,27 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
               type="text"
               value={form.location}
               onChange={(e) => onChange('location', e.target.value)}
-              placeholder="Zoom link or venue address"
+              placeholder="Online (Zoom) / Dublin Convention Centre"
               className={fieldClass}
             />
+          </div>
+          <div>
+            <label htmlFor="price" className={labelClass}>
+              Price
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#64748B]">
+                $
+              </span>
+              <input
+                id="price"
+                type="text"
+                value={form.price}
+                onChange={(e) => onChange('price', e.target.value)}
+                placeholder="60"
+                className={`${fieldClass} pl-8`}
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="organizer" className={labelClass}>
@@ -435,7 +534,7 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
               type="text"
               value={form.organizer}
               onChange={(e) => onChange('organizer', e.target.value)}
-              placeholder="Company or organizer name"
+              placeholder="BioLab Corp"
               className={fieldClass}
             />
           </div>
@@ -458,7 +557,7 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
         </div>
       ) : null}
 
-      {(categoryId === 'product' || categoryId === 'promo' || categoryId === 'webinar') && (
+      {(categoryId === 'product' || categoryId === 'promo') && (
         <div>
           <label htmlFor="price" className={labelClass}>
             {categoryId === 'promo' ? 'Offer Price' : 'Price (€)'}
@@ -483,7 +582,11 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
           value={form.description}
           onChange={(e) => onChange('description', e.target.value)}
           rows={4}
-          placeholder="Describe your product, service, or event..."
+          placeholder={
+            isWebinar
+              ? 'Describe your advertisement in detail. Explain the key benefits and features of your webinar or event.'
+              : 'Describe your product, service, or event...'
+          }
           className={fieldClass}
         />
       </div>
@@ -492,34 +595,36 @@ const DetailsStep = ({ categoryId, form, onChange }) => {
 };
 
 const MediaStep = ({ imageName, videoName, onImageSelect, onVideoSelect }) => (
-  <div className="space-y-4">
-    <p className="text-[14px] text-[#64748B] sm:text-[15px]">
-      Add images and an optional video to make your advertisement stand out.
-    </p>
+  <div className="space-y-5">
     <div>
-      <p className={labelClass}>Upload Media</p>
-      <label className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-10 text-center hover:border-primary hover:bg-secondary/20">
-        <ImageIcon className="h-8 w-8 text-[#98A2B3]" />
-        <span className="text-[14px] font-medium text-deep-blue">
-          {imageName || 'Drop images here or click to upload'}
-        </span>
-        <span className="text-[12px] text-[#98A2B3] sm:text-[13px]">
-          PNG, JPG, WEBP up to 10MB · Recommended: 1200×628px
-        </span>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className="sr-only"
-          onChange={(event) => onImageSelect(event.target.files?.[0]?.name || '')}
-        />
-      </label>
+      <h3 className="text-[15px] font-bold text-deep-blue sm:text-[16px]">Upload Media</h3>
+      <p className="mt-1 text-[13px] text-[#64748B] sm:text-[14px]">
+        Add images and an optional video to make your advertisement stand out.
+      </p>
     </div>
+
+    <label className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-10 text-center hover:border-primary hover:bg-secondary/20">
+      <ImageIcon className="h-8 w-8 text-[#98A2B3]" />
+      <span className="text-[14px] font-semibold text-deep-blue sm:text-[15px]">
+        {imageName || 'Drop images here or click to upload'}
+      </span>
+      <span className="text-[12px] text-[#98A2B3] sm:text-[13px]">
+        PNG, JPG, WEBP up to 10MB · Recommended: 1200×628px
+      </span>
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="sr-only"
+        onChange={(event) => onImageSelect(event.target.files?.[0]?.name || '')}
+      />
+    </label>
+
     <div>
-      <p className={labelClass}>Video (Optional)</p>
-      <label className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-4 hover:border-primary hover:bg-secondary/20">
+      <p className={`${labelClass} mb-2`}>Video (Optional)</p>
+      <label className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-[#E4E7EC] bg-white px-4 py-4 hover:border-primary hover:bg-secondary/10">
         <Video className="h-5 w-5 shrink-0 text-[#98A2B3]" />
-        <div>
-          <p className="text-[14px] font-medium text-deep-blue">
+        <div className="min-w-0 text-left">
+          <p className="text-[14px] font-semibold text-deep-blue sm:text-[15px]">
             {videoName || 'Add a product demo video'}
           </p>
           <p className="text-[12px] text-[#98A2B3] sm:text-[13px]">MP4, MOV up to 100MB</p>
@@ -539,12 +644,12 @@ const DurationStep = ({ durationId, onSelect }) => {
   const selected = getDurationById(durationId);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <p className="text-[15px] font-bold text-deep-blue sm:text-[16px]">
+        <h3 className="text-[15px] font-bold text-deep-blue sm:text-[16px] lg:text-[17px]">
           Select Advertisement Duration
-        </p>
-        <p className="mt-1 text-[13px] text-[#64748B] sm:text-[14px]">
+        </h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B] sm:text-[14px] lg:text-[15px]">
           Choose how long your advertisement will run. Payment is required to submit for review.
         </p>
       </div>
@@ -557,21 +662,45 @@ const DurationStep = ({ durationId, onSelect }) => {
               key={tier.id}
               type="button"
               onClick={() => onSelect(tier.id)}
-              className={`relative rounded-xl border p-4 text-left transition-colors ${
+              className={`relative rounded-xl border px-3 pb-4 pt-5 text-center transition-colors sm:px-4 sm:pb-5 sm:pt-6 ${
                 active
-                  ? 'border-green-primary bg-green-secondary/30'
-                  : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
+                  ? 'border-2 border-green-primary bg-green-secondary/40'
+                  : 'border border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
               }`}
             >
               {tier.popular ? (
-                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-green-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
                   Most Popular
                 </span>
               ) : null}
-              <p className="text-[14px] font-bold text-deep-blue">{tier.label}</p>
-              <p className="mt-2 text-[20px] font-bold text-deep-blue">{tier.price}</p>
-              <p className="mt-2 text-[11px] text-[#64748B] sm:text-[12px]">
-                {tier.startDate} – {tier.endDate}
+
+              <p
+                className={`text-[28px] font-bold leading-none sm:text-[32px] lg:text-[36px] ${
+                  active ? 'text-green-primary' : 'text-deep-blue'
+                }`}
+              >
+                {tier.days}
+              </p>
+              <p
+                className={`mt-1 text-[13px] font-medium sm:text-[14px] lg:text-[15px] ${
+                  active ? 'text-green-primary' : 'text-[#64748B]'
+                }`}
+              >
+                days
+              </p>
+              <p
+                className={`mt-3 text-[20px] font-bold sm:text-[22px] lg:text-[24px] ${
+                  active ? 'text-green-primary' : 'text-deep-blue'
+                }`}
+              >
+                {tier.price}
+              </p>
+              <p
+                className={`mt-3 text-[11px] leading-snug sm:text-[12px] lg:text-[13px] ${
+                  active ? 'text-green-primary/80' : 'text-[#98A2B3]'
+                }`}
+              >
+                {tier.startDate} — {tier.endDate}
               </p>
             </button>
           );
@@ -579,13 +708,13 @@ const DurationStep = ({ durationId, onSelect }) => {
       </div>
 
       {selected ? (
-        <div className="rounded-xl border border-pink-secondary bg-pink-secondary/20 p-4">
-          <p className="text-[13px] font-bold text-deep-blue sm:text-[14px]">Selected Duration Summary</p>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <SummaryItem label="Duration" value={selected.label} />
-            <SummaryItem label="Start Date" value={selected.startDate} />
-            <SummaryItem label="End Date" value={selected.endDate} />
-            <SummaryItem label="Total Price" value={selected.price} highlight />
+        <div className="rounded-xl border border-pink-secondary/60 bg-pink-secondary/25 px-4 py-4 sm:px-5">
+          <p className="text-[14px] font-bold text-pink-light sm:text-[15px]">Selected Duration Summary</p>
+          <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <DurationSummaryItem label="Duration" value={selected.label} />
+            <DurationSummaryItem label="Start Date" value={selected.startDate} />
+            <DurationSummaryItem label="End Date" value={selected.endDate} />
+            <DurationSummaryItem label="Total Price" value={selected.price} />
           </div>
         </div>
       ) : null}
@@ -593,16 +722,10 @@ const DurationStep = ({ durationId, onSelect }) => {
   );
 };
 
-const SummaryItem = ({ label, value, highlight = false }) => (
+const DurationSummaryItem = ({ label, value }) => (
   <div>
-    <p className="text-[11px] text-[#64748B] sm:text-[12px]">{label}</p>
-    <p
-      className={`mt-0.5 text-[13px] font-semibold sm:text-[14px] ${
-        highlight ? 'text-pink-light' : 'text-deep-blue'
-      }`}
-    >
-      {value}
-    </p>
+    <p className="text-[12px] font-medium text-pink-light/80 sm:text-[13px]">{label}</p>
+    <p className="mt-0.5 text-[14px] font-bold text-pink-light sm:text-[15px] lg:text-[16px]">{value}</p>
   </div>
 );
 
@@ -642,29 +765,29 @@ const SuccessStep = ({ ad, category, duration, onFinish }) => (
   <>
     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
       <div className="text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-secondary text-green-primary">
-          <CheckCircle2 className="h-8 w-8" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-secondary text-green-primary">
+          <CheckCircle2 className="h-9 w-9" strokeWidth={2} />
         </div>
         <h3 className="mt-4 text-[20px] font-bold text-deep-blue sm:text-[22px]">Payment Successful</h3>
         <p className="mt-2 text-[14px] text-[#64748B] sm:text-[15px]">
-          Your advertisement has been submitted and is pending administrator review.
+          Your advertisement has been submitted for administrator review.
         </p>
       </div>
 
-      <Card className="mt-6 overflow-hidden">
-        <div className="flex items-start justify-between gap-3 border-b border-[#E4E7EC] px-4 py-4">
+      <div className="mt-6 overflow-hidden rounded-xl border border-[#E4E7EC] bg-[#F9FAFB]">
+        <div className="flex items-start justify-between gap-3 px-4 py-4 sm:px-5">
           <div className="min-w-0">
-            <p className="text-[15px] font-bold text-deep-blue">{ad.title}</p>
-            <CategoryPill label={category} className="mt-1" />
+            <p className="text-[15px] font-bold text-deep-blue sm:text-[16px]">{ad.title}</p>
+            <p className="mt-0.5 text-[13px] text-[#64748B] sm:text-[14px]">{category}</p>
           </div>
           <StatusBadge status="Pending" label="Pending Review" />
         </div>
-        <div className="grid grid-cols-3 gap-3 px-4 py-4 text-center">
-          <SummaryItem label="Duration" value={duration?.label} />
-          <SummaryItem label="Start Date" value={duration?.startDate} />
-          <SummaryItem label="End Date" value={duration?.endDate} />
+        <div className="grid grid-cols-3 gap-3 border-t border-[#E4E7EC] px-4 py-4 sm:px-5">
+          <SuccessDetailItem label="Duration" value={duration?.label} />
+          <SuccessDetailItem label="Start Date" value={duration?.startDate} />
+          <SuccessDetailItem label="End Date" value={duration?.endDate} />
         </div>
-      </Card>
+      </div>
 
       <div className="mt-5 space-y-2">
         <StatusRow icon={Check} label="Payment confirmed" done />
@@ -672,17 +795,27 @@ const SuccessStep = ({ ad, category, duration, onFinish }) => (
         <StatusRow label="Advertisement approved & goes live" />
       </div>
 
-      <p className="mt-4 text-center text-[12px] text-[#64748B] sm:text-[13px]">
-        Review typically takes 1–2 business days.
+      <p className="mt-5 text-center text-[12px] leading-relaxed text-[#64748B] sm:text-[13px]">
+        You will receive a notification when your advertisement is reviewed. Typically within 1–2
+        business days.
       </p>
     </div>
 
     <div className="shrink-0 border-t border-[#E4E7EC] px-4 py-4 sm:px-6">
-      <button type="button" onClick={onFinish} className={`${panelPrimaryBtn} w-full`}>
+      <button type="button" onClick={onFinish} className={`${panelPrimaryBtn} w-full py-3`}>
         Go to My Advertisements
       </button>
     </div>
   </>
+);
+
+const SuccessDetailItem = ({ label, value }) => (
+  <div>
+    <p className="text-[11px] font-medium uppercase tracking-wide text-[#98A2B3] sm:text-[12px]">
+      {label}
+    </p>
+    <p className="mt-1 text-[14px] font-bold text-deep-blue sm:text-[15px]">{value}</p>
+  </div>
 );
 
 const StatusRow = ({ icon: Icon, label, done = false, active = false }) => (

@@ -3,7 +3,7 @@ import { Clock, UserPlus } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 
-const ContactCard = ({ contact, connected = false, pending = false, onConnect }) => (
+const ContactCard = ({ contact, profileBasePath = '/contacts', connected = false, pending = false, onConnect }) => (
   <Card className="flex flex-col p-5 text-center">
     <Avatar
       src={contact.avatar}
@@ -13,7 +13,7 @@ const ContactCard = ({ contact, connected = false, pending = false, onConnect })
       className={`mx-auto ${contact.avatarClass || ''}`}
     />
     <Link
-      to={`/contacts/${contact.id}`}
+      to={`${profileBasePath}/${contact.id}`}
       className="mt-3 text-[15px] font-semibold text-primary hover:underline"
     >
       {contact.name}
@@ -24,7 +24,7 @@ const ContactCard = ({ contact, connected = false, pending = false, onConnect })
 
     <div className="mt-4 grid grid-cols-2 gap-2">
       <Link
-        to={`/contacts/${contact.id}`}
+        to={`${profileBasePath}/${contact.id}`}
         className="rounded-md bg-pink-secondary px-3 py-2 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
       >
         Profile
