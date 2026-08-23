@@ -42,47 +42,6 @@ body::-webkit-scrollbar {
     display: none;
 }
 
-@keyframes pulse-soft {
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.65;
-        transform: scale(0.88);
-    }
-}
-
-@keyframes drift {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-6px);
-    }
-}
-
-.animate-pulse-soft {
-    animation: pulse-soft 2.8s ease-in-out infinite;
-}
-
-.animate-drift {
-    animation: drift 4.5s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .animate-pulse-soft,
-    .animate-drift {
-        animation: none !important;
-        opacity: 1 !important;
-        transform: none !important;
-    }
-}
-
 button {
     cursor: pointer;
 }
