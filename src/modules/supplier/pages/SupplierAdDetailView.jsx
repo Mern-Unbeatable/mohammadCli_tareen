@@ -52,7 +52,7 @@ const SupplierAdDetailView = () => {
   };
 
   return (
-    <PanelPage className="mx-auto max-w-[760px]">
+    <PanelPage>
       <PanelPageHeader title="My Advertisement Details" />
 
       <Link

@@ -33,7 +33,7 @@ const SupplierContactProfileView = () => {
 
   return (
     <>
-      <PanelPage className="max-w-[760px]">
+      <PanelPage>
         <Link
           to="/supplier/contacts"
           className="inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

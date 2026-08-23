@@ -12,7 +12,7 @@ const SupplierJobDetailView = () => {
   if (!job) return <NotFound />;
 
   return (
-    <PanelPage className="max-w-[760px]">
+    <PanelPage>
       <Link
         to="/supplier/recruitment"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

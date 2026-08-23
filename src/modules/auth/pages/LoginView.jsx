@@ -1,28 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Eye, EyeOff } from 'lucide-react';
-import { getDemoAccountsByRole } from '@/shared/auth/dummyAccounts';
 import { useAuth } from '@/shared/auth/AuthContext';
-import { USER_ROLES } from '@/shared/constants/roles';
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
   'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15';
 
-const ROLE_LABELS = {
-  [USER_ROLES.USER]: 'User',
-  [USER_ROLES.ADMIN]: 'Admin',
-  [USER_ROLES.SUPPLIER]: 'Supplier',
-};
-
 const LoginView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, homePath } = useAuth();
-  const demoAccounts = getDemoAccountsByRole();
 
-  const [email, setEmail] = useState('user.lab@gmail.com');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState('');
@@ -41,12 +32,6 @@ const LoginView = () => {
       return;
     }
     navigate(location.state?.from || result.redirectTo, { replace: true });
-  };
-
-  const fillDemo = (account) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError('');
   };
 
   return (
@@ -130,7 +115,7 @@ const LoginView = () => {
             </button>
           </form>
 
-          <div className="mt-6 border-t border-[#E4E7EC] pt-5">
+          {/* <div className="mt-6 border-t border-[#E4E7EC] pt-5">
             <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#98A2B3]">
               Demo accounts
             </p>
@@ -153,7 +138,7 @@ const LoginView = () => {
               ))}
             </div>
             <p className="mt-3 text-[11px] text-[#98A2B3]">Password for all demo accounts: demo123</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

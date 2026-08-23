@@ -32,7 +32,7 @@ const SupplierPostJobView = () => {
   };
 
   return (
-    <PanelPage className="max-w-[760px]">
+    <PanelPage width="narrow">
       <Link
         to="/supplier/recruitment"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

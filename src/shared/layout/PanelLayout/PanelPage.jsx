@@ -1,7 +1,9 @@
-import { panelPageTheme } from './panelPageTheme';
+import { panelPageTheme, panelPageWidths } from './panelPageTheme';
 
-const PanelPage = ({ children, className = '' }) => (
-  <div className={`${panelPageTheme.page} ${className}`.trim()}>{children}</div>
+const PanelPage = ({ children, className = '', width = 'full' }) => (
+  <div className={`${panelPageTheme.page} ${panelPageWidths[width]} ${className}`.trim()}>
+    {children}
+  </div>
 );
 
 export default PanelPage;

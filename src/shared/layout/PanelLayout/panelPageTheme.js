@@ -1,4 +1,3 @@
-/** Single source of truth for panel page title/subtitle and vertical rhythm. */
 export const panelPageTheme = {
   page: 'space-y-4',
   title: 'text-[22px] font-bold leading-tight text-deep-blue sm:text-[26px]',
@@ -8,6 +7,11 @@ export const panelPageTheme = {
   cardSubtitle: 'text-[13px] text-[#64748B] sm:text-[14px] lg:text-[15px]',
   cardEyebrow: 'text-[12px] font-bold uppercase tracking-wide text-primary sm:text-[13px] lg:text-[14px]',
   cardBody: 'text-[13px] text-deep-blue sm:text-[14px] lg:text-[15px]',
+};
+
+export const panelPageWidths = {
+  full: '',
+  narrow: 'mx-auto max-w-[760px]',
 };
 
 export const panelPrimaryBtn =
