@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import GeneralPostCard from '@/components/data-display/GeneralPostCard/GeneralPostCard';
 import GeneralToolbar from '@/modules/user/components/general/GeneralToolbar';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import { filterGeneralPosts, generalPosts } from '@/modules/user/data/general';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const AdminGeneralView = () => {
   const [category, setCategory] = useState('All');
@@ -11,6 +13,10 @@ const AdminGeneralView = () => {
     () => filterGeneralPosts(generalPosts, category),
     [category]
   );
+
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
+    category,
+  ]);
 
   return (
     <PanelPage>
@@ -23,7 +29,7 @@ const AdminGeneralView = () => {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((post) => (
+        {pageItems.map((post) => (
           <GeneralPostCard
             key={post.id}
             post={post}
@@ -33,6 +39,8 @@ const AdminGeneralView = () => {
           />
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
     </PanelPage>
   );
 };

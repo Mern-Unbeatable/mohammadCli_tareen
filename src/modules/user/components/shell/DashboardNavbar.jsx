@@ -61,7 +61,7 @@ const DashboardNavbar = () => {
       <header className="sticky top-0 z-[70] border-b border-[#E4E7EC] bg-white">
         {/* Mobile & tablet */}
         <div className="mx-auto flex h-14 w-full items-center gap-1.5 px-4 sm:gap-2 sm:px-6 xl:hidden">
-          <Link to="/feed" className="flex shrink-0 items-center gap-2" onClick={closeMenu}>
+          <Link to="/" className="flex shrink-0 items-center gap-2" onClick={closeMenu}>
             <img src={logo} alt="Lab Unity" className="h-7 w-auto sm:h-8" />
             <span className="hidden text-[16px] font-bold text-deep-blue sm:inline lg:text-[17px]">
               Lab Unity
@@ -101,7 +101,7 @@ const DashboardNavbar = () => {
 
         {/* Desktop */}
         <Container className="hidden h-[62px] items-center gap-4 xl:flex xl:gap-6">
-          <Link to="/feed" className="flex shrink-0 items-center gap-2">
+          <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src={logo} alt="Lab Unity" className="h-8 w-auto" />
             <span className="text-[17px] font-bold text-deep-blue">Lab Unity</span>
           </Link>

@@ -124,7 +124,7 @@ const AdminReportDetailView = () => {
   };
 
   return (
-    <PanelPage className="mx-auto max-w-[900px]">
+    <PanelPage>
       <Link
         to="/admin/reports"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

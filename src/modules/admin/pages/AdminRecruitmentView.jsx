@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import JobCard from '@/components/data-display/JobCard/JobCard';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
 import { filterJobs, jobs, levels } from '@/modules/user/data/recruitment';
+import { LIST_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const timeFilters = ['All Time', 'Last 7 days', 'Last 30 days', 'Last 90 days'];
 
@@ -30,6 +32,10 @@ const AdminRecruitmentView = () => {
   const [level, setLevel] = useState('All');
 
   const filtered = useMemo(() => filterJobs(jobs, '', level), [level]);
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, LIST_PAGE_SIZE, [
+    level,
+    timeFilter,
+  ]);
 
   return (
     <PanelPage>
@@ -50,7 +56,7 @@ const AdminRecruitmentView = () => {
       />
 
       <div className="space-y-3">
-        {filtered.map((job) => (
+        {pageItems.map((job) => (
           <JobCard
             key={job.id}
             job={job}
@@ -60,6 +66,8 @@ const AdminRecruitmentView = () => {
           />
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
     </PanelPage>
   );
 };

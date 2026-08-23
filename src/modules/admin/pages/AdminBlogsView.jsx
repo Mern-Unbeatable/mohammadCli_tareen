@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import Pagination from '@/components/common/Pagination/Pagination';
 import BlogAdminCard from '@/components/data-display/BlogAdminCard/BlogAdminCard';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
 import { panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 import { allArticles, popularPosts } from '@/modules/user/data/blogs';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const toAdminArticle = (article) => ({
   ...article,
@@ -30,6 +32,11 @@ const AdminBlogsView = () => {
     });
   }, [articles]);
 
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(
+    uniqueArticles,
+    GRID_PAGE_SIZE
+  );
+
   return (
     <PanelPage>
       <PanelPageHeader
@@ -43,7 +50,7 @@ const AdminBlogsView = () => {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {uniqueArticles.map((article) => (
+        {pageItems.map((article) => (
           <BlogAdminCard
             key={article.id}
             article={article}
@@ -55,6 +62,8 @@ const AdminBlogsView = () => {
           />
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
     </PanelPage>
   );
 };

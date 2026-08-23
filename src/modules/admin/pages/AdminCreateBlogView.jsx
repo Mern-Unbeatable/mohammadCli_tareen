@@ -24,7 +24,7 @@ const AdminCreateBlogView = () => {
   };
 
   return (
-    <PanelPage className="mx-auto max-w-[720px]">
+    <PanelPage>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">Blogs</p>
 
       <PanelPageHeader

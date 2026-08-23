@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router';
 import { LogOut, Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
 import { useAuth } from '@/shared/auth/AuthContext';
+import ScrollToTop from '@/shared/routing/ScrollToTop';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -39,10 +40,10 @@ const PanelLayout = ({ navItems, children }) => {
   const sidebarContent = (
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#E4E7EC] px-5">
-        <div className="flex items-center gap-2.5">
+        <Link to="/" onClick={closeSidebar} className="flex items-center gap-2.5">
           <img src={logo} alt="Lab Unity" className="h-8 w-auto" />
           <span className="text-[17px] font-bold text-deep-blue">Lab Unity</span>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={closeSidebar}
@@ -102,6 +103,7 @@ const PanelLayout = ({ navItems, children }) => {
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6]">
+      <ScrollToTop />
       {/* Mobile overlay */}
       {sidebarOpen ? (
         <button
@@ -137,10 +139,10 @@ const PanelLayout = ({ navItems, children }) => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <img src={logo} alt="" className="h-7 w-auto" />
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logo} alt="Lab Unity" className="h-7 w-auto" />
             <span className="text-[15px] font-bold text-deep-blue">Lab Unity</span>
-          </div>
+          </Link>
         </header>
 
         <main className="min-h-[calc(100vh-3.5rem)] flex-1 p-4 sm:p-5 lg:min-h-screen lg:p-6">

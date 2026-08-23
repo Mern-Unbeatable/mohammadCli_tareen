@@ -11,7 +11,7 @@ const AdminAdvertisementDetailView = () => {
   if (!ad) return <Navigate to="/admin/advertisement" replace />;
 
   return (
-    <PanelPage className="mx-auto max-w-[760px]">
+    <PanelPage>
       <Link
         to="/admin/advertisement"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

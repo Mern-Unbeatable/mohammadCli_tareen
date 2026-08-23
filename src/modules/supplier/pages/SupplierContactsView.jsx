@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import ContactCard from '@/components/data-display/ContactCard/ContactCard';
 import { contacts, countries } from '@/modules/user/data/contacts';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const PROFILE_BASE = '/supplier/contacts';
 
@@ -12,16 +14,23 @@ const SupplierContactsView = () => {
   const [connected, setConnected] = useState({});
   const [pending, setPending] = useState({});
 
-  const filtered = contacts.filter((contact) => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matchesCountry = country === 'All countries' || contact.country === country;
-    const matchesQuery =
-      !q ||
-      contact.name.toLowerCase().includes(q) ||
-      contact.company.toLowerCase().includes(q) ||
-      contact.title.toLowerCase().includes(q);
-    return matchesCountry && matchesQuery;
-  });
+    return contacts.filter((contact) => {
+      const matchesCountry = country === 'All countries' || contact.country === country;
+      const matchesQuery =
+        !q ||
+        contact.name.toLowerCase().includes(q) ||
+        contact.company.toLowerCase().includes(q) ||
+        contact.title.toLowerCase().includes(q);
+      return matchesCountry && matchesQuery;
+    });
+  }, [query, country]);
+
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
+    query,
+    country,
+  ]);
 
   const handleConnect = (id) => {
     if (connected[id] || pending[id]) return;
@@ -65,7 +74,7 @@ const SupplierContactsView = () => {
       </p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((contact) => (
+        {pageItems.map((contact) => (
           <ContactCard
             key={contact.id}
             contact={contact}
@@ -76,6 +85,8 @@ const SupplierContactsView = () => {
           />
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
     </PanelPage>
   );
 };

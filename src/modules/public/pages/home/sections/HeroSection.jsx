@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Check } from 'lucide-react';
 import heroImage from '@/assets/hero.png';
 import Container from '@/components/ui/Container';
+import { useAuth } from '@/shared/auth/AuthContext';
 
 const features = [
   'Research-focused',
@@ -10,6 +11,8 @@ const features = [
 ];
 
 const HeroSection = () => {
+  const { isUser, homePath } = useAuth();
+
   return (
     <section id="platform" className="relative scroll-mt-[72px] overflow-hidden bg-white lg:scroll-mt-[76px] xl:scroll-mt-[84px]">
       <div
@@ -40,12 +43,21 @@ const HeroSection = () => {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3 lg:mt-6 lg:gap-2.5 xl:mt-10 xl:gap-4">
-            <Link
-              to="/join"
-              className="rounded-full bg-primary px-7 py-3 text-[15px] font-medium leading-none text-white transition-opacity hover:opacity-90 lg:px-6 lg:py-2.5 lg:text-[14px] xl:px-9 xl:py-3.5 xl:text-[16px]"
-            >
-              Join Lab Unity
-            </Link>
+            {isUser ? (
+              <Link
+                to={homePath}
+                className="rounded-full bg-primary px-7 py-3 text-[15px] font-medium leading-none text-white transition-opacity hover:opacity-90 lg:px-6 lg:py-2.5 lg:text-[14px] xl:px-9 xl:py-3.5 xl:text-[16px]"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/join"
+                className="rounded-full bg-primary px-7 py-3 text-[15px] font-medium leading-none text-white transition-opacity hover:opacity-90 lg:px-6 lg:py-2.5 lg:text-[14px] xl:px-9 xl:py-3.5 xl:text-[16px]"
+              >
+                Join Lab Unity
+              </Link>
+            )}
             <Link
               to="/explore"
               className="rounded-full bg-secondary px-7 py-3 text-[15px] font-medium leading-none text-deep-blue transition-colors hover:bg-[#E3EEF8] lg:px-6 lg:py-2.5 lg:text-[14px] xl:px-9 xl:py-3.5 xl:text-[16px]"

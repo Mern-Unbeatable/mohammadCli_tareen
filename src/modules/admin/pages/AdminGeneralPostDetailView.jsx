@@ -16,7 +16,7 @@ const AdminGeneralPostDetailView = () => {
   if (!post) return <NotFound />;
 
   return (
-    <PanelPage className="mx-auto max-w-[760px]">
+    <PanelPage>
       <Link
         to="/admin/general"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

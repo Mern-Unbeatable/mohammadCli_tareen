@@ -3,12 +3,64 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Container from '@/components/ui/Container';
+import { useAuth } from '@/shared/auth/AuthContext';
 
 const navLinks = [
   { label: 'Platform', sectionId: 'platform', active: true },
   { label: 'Community', sectionId: 'community' },
   { label: 'Marketplace', sectionId: 'marketplace' },
 ];
+
+const AuthActions = ({ onNavigate, className = '' }) => {
+  const { isUser, homePath, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    onNavigate?.();
+    navigate('/');
+  };
+
+  if (isUser) {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="text-[15px] font-normal leading-none text-deep-blue transition-colors hover:text-primary xl:text-[16px]"
+        >
+          Log out
+        </button>
+        <Link
+          to={homePath}
+          onClick={onNavigate}
+          className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
+        >
+          Dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <Link
+        to="/login"
+        onClick={onNavigate}
+        className="text-[15px] font-normal leading-none text-deep-blue transition-colors hover:text-primary xl:text-[16px]"
+      >
+        Log in
+      </Link>
+      <Link
+        to="/join"
+        onClick={onNavigate}
+        className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
+      >
+        Join Lab Unity
+      </Link>
+    </div>
+  );
+};
 
 const NavbarLayout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -95,20 +147,10 @@ const NavbarLayout = () => {
             </ul>
           </div>
 
-          <div className="hidden items-center gap-6 lg:flex lg:gap-5 xl:gap-8">
-            <Link
-              to="/login"
-              className="text-[15px] font-normal leading-none text-deep-blue transition-colors hover:text-primary xl:text-[16px]"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/join"
-              className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
-            >
-              Join Lab Unity
-            </Link>
-          </div>
+          <AuthActions
+            onNavigate={closeMenu}
+            className="hidden items-center gap-6 lg:flex lg:gap-5 xl:gap-8"
+          />
 
           <button
             type="button"
@@ -157,22 +199,10 @@ const NavbarLayout = () => {
               </li>
             ))}
           </ul>
-          <div className="mt-5 flex flex-col gap-3 border-t border-[#F0F0F0] pt-5">
-            <Link
-              to="/login"
-              onClick={closeMenu}
-              className="text-center text-[15px] font-normal text-deep-blue transition-colors hover:text-primary"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/join"
-              onClick={closeMenu}
-              className="rounded-full bg-primary px-6 py-3 text-center text-[14px] font-medium text-white transition-opacity hover:opacity-90"
-            >
-              Join Lab Unity
-            </Link>
-          </div>
+          <AuthActions
+            onNavigate={closeMenu}
+            className="mt-5 flex flex-col gap-3 border-t border-[#F0F0F0] pt-5 [&_a:last-child]:text-center [&_button]:text-center"
+          />
         </Container>
       </div>
     </>

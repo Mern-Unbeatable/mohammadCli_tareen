@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import Container from '@/components/ui/Container';
 import ContactCard from '@/components/data-display/ContactCard/ContactCard';
 import { contacts, countries } from '@/modules/user/data/contacts';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const ContactsView = () => {
   const [query, setQuery] = useState('');
@@ -9,16 +11,23 @@ const ContactsView = () => {
   const [connected, setConnected] = useState({});
   const [pending, setPending] = useState({});
 
-  const filtered = contacts.filter((contact) => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matchesCountry = country === 'All countries' || contact.country === country;
-    const matchesQuery =
-      !q ||
-      contact.name.toLowerCase().includes(q) ||
-      contact.company.toLowerCase().includes(q) ||
-      contact.title.toLowerCase().includes(q);
-    return matchesCountry && matchesQuery;
-  });
+    return contacts.filter((contact) => {
+      const matchesCountry = country === 'All countries' || contact.country === country;
+      const matchesQuery =
+        !q ||
+        contact.name.toLowerCase().includes(q) ||
+        contact.company.toLowerCase().includes(q) ||
+        contact.title.toLowerCase().includes(q);
+      return matchesCountry && matchesQuery;
+    });
+  }, [query, country]);
+
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
+    query,
+    country,
+  ]);
 
   const handleConnect = (id) => {
     if (connected[id] || pending[id]) return;
@@ -67,7 +76,7 @@ const ContactsView = () => {
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((contact) => (
+          {pageItems.map((contact) => (
             <ContactCard
               key={contact.id}
               contact={contact}
@@ -77,6 +86,13 @@ const ContactsView = () => {
             />
           ))}
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          className="mt-8"
+        />
       </Container>
     </main>
   );

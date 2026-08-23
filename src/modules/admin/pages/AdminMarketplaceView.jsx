@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import ListingCard from '@/components/data-display/ListingCard/ListingCard';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
 import { categories, filterListings, listings } from '@/modules/user/data/marketplace';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const AdminMarketplaceView = () => {
   const [category, setCategory] = useState('All');
   const filtered = useMemo(() => filterListings(listings, '', category), [category]);
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
+    category,
+  ]);
 
   return (
     <PanelPage>
@@ -36,7 +41,7 @@ const AdminMarketplaceView = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((listing) => (
+        {pageItems.map((listing) => (
           <ListingCard
             key={listing.id}
             listing={listing}
@@ -46,6 +51,8 @@ const AdminMarketplaceView = () => {
           />
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
     </PanelPage>
   );
 };

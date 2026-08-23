@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import GeneralPostCard from '@/components/data-display/GeneralPostCard/GeneralPostCard';
 import GeneralToolbar from '@/modules/user/components/general/GeneralToolbar';
 import CreateGeneralPostModal from '@/shared/pages/general/CreateGeneralPostModal';
 import { filterGeneralPosts, generalPosts, getMyGeneralPosts } from '@/modules/user/data/general';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const GeneralPageContent = ({
   basePath = '/general',
@@ -19,6 +21,11 @@ const GeneralPageContent = ({
     () => filterGeneralPosts(source, category),
     [source, category]
   );
+
+  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
+    category,
+    activeView,
+  ]);
 
   const detailBase = `${basePath}`;
 
@@ -37,18 +44,26 @@ const GeneralPageContent = ({
       />
 
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((post) => (
-            <GeneralPostCard
-              key={post.id}
-              post={post}
-              variant={activeView === 'mine' ? 'mine' : 'browse'}
-              detailHref={`${detailBase}/${post.id}`}
-              onEdit={() => {}}
-              onDelete={activeView === 'mine' ? handleDelete : undefined}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {pageItems.map((post) => (
+              <GeneralPostCard
+                key={post.id}
+                post={post}
+                variant={activeView === 'mine' ? 'mine' : 'browse'}
+                detailHref={`${detailBase}/${post.id}`}
+                onEdit={() => {}}
+                onDelete={activeView === 'mine' ? handleDelete : undefined}
+              />
+            ))}
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            className="mt-8"
+          />
+        </>
       ) : (
         <div className="rounded-xl border border-[#E4E7EC] bg-white px-6 py-14 text-center">
           <p className="text-[15px] font-semibold text-deep-blue sm:text-[16px]">No posts yet</p>

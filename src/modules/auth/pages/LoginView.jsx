@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { Eye, EyeOff } from 'lucide-react';
 import { getDemoAccountsByRole } from '@/shared/auth/dummyAccounts';
 import { useAuth } from '@/shared/auth/AuthContext';
 import { USER_ROLES } from '@/shared/constants/roles';
@@ -20,8 +21,9 @@ const LoginView = () => {
   const { login, isAuthenticated, homePath } = useAuth();
   const demoAccounts = getDemoAccountsByRole();
 
-  const [email, setEmail] = useState('elise.moreau@novalab.eu');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('user.lab@gmail.com');
+  const [password, setPassword] = useState('demo123');
+  const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState('');
 
@@ -79,14 +81,24 @@ const LoginView = () => {
               <label htmlFor="password" className={labelClass}>
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${inputClass} pr-10`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#64748B]"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error ? (
@@ -140,7 +152,7 @@ const LoginView = () => {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[11px] text-[#98A2B3]">Password for all demo accounts: password123</p>
+            <p className="mt-3 text-[11px] text-[#98A2B3]">Password for all demo accounts: demo123</p>
           </div>
         </div>
       </div>

@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, Search, Sparkles } from 'lucide-react';
+import Pagination from '@/components/common/Pagination/Pagination';
 import Container from '@/components/ui/Container';
 import LatestHubCard from '@/components/data-display/BlogCard/LatestHubCard';
 import BlogGridCard from '@/components/data-display/BlogCard/BlogGridCard';
 import { archiveArticles, latestArticles } from '@/modules/user/data/blogs';
+import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
 
 const BlogsPageContent = ({ blogBasePath = '/blogs' }) => {
   const [query, setQuery] = useState('');
@@ -36,6 +38,12 @@ const BlogsPageContent = ({ blogBasePath = '/blogs' }) => {
           a.category.toLowerCase().includes(q)
       )
     : archiveArticles;
+
+  const { page, setPage, totalPages, pageItems: archivePageItems } = usePaginatedList(
+    filteredArchive,
+    GRID_PAGE_SIZE,
+    [query]
+  );
 
   return (
     <div className="pb-8 pt-0 sm:pb-10">
@@ -142,11 +150,19 @@ const BlogsPageContent = ({ blogBasePath = '/blogs' }) => {
           </h2>
 
           {filteredArchive.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredArchive.map((article) => (
-                <BlogGridCard key={article.id} article={article} blogBasePath={blogBasePath} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {archivePageItems.map((article) => (
+                  <BlogGridCard key={article.id} article={article} blogBasePath={blogBasePath} />
+                ))}
+              </div>
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                className="mt-8"
+              />
+            </>
           ) : (
             <p className="py-8 text-center text-[13px] text-[#64748B]">No articles found.</p>
           )}

@@ -82,9 +82,18 @@ const EcosystemSection = () => {
             </p>
 
             <div className="relative mx-auto mt-6 h-[280px] w-full max-w-[420px] lg:mt-7 lg:h-[260px] xl:mt-8 xl:h-[300px]">
-              <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2]" />
-              <div className="absolute left-1/2 top-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2]" />
-              <div className="absolute left-1/2 top-1/2 h-[120px] w-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2]" />
+              <div
+                className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2] motion-safe:animate-pulse-soft"
+                style={{ animationDuration: '5s' }}
+              />
+              <div
+                className="absolute left-1/2 top-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2] motion-safe:animate-pulse-soft"
+                style={{ animationDuration: '6.5s' }}
+              />
+              <div
+                className="absolute left-1/2 top-1/2 h-[120px] w-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ECEEF2] motion-safe:animate-pulse-soft"
+                style={{ animationDuration: '4s' }}
+              />
 
               <svg
                 className="absolute inset-0 h-full w-full"
@@ -98,26 +107,28 @@ const EcosystemSection = () => {
               </svg>
 
               <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-                <span className="inline-block rounded-full bg-deep-blue px-5 py-2.5 text-[12px] font-semibold text-white xl:px-6 xl:py-3 xl:text-[13px]">
+                <span className="animate-pulse-soft inline-block rounded-full bg-deep-blue px-5 py-2.5 text-[12px] font-semibold text-white xl:px-6 xl:py-3 xl:text-[13px]">
                   Lab Unity Network
                 </span>
               </div>
 
-              {networkNodes.map(({ role, label, avatar, className }) => (
-                <div
-                  key={role}
-                  className={`absolute z-10 flex items-center gap-2 rounded-full border border-[#ECEEF2] bg-white py-1.5 pl-1.5 pr-3 shadow-sm ${className}`}
-                >
-                  <img
-                    src={avatar}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover xl:h-9 xl:w-9"
-                  />
-                  <div className="leading-tight">
-                    <p className="text-[11px] font-semibold text-deep-blue xl:text-[12px]">
-                      {role}
-                    </p>
-                    <p className="text-[10px] text-[#64748B] xl:text-[11px]">{label}</p>
+              {networkNodes.map(({ role, label, avatar, className }, index) => (
+                <div key={role} className={`absolute z-10 ${className}`}>
+                  <div
+                    className="flex animate-drift items-center gap-2 rounded-full border border-[#ECEEF2] bg-white py-1.5 pl-1.5 pr-3 shadow-sm"
+                    style={{ animationDelay: `${index * 700}ms` }}
+                  >
+                    <img
+                      src={avatar}
+                      alt=""
+                      className="h-8 w-8 rounded-full object-cover xl:h-9 xl:w-9"
+                    />
+                    <div className="leading-tight">
+                      <p className="text-[11px] font-semibold text-deep-blue xl:text-[12px]">
+                        {role}
+                      </p>
+                      <p className="text-[10px] text-[#64748B] xl:text-[11px]">{label}</p>
+                    </div>
                   </div>
                 </div>
               ))}

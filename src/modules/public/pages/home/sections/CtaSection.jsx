@@ -1,8 +1,11 @@
 import { Link } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import Container from '@/components/ui/Container';
+import { useAuth } from '@/shared/auth/AuthContext';
 
 const CtaSection = () => {
+  const { isUser, homePath } = useAuth();
+
   return (
     <section className="bg-deep-blue py-16 lg:py-20">
       <Container className="text-center">
@@ -15,13 +18,23 @@ const CtaSection = () => {
           <span className="sm:hidden"> </span>
           No payment details required during the trial period.
         </p>
-        <Link
-          to="/join"
-          className="mt-8 inline-flex items-center gap-2 rounded-md bg-[#F7F8FA] px-6 py-3 text-[15px] font-semibold text-deep-blue transition-opacity hover:opacity-90 lg:mt-9 lg:px-7 lg:py-3.5 lg:text-[16px] xl:mt-10"
-        >
-          Create your free account
-          <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-        </Link>
+        {isUser ? (
+          <Link
+            to={homePath}
+            className="mt-8 inline-flex items-center gap-2 rounded-md bg-[#F7F8FA] px-6 py-3 text-[15px] font-semibold text-deep-blue transition-opacity hover:opacity-90 lg:mt-9 lg:px-7 lg:py-3.5 lg:text-[16px] xl:mt-10"
+          >
+            Go to Dashboard
+            <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+          </Link>
+        ) : (
+          <Link
+            to="/join"
+            className="mt-8 inline-flex items-center gap-2 rounded-md bg-[#F7F8FA] px-6 py-3 text-[15px] font-semibold text-deep-blue transition-opacity hover:opacity-90 lg:mt-9 lg:px-7 lg:py-3.5 lg:text-[16px] xl:mt-10"
+          >
+            Create your free account
+            <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+          </Link>
+        )}
       </Container>
     </section>
   );
