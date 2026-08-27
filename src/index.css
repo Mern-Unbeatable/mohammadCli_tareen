@@ -17,20 +17,6 @@
 
 html {
     scroll-behavior: smooth;
-    scrollbar-width: none;
-}
-
-html::-webkit-scrollbar {
-    display: none;
-}
-
-body {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-body::-webkit-scrollbar {
-    display: none;
 }
 
 .scrollbar-hide {
