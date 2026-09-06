@@ -13,7 +13,7 @@ const navLinks = [
 ];
 
 const AuthActions = ({ onNavigate, className = '' }) => {
-  const { isUser, homePath, logout } = useAuth();
+  const { isAuthenticated, isSupplier, isAdmin, homePath, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -22,7 +22,9 @@ const AuthActions = ({ onNavigate, className = '' }) => {
     navigate('/');
   };
 
-  if (isUser) {
+  if (isAuthenticated) {
+    const isSupplierOrAdmin = isSupplier || isAdmin;
+
     return (
       <div className={className}>
         <button
@@ -32,13 +34,23 @@ const AuthActions = ({ onNavigate, className = '' }) => {
         >
           Log out
         </button>
-        <Link
-          to={homePath}
-          onClick={onNavigate}
-          className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
-        >
-          Dashboard
-        </Link>
+        {isSupplierOrAdmin ? (
+          <Link
+            to={homePath}
+            onClick={onNavigate}
+            className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
+          >
+            Dashboard
+          </Link>
+        ) : (
+          <Link
+            to="/feed"
+            onClick={onNavigate}
+            className="rounded-full bg-primary px-6 py-2.5 text-[14px] font-medium leading-none text-white transition-opacity hover:opacity-90 xl:px-8 xl:py-3 xl:text-[15px]"
+          >
+            Feed
+          </Link>
+        )}
       </div>
     );
   }
@@ -62,6 +74,7 @@ const AuthActions = ({ onNavigate, className = '' }) => {
     </div>
   );
 };
+
 
 const NavbarLayout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
