@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { ROLE_HOME_PATH } from '@/shared/constants/roles';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
 
 /**
  * Protects panel routes. Redirects unauthenticated users to login

@@ -1,10 +1,11 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { toast } from 'react-toastify';
 import { loginUser, logoutUser, clearError } from '@/features/auth/authSlice';
 import { ROLE_HOME_PATH } from '@/shared/constants/roles';
 
 /**
- * Custom hook connecting components directly to Redux Auth state & actions.
- * Replaces old dummy AuthContext state with real Redux Toolkit state.
+ * Production custom hook connecting components directly to Redux Auth state & actions.
+ * No React Context wrapper required.
  */
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -34,8 +35,9 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
-    dispatch(logoutUser());
+  const logout = async () => {
+    await dispatch(logoutUser());
+    toast.info('Logged out successfully');
   };
 
   return {
@@ -43,7 +45,6 @@ export const useAuth = () => {
     isAuthenticated: Boolean(isAuthenticated && user),
     loading,
     error,
-
     role: normalizedRole,
     login,
     logout,
@@ -53,13 +54,6 @@ export const useAuth = () => {
     isAdmin: normalizedRole === 'ADMIN',
     isSupplier: normalizedRole === 'SUPPLIER',
   };
-};
-
-/**
- * Pass-through AuthProvider wrapper (kept for backward compatibility with root providers)
- */
-export const AuthProvider = ({ children }) => {
-  return children;
 };
 
 export default useAuth;

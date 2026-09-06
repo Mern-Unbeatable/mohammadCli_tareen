@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Container from '@/components/ui/Container';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 
 const navLinks = [
   { label: 'Platform', sectionId: 'platform', active: true },

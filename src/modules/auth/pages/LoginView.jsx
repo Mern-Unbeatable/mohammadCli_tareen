@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
