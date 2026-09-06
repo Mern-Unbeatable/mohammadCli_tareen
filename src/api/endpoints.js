@@ -34,10 +34,14 @@ export const API_ENDPOINTS = {
 
   // Admin Module Endpoints
   ADMIN: {
-    DASHBOARD_STATS: `${API_PREFIX}/admin/dashboard/stats`,
+    DASHBOARD: `${API_PREFIX}/admin/dashboard`,
+    DASHBOARD_STATS: `${API_PREFIX}/admin/dashboard`,
+    STATISTICS: `${API_PREFIX}/admin/statistics`,
     MANAGE_USERS: `${API_PREFIX}/admin/users`,
     USER_STATUS: (id) => `${API_PREFIX}/admin/users/${id}/status`,
   },
+
+
 
   // Supplier Module Endpoints
   SUPPLIER: {

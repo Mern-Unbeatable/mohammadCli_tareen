@@ -1,8 +1,39 @@
 import { ChevronDown } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 import Card from '@/components/ui/Card';
 
 const DEFAULT_CHART_HEIGHT = 240;
-const CHART_PAD = { top: 16, right: 12, bottom: 32, left: 44 };
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-[#E4E7EC] bg-white p-3 shadow-md">
+        <p className="mb-1 text-[12px] font-bold text-deep-blue">{label}</p>
+        {payload.map((entry) => (
+          <div key={entry.dataKey} className="flex items-center gap-2 text-[12px]">
+            <span
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-[#64748B]">{entry.name}:</span>
+            <span className="font-semibold text-deep-blue">
+              {entry.value >= 1000 ? `${entry.value / 1000}k` : entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const BarChartCard = ({
   title,
@@ -15,22 +46,16 @@ const BarChartCard = ({
   onYearChange,
   chartHeight = DEFAULT_CHART_HEIGHT,
   legendPosition = 'top',
-  fullWidth = false,
   className = '',
 }) => {
-  const width = fullWidth ? Math.max(840, labels.length * 72) : 520;
-  const height = chartHeight;
-  const pad =
-    height <= 180
-      ? { top: 10, right: 12, bottom: 26, left: 40 }
-      : CHART_PAD;
-  const max = yMax || Math.max(...series.flatMap((item) => item.values), 1);
-  const innerW = width - pad.left - pad.right;
-  const innerH = height - pad.top - pad.bottom;
-  const groupCount = labels.length || 1;
-  const groupWidth = innerW / groupCount;
-  const barGap = 4;
-  const barWidth = Math.min(fullWidth ? 20 : 14, (groupWidth - barGap * (series.length + 1)) / series.length);
+  // Transform props into Recharts data format
+  const chartData = labels.map((label, index) => {
+    const row = { name: label };
+    series.forEach((item) => {
+      row[item.id] = item.values[index] ?? 0;
+    });
+    return row;
+  });
 
   const legend = (
     <div
@@ -45,7 +70,9 @@ const BarChartCard = ({
             style={{ backgroundColor: item.color }}
             aria-hidden
           />
-          <span className="text-[12px] font-medium text-[#64748B] sm:text-[13px]">{item.label}</span>
+          <span className="text-[12px] font-medium text-[#64748B] sm:text-[13px]">
+            {item.label}
+          </span>
         </div>
       ))}
     </div>
@@ -53,11 +80,7 @@ const BarChartCard = ({
 
   return (
     <Card className={`overflow-hidden ${className}`}>
-      <div
-        className={`flex flex-wrap items-start justify-between gap-3 border-b border-[#E4E7EC] px-4 sm:px-5 ${
-          height <= 180 ? 'py-3' : 'py-4'
-        }`}
-      >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#E4E7EC] px-4 py-4 sm:px-5">
         <h3 className="text-[16px] font-bold text-deep-blue sm:text-[17px]">{title}</h3>
         {yearOptions.length > 0 ? (
           <label className="relative inline-flex min-w-[120px] items-center">
@@ -80,88 +103,38 @@ const BarChartCard = ({
 
       {legendPosition === 'top' ? legend : null}
 
-      <div
-        className={
-          fullWidth
-            ? `overflow-x-auto px-4 lg:overflow-x-visible sm:px-5 ${height <= 180 ? 'pb-2 pt-1' : 'pb-4 pt-2'}`
-            : `overflow-x-auto px-2 sm:px-3 ${height <= 180 ? 'pb-2 pt-1' : 'pb-4 pt-2'}`
-        }
-      >
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className={
-            fullWidth
-              ? 'block h-[220px] w-full min-w-[720px] lg:h-auto lg:min-w-0'
-              : 'min-w-[480px] w-full'
-          }
-          style={!fullWidth && height <= 180 ? { height: `${height}px` } : undefined}
-          preserveAspectRatio="xMidYMid meet"
-          role="img"
-          aria-label={title}
-        >
-          {yTicks.map((tick) => {
-            const y = pad.top + innerH - (tick / max) * innerH;
-            return (
-              <g key={tick}>
-                <line
-                  x1={pad.left}
-                  y1={y}
-                  x2={width - pad.right}
-                  y2={y}
-                  stroke="#E4E7EC"
-                  strokeWidth="1"
-                  strokeDasharray="4 4"
-                />
-                <text
-                  x={pad.left - 8}
-                  y={y + 4}
-                  textAnchor="end"
-                  className="fill-[#98A2B3] text-[10px]"
-                >
-                  {tick}
-                </text>
-              </g>
-            );
-          })}
-
-          {labels.map((label, groupIndex) => {
-            const groupX = pad.left + groupIndex * groupWidth + groupWidth / 2;
-            const totalBarsWidth = series.length * barWidth + (series.length - 1) * barGap;
-            let barOffset = -totalBarsWidth / 2;
-
-            return (
-              <g key={label}>
-                {series.map((item) => {
-                  const value = item.values[groupIndex] ?? 0;
-                  const barHeight = (value / max) * innerH;
-                  const x = groupX + barOffset;
-                  const y = pad.top + innerH - barHeight;
-                  barOffset += barWidth + barGap;
-
-                  return (
-                    <rect
-                      key={item.id}
-                      x={x}
-                      y={y}
-                      width={barWidth}
-                      height={barHeight}
-                      rx={2}
-                      fill={item.color}
-                    />
-                  );
-                })}
-                <text
-                  x={groupX}
-                  y={height - 8}
-                  textAnchor="middle"
-                  className="fill-[#98A2B3] text-[10px]"
-                >
-                  {label}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
+      <div className="px-2 pb-4 pt-4 sm:px-4">
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={chartData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#E4E7EC" vertical={false} />
+            <XAxis
+              dataKey="name"
+              stroke="#98A2B3"
+              fontSize={11}
+              tickLine={false}
+              axisLine={{ stroke: '#E4E7EC' }}
+            />
+            <YAxis
+              stroke="#98A2B3"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              ticks={yTicks.length > 0 ? yTicks : undefined}
+              domain={yMax ? [0, yMax] : [0, 'auto']}
+              tickFormatter={(val) => (val >= 1000 ? `${val / 1000}k` : val)}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            {series.map((item) => (
+              <Bar
+                key={item.id}
+                dataKey={item.id}
+                name={item.label}
+                fill={item.color}
+                radius={[4, 4, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {legendPosition === 'bottom' ? legend : null}
