@@ -70,7 +70,7 @@ const LoginView = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={inputClass}
-                placeholder="name@example.com"
+                placeholder="Enter Your email"
                 disabled={loading}
                 required
               />
