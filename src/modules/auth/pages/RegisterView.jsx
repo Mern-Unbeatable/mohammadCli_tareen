@@ -1,19 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { IoIosArrowDown } from 'react-icons/io';
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/shared/auth/useAuth';
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
-  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15';
+  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-gray-100';
 const selectClass = `${inputClass} appearance-none pr-10`;
 
-const SelectField = ({ id, label, defaultValue, children }) => (
+const SelectField = ({ id, label, value, onChange, children, disabled }) => (
   <div>
     <label htmlFor={id} className={labelClass}>
       {label}
     </label>
     <div className="relative">
-      <select id={id} defaultValue={defaultValue} className={selectClass}>
+      <select id={id} value={value} onChange={onChange} disabled={disabled} className={selectClass}>
         {children}
       </select>
       <IoIosArrowDown
@@ -23,6 +26,7 @@ const SelectField = ({ id, label, defaultValue, children }) => (
     </div>
   </div>
 );
+
 const profileOptions = [
   { value: '', label: 'Select One' },
   { value: 'laboratory', label: 'Laboratory — For laboratories and laboratory professionals' },
@@ -35,7 +39,7 @@ const profileOptions = [
 
 const countries = ['Belgium', 'France', 'Germany', 'Netherlands', 'United Kingdom', 'United States'];
 
-const PasswordField = ({ id, label, value, onChange, visible, onToggle }) => (
+const PasswordField = ({ id, label, value, onChange, visible, onToggle, disabled }) => (
   <div>
     <label htmlFor={id} className={labelClass}>
       {label}
@@ -46,11 +50,15 @@ const PasswordField = ({ id, label, value, onChange, visible, onToggle }) => (
         type={visible ? 'text' : 'password'}
         value={value}
         onChange={onChange}
+        disabled={disabled}
         className={`${inputClass} pr-10`}
+        placeholder="••••••••"
+        required
       />
       <button
         type="button"
         onClick={onToggle}
+        disabled={disabled}
         aria-label={visible ? 'Hide password' : 'Show password'}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#64748B]"
       >
@@ -61,11 +69,23 @@ const PasswordField = ({ id, label, value, onChange, visible, onToggle }) => (
 );
 
 const RegisterView = () => {
+  const navigate = useNavigate();
+  const { register, loading } = useAuth();
+
+  const [profileType, setProfileType] = useState('laboratory');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('Germany');
+  const [professionalInfo, setProfessionalInfo] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   const strength = [
     password.length >= 8,
@@ -73,6 +93,50 @@ const RegisterView = () => {
     /\d/.test(password),
     /[^A-Za-z0-9]/.test(password),
   ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!profileType) {
+      toast.error('Please select what best describes you.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast.error('You must accept the Terms of Service and Privacy Policy.');
+      return;
+    }
+
+    const payload = {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      profileType,
+      jobTitle,
+      company,
+      country,
+      phone,
+      professionalInfo,
+      acceptedTerms,
+    };
+
+    const result = await register(payload);
+
+    if (!result.ok) {
+      toast.error(result.error || 'Registration failed');
+      return;
+    }
+
+    toast.success('Account created successfully!');
+    navigate(result.redirectTo || '/feed', { replace: true });
+  };
 
   return (
     <section className="px-4 sm:px-6 py-10 lg:py-12">
@@ -87,8 +151,14 @@ const RegisterView = () => {
         </div>
 
         <div className="rounded-xl bg-white p-6 sm:p-8">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-            <SelectField id="profileType" label="What best describes you?" defaultValue="">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <SelectField
+              id="profileType"
+              label="What best describes you?"
+              value={profileType}
+              onChange={(e) => setProfileType(e.target.value)}
+              disabled={loading}
+            >
               {profileOptions.map(({ value, label }) => (
                 <option key={value || 'default'} value={value} disabled={!value}>
                   {label}
@@ -101,13 +171,31 @@ const RegisterView = () => {
                 <label htmlFor="firstName" className={labelClass}>
                   First Name
                 </label>
-                <input id="firstName" type="text" defaultValue="Elise" className={inputClass} />
+                <input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={inputClass}
+                  placeholder="Jane"
+                  disabled={loading}
+                  required
+                />
               </div>
               <div>
                 <label htmlFor="lastName" className={labelClass}>
                   Last Name
                 </label>
-                <input id="lastName" type="text" defaultValue="Moreau" className={inputClass} />
+                <input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={inputClass}
+                  placeholder="Doe"
+                  disabled={loading}
+                  required
+                />
               </div>
             </div>
 
@@ -118,8 +206,12 @@ const RegisterView = () => {
               <input
                 id="jobTitle"
                 type="text"
-                defaultValue="Quality Control Manager"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
                 className={inputClass}
+                placeholder="Lab Manager"
+                disabled={loading}
+                required
               />
             </div>
 
@@ -130,8 +222,12 @@ const RegisterView = () => {
               <input
                 id="company"
                 type="text"
-                defaultValue="Novalab Diagnostics"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
                 className={inputClass}
+                placeholder="Acme Labs"
+                disabled={loading}
+                required
               />
             </div>
 
@@ -142,8 +238,12 @@ const RegisterView = () => {
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@laboratory.com"
                 className={inputClass}
+                disabled={loading}
+                required
               />
             </div>
 
@@ -155,14 +255,24 @@ const RegisterView = () => {
                 <input
                   id="phone"
                   type="tel"
-                  defaultValue="+32 471 00 00 00"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+49123456789"
                   className={inputClass}
+                  disabled={loading}
+                  required
                 />
               </div>
-              <SelectField id="country" label="Country" defaultValue="Belgium">
-                {countries.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
+              <SelectField
+                id="country"
+                label="Country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                disabled={loading}
+              >
+                {countries.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
                   </option>
                 ))}
               </SelectField>
@@ -175,8 +285,11 @@ const RegisterView = () => {
               <textarea
                 id="professionalInfo"
                 rows={4}
-                placeholder="write professional information about you within 100-150 word"
+                value={professionalInfo}
+                onChange={(e) => setProfessionalInfo(e.target.value)}
+                placeholder="Write professional information about yourself..."
                 className={`${inputClass} resize-none`}
+                disabled={loading}
               />
             </div>
 
@@ -188,6 +301,7 @@ const RegisterView = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 visible={showPassword}
                 onToggle={() => setShowPassword((prev) => !prev)}
+                disabled={loading}
               />
               <PasswordField
                 id="confirmPassword"
@@ -196,6 +310,7 @@ const RegisterView = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 visible={showConfirmPassword}
                 onToggle={() => setShowConfirmPassword((prev) => !prev)}
+                disabled={loading}
               />
             </div>
 
@@ -218,6 +333,7 @@ const RegisterView = () => {
                 type="checkbox"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
+                disabled={loading}
                 className="mt-0.5 h-4 w-4 rounded border-[#D0D5DD] text-primary focus:ring-primary/20"
               />
               <span className="text-[14px] leading-[1.6] text-[#475467]">
@@ -235,9 +351,17 @@ const RegisterView = () => {
 
             <button
               type="submit"
-              className="w-full rounded-md bg-primary py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-md bg-primary py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              Create free account
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Create free account'
+              )}
             </button>
 
             <div className="flex items-center justify-center gap-2 pt-1 text-[13px] text-[#64748B]">

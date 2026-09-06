@@ -45,7 +45,42 @@ export const loginUser = createAsyncThunk(
         'Invalid email or password';
       return rejectWithValue(errorMessage);
     }
+  }
+);
 
+/**
+ * Register Async Thunk
+ */
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await crudService.post(API_ENDPOINTS.AUTH.REGISTER, formData);
+
+      const payloadData = response?.data || response;
+      const accessToken = payloadData?.accessToken || payloadData?.token;
+      const refreshToken = payloadData?.refreshToken;
+      const user = payloadData?.user;
+
+      // Save tokens in Cookies using tokenService
+      if (accessToken) {
+        tokenService.setToken(accessToken);
+      }
+      if (refreshToken) {
+        tokenService.setRefreshToken(refreshToken);
+      }
+      if (user) {
+        tokenService.setUser(user);
+      }
+      return payloadData;
+    } catch (err) {
+      const errorMessage =
+        err?.message ||
+        err?.error?.message ||
+        err?.response?.data?.error?.message ||
+        'Registration failed';
+      return rejectWithValue(errorMessage);
+    }
   }
 );
 
@@ -67,6 +102,7 @@ export const fetchUserProfile = createAsyncThunk(
     }
   }
 );
+
 
 /**
  * Logout Async Thunk
@@ -117,6 +153,22 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Register
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload?.user || null;
+        state.token = action.payload?.accessToken || action.payload?.token || null;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // Fetch Profile
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.user = action.payload;

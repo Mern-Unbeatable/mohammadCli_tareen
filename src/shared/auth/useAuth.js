@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { loginUser, logoutUser, clearError } from '@/features/auth/authSlice';
+import { loginUser, registerUser, logoutUser, clearError } from '@/features/auth/authSlice';
 import { ROLE_HOME_PATH } from '@/shared/constants/roles';
 
 /**
@@ -35,6 +35,26 @@ export const useAuth = () => {
     }
   };
 
+  const register = async (formData) => {
+    const resultAction = await dispatch(registerUser(formData));
+
+    if (registerUser.fulfilled.match(resultAction)) {
+      const userPayload = resultAction.payload?.user;
+      const userRole = userPayload?.role ? userPayload.role.toUpperCase() : 'USER';
+      return {
+        ok: true,
+        user: userPayload,
+        role: userRole,
+        redirectTo: ROLE_HOME_PATH[userRole] || '/feed',
+      };
+    } else {
+      return {
+        ok: false,
+        error: resultAction.payload || 'Registration failed.',
+      };
+    }
+  };
+
   const logout = async () => {
     await dispatch(logoutUser());
     toast.info('Logged out successfully');
@@ -47,6 +67,7 @@ export const useAuth = () => {
     error,
     role: normalizedRole,
     login,
+    register,
     logout,
     clearError: () => dispatch(clearError()),
     homePath: isAuthenticated ? (ROLE_HOME_PATH[normalizedRole] || '/feed') : '/login',
@@ -57,3 +78,4 @@ export const useAuth = () => {
 };
 
 export default useAuth;
+
