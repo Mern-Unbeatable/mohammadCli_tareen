@@ -15,7 +15,8 @@ import {
   SUPPLIER_DASHBOARD_STATS,
 } from '@/modules/supplier/data/dashboard';
 import { SUPPLIER_AD_ROWS } from '@/modules/supplier/data/advertisements';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import { panelPageTheme, panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 

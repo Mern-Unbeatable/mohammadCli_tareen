@@ -3,7 +3,8 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router';
 import { LogOut, Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 import ScrollToTop from '@/shared/routing/ScrollToTop';
 
 const SIDEBAR_WIDTH = 260;

@@ -1,64 +1,111 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
+import { toast } from 'react-toastify';
 import DataTable from '@/components/data-display/DataTable/DataTable';
 import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
 import SuspendUserModal from '@/modules/admin/components/SuspendUserModal';
 import SubscriptionPill from '@/modules/admin/components/SubscriptionPill';
-import {
-  ADMIN_SUPPLIER_ROWS,
-  ADMIN_USER_ROWS,
-} from '@/modules/admin/data/users';
+import { fetchUsersList, updateUserStatus } from '@/features/admin/adminSlice';
 import { DEMO_TABLE_TABS } from '@/data/demoData';
 
-const PAGE_SIZE = 7;
+const PAGE_SIZE = 10;
 
 const AdminUsersView = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const { users, usersMeta, usersLoading } = useSelector((state) => state.admin);
+
   const [tab, setTab] = useState('all');
   const [page, setPage] = useState(1);
-  const [userRows, setUserRows] = useState(ADMIN_USER_ROWS);
-  const [supplierRows, setSupplierRows] = useState(ADMIN_SUPPLIER_ROWS);
   const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [suspendTarget, setSuspendTarget] = useState(null);
 
   const isSupplierTab = tab === 'supplier';
-  const sourceRows = isSupplierTab ? supplierRows : userRows;
 
-  const filteredRows = useMemo(() => {
-    return sourceRows.filter((row) => {
-      const statusOk =
-        statusFilter === 'all' ||
-        row.status.toLowerCase() === statusFilter ||
-        (statusFilter === 'suspend' && row.status === 'Suspend');
+  // Fetch users from API whenever filters or pagination change
+  useEffect(() => {
+    const params = {
+      page,
+      pageSize: PAGE_SIZE,
+    };
 
-      if (isSupplierTab) return statusOk;
-
-      const subscriptionOk =
-        subscriptionFilter === 'all' ||
-        row.subscription?.toLowerCase() === subscriptionFilter;
-
-      return statusOk && subscriptionOk;
-    });
-  }, [sourceRows, subscriptionFilter, statusFilter, isSupplierTab]);
-
-  const pageRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [filteredRows, page]);
-
-  const updateRowStatus = (rowId, status) => {
-    const updater = (rows) =>
-      rows.map((row) => (row.id === rowId ? { ...row, status } : row));
-
-    if (isSupplierTab) {
-      setSupplierRows(updater);
-    } else {
-      setUserRows(updater);
+    if (tab === 'supplier') {
+      params.role = 'SUPPLIER';
+    } else if (tab === 'user') {
+      params.role = 'USER';
     }
-  };
+
+    if (statusFilter !== 'all') {
+      params.status = statusFilter === 'suspend' ? 'SUSPENDED' : statusFilter.toUpperCase();
+    }
+
+    if (subscriptionFilter !== 'all') {
+      params.subscription = subscriptionFilter.toUpperCase();
+    }
+
+    dispatch(fetchUsersList(params));
+  }, [dispatch, page, tab, statusFilter, subscriptionFilter]);
+
+  // Format API users into table row objects
+  const tableRows = useMemo(() => {
+    if (!users || !users.length) return [];
+
+    let filteredUsers = users;
+
+    if (tab === 'supplier') {
+      filteredUsers = users.filter(
+        (u) =>
+          u.role === 'SUPPLIER' ||
+          u.role === 'supplier' ||
+          u.profileType === 'SUPPLIER' ||
+          u.profileType === 'supplier'
+      );
+    } else if (tab === 'user') {
+      filteredUsers = users.filter(
+        (u) =>
+          u.role === 'USER' ||
+          u.role === 'user' ||
+          u.profileType === 'LABORATORY'
+      );
+    }
+
+    return filteredUsers.map((u) => {
+      const rawName =
+        u.profile?.name ||
+        [u.profile?.firstName, u.profile?.lastName].filter(Boolean).join(' ') ||
+        u.email;
+
+      const rawPlan = u.subscription?.plan || u.subscription?.status || 'Free';
+      const planCapitalized =
+        rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1).toLowerCase();
+
+      const rawStatus = u.status === 'SUSPENDED' ? 'Suspend' : 'Active';
+
+      return {
+        id: u.id,
+        userName: rawName,
+        userType: u.profileType || u.profile?.title || 'Laboratory',
+        company: u.profile?.company || u.profile?.country || 'N/A',
+        role: u.role || 'USER',
+        subscription: planCapitalized,
+        joinedDate: u.createdAt
+          ? new Date(u.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : 'N/A',
+        status: rawStatus,
+        rawUser: u,
+      };
+    });
+  }, [users, tab]);
+
 
   const handleTabChange = (nextTab) => {
     setTab(nextTab);
@@ -66,6 +113,44 @@ const AdminUsersView = () => {
     setSubscriptionFilter('all');
     setStatusFilter('all');
   };
+
+  const handleStatusChange = async (userId, newStatus, reason = '') => {
+    const apiStatus = newStatus === 'Suspend' ? 'SUSPENDED' : 'ACTIVE';
+    const statusReason =
+      reason ||
+      (apiStatus === 'SUSPENDED'
+        ? 'Violation of terms of service — spamming other users'
+        : 'Account activated by admin');
+
+
+    const resultAction = await dispatch(
+      updateUserStatus({ userId, status: apiStatus, reason: statusReason })
+    );
+
+    if (updateUserStatus.fulfilled.match(resultAction)) {
+      toast.success(
+        newStatus === 'Suspend'
+          ? 'User suspended successfully'
+          : 'User activated successfully'
+      );
+
+      // Re-fetch users list to reflect server state
+      const params = { page, pageSize: PAGE_SIZE };
+      if (tab === 'supplier') params.role = 'SUPPLIER';
+      else if (tab === 'user') params.role = 'USER';
+      if (statusFilter !== 'all') {
+        params.status = statusFilter === 'suspend' ? 'SUSPENDED' : statusFilter.toUpperCase();
+      }
+      if (subscriptionFilter !== 'all') {
+        params.subscription = subscriptionFilter.toUpperCase();
+      }
+
+      dispatch(fetchUsersList(params));
+    } else {
+      toast.error(resultAction.payload || 'Failed to update user status');
+    }
+  };
+
 
   const userColumns = useMemo(() => {
     const base = [
@@ -105,7 +190,7 @@ const AdminUsersView = () => {
       id: 'active',
       label: 'Active',
       disabled: () => row.status === 'Active',
-      onClick: () => updateRowStatus(row.id, 'Active'),
+      onClick: () => handleStatusChange(row.id, 'Active'),
     },
     {
       id: 'suspend',
@@ -152,7 +237,10 @@ const AdminUsersView = () => {
 
   return (
     <PanelPage>
-      <PanelPageHeader title="Users & Subscriptions" subtitle="200 Customers" />
+      <PanelPageHeader
+        title="Users & Subscriptions"
+        subtitle={`${usersMeta.total || 0} Total Customers`}
+      />
 
       <DataTable
         showTabs
@@ -163,24 +251,29 @@ const AdminUsersView = () => {
         filterLabel=""
         filters={filters}
         columns={userColumns}
-        data={pageRows}
+        data={tableRows}
+        loading={usersLoading}
         showActions
         getActions={rowActions}
         showPagination
         pagination={{
-          page,
-          pageSize: PAGE_SIZE,
-          total: filteredRows.length,
+          page: usersMeta.page || page,
+          pageSize: usersMeta.pageSize || PAGE_SIZE,
+          total: tab === 'all' ? (usersMeta.total || tableRows.length) : tableRows.length,
           onPageChange: setPage,
         }}
+
       />
 
       <SuspendUserModal
         open={Boolean(suspendTarget)}
         userName={suspendTarget?.userName}
         onClose={() => setSuspendTarget(null)}
-        onConfirm={() => {
-          if (suspendTarget) updateRowStatus(suspendTarget.id, 'Suspend');
+        onConfirm={(reason) => {
+          if (suspendTarget) {
+            handleStatusChange(suspendTarget.id, 'Suspend', reason);
+            setSuspendTarget(null);
+          }
         }}
       />
     </PanelPage>
