@@ -1,71 +1,65 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { ROLE_HOME_PATH, USER_ROLES } from '@/shared/constants/roles';
-import { findAccountByCredentials } from '@/shared/auth/dummyAccounts';
-import { clearSession, loadSession, saveSession } from '@/shared/auth/authStorage';
+import { useSelector, useDispatch } from 'react-redux';
+import { loginUser, logoutUser, clearError } from '@/features/auth/authSlice';
+import { ROLE_HOME_PATH } from '@/shared/constants/roles';
 
-const AuthContext = createContext(null);
-
-const toSessionUser = (account) => ({
-  id: account.id,
-  email: account.email,
-  role: account.role,
-  name: account.name,
-  title: account.title,
-  initials: account.initials,
-  avatar: account.avatar,
-});
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const session = loadSession();
-    return session?.user ?? null;
-  });
-
-  const login = useCallback(({ email, password, remember = true }) => {
-    const account = findAccountByCredentials(email, password);
-    if (!account) {
-      return { ok: false, error: 'Invalid email or password.' };
-    }
-
-    const nextUser = toSessionUser(account);
-    setUser(nextUser);
-
-    if (remember) {
-      saveSession({ user: nextUser });
-    } else {
-      clearSession();
-    }
-
-    return { ok: true, role: nextUser.role, redirectTo: ROLE_HOME_PATH[nextUser.role] };
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    clearSession();
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      user,
-      isAuthenticated: Boolean(user),
-      role: user?.role ?? null,
-      login,
-      logout,
-      homePath: user ? ROLE_HOME_PATH[user.role] : '/login',
-      isUser: user?.role === USER_ROLES.USER,
-      isAdmin: user?.role === USER_ROLES.ADMIN,
-      isSupplier: user?.role === USER_ROLES.SUPPLIER,
-    }),
-    [user, login, logout]
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
+/**
+ * Custom hook connecting components directly to Redux Auth state & actions.
+ * Replaces old dummy AuthContext state with real Redux Toolkit state.
+ */
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
+  const dispatch = useDispatch();
+  const { user, isAuthenticated, loading, error } = useSelector((state) => state.auth);
+
+  const rawRole = user?.role || user?.profileType || '';
+  const normalizedRole = rawRole ? rawRole.toUpperCase() : 'USER';
+
+  const login = async (credentials) => {
+    // credentials format: { email, password, remember }
+    const resultAction = await dispatch(loginUser(credentials));
+    
+    if (loginUser.fulfilled.match(resultAction)) {
+      const userPayload = resultAction.payload?.user;
+      const userRole = userPayload?.role ? userPayload.role.toUpperCase() : 'USER';
+      return {
+        ok: true,
+        user: userPayload,
+        role: userRole,
+        redirectTo: ROLE_HOME_PATH[userRole] || '/feed',
+      };
+    } else {
+      return {
+        ok: false,
+        error: resultAction.payload || 'Invalid email or password.',
+      };
+    }
+  };
+
+  const logout = () => {
+    dispatch(logoutUser());
+  };
+
+  return {
+    user,
+    isAuthenticated: Boolean(isAuthenticated && user),
+    loading,
+    error,
+
+    role: normalizedRole,
+    login,
+    logout,
+    clearError: () => dispatch(clearError()),
+    homePath: isAuthenticated ? (ROLE_HOME_PATH[normalizedRole] || '/feed') : '/login',
+    isUser: normalizedRole === 'USER',
+    isAdmin: normalizedRole === 'ADMIN',
+    isSupplier: normalizedRole === 'SUPPLIER',
+  };
 };
+
+/**
+ * Pass-through AuthProvider wrapper (kept for backward compatibility with root providers)
+ */
+export const AuthProvider = ({ children }) => {
+  return children;
+};
+
+export default useAuth;
