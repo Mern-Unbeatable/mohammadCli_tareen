@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   USERS: {
     BASE: `${API_PREFIX}/users`,
     DETAILS: (id) => `${API_PREFIX}/users/${id}`,
+    STATUS: (id) => `${API_PREFIX}/users/${id}/status`,
     UPDATE_PROFILE: `${API_PREFIX}/users/profile`,
     CHANGE_PASSWORD: `${API_PREFIX}/users/change-password`,
   },
@@ -38,8 +39,9 @@ export const API_ENDPOINTS = {
     DASHBOARD_STATS: `${API_PREFIX}/admin/dashboard`,
     STATISTICS: `${API_PREFIX}/admin/statistics`,
     MANAGE_USERS: `${API_PREFIX}/admin/users`,
-    USER_STATUS: (id) => `${API_PREFIX}/admin/users/${id}/status`,
+    USER_STATUS: (id) => `${API_PREFIX}/users/${id}/status`,
   },
+
 
 
 

@@ -116,20 +116,41 @@ const AdminUsersView = () => {
 
   const handleStatusChange = async (userId, newStatus, reason = '') => {
     const apiStatus = newStatus === 'Suspend' ? 'SUSPENDED' : 'ACTIVE';
+    const statusReason =
+      reason ||
+      (apiStatus === 'SUSPENDED'
+        ? 'Violation of terms of service — spamming other users'
+        : 'Account activated by admin');
+
+
     const resultAction = await dispatch(
-      updateUserStatus({ userId, status: apiStatus, reason })
+      updateUserStatus({ userId, status: apiStatus, reason: statusReason })
     );
 
     if (updateUserStatus.fulfilled.match(resultAction)) {
       toast.success(
-        newStatus === 'Suspend' ? 'User suspended successfully' : 'User activated successfully'
+        newStatus === 'Suspend'
+          ? 'User suspended successfully'
+          : 'User activated successfully'
       );
-      // Refresh active view
-      dispatch(fetchUsersList({ page, pageSize: PAGE_SIZE, role: tab === 'all' ? undefined : tab.toUpperCase() }));
+
+      // Re-fetch users list to reflect server state
+      const params = { page, pageSize: PAGE_SIZE };
+      if (tab === 'supplier') params.role = 'SUPPLIER';
+      else if (tab === 'user') params.role = 'USER';
+      if (statusFilter !== 'all') {
+        params.status = statusFilter === 'suspend' ? 'SUSPENDED' : statusFilter.toUpperCase();
+      }
+      if (subscriptionFilter !== 'all') {
+        params.subscription = subscriptionFilter.toUpperCase();
+      }
+
+      dispatch(fetchUsersList(params));
     } else {
       toast.error(resultAction.payload || 'Failed to update user status');
     }
   };
+
 
   const userColumns = useMemo(() => {
     const base = [
