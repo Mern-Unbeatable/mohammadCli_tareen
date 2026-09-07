@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { CreditCard, LogOut, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import Avatar from '@/components/ui/Avatar';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 import { currentUser } from '@/modules/user/data/dashboard';
 
 const ProfileDropdown = () => {

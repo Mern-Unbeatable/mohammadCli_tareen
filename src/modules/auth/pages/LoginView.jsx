@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/shared/auth/useAuth';
+
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
-  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15';
+  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-gray-100';
 
 const LoginView = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, homePath } = useAuth();
+  const { login, isAuthenticated, loading, homePath } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,15 +25,25 @@ const LoginView = () => {
     navigate(location.state?.from || homePath, { replace: true });
   }, [isAuthenticated, homePath, location.state?.from, navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = login({ email, password, remember: keepSignedIn });
+
+    const result = await login({
+      email,
+      password,
+      remember: keepSignedIn,
+    });
+
     if (!result.ok) {
-      setError(result.error);
+      const errorMsg = result.error || 'Invalid email or password';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
-    navigate(location.state?.from || result.redirectTo, { replace: true });
+
+    toast.success('Login successful!');
+    navigate(location.state?.from || result.redirectTo || homePath, { replace: true });
   };
 
   return (
@@ -58,6 +70,8 @@ const LoginView = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={inputClass}
+                placeholder="Enter Your email"
+                disabled={loading}
                 required
               />
             </div>
@@ -73,12 +87,15 @@ const LoginView = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`${inputClass} pr-10`}
+                  placeholder="Enter your password"
+                  disabled={loading}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  disabled={loading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#64748B]"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -86,11 +103,6 @@ const LoginView = () => {
               </div>
             </div>
 
-            {error ? (
-              <p className="rounded-lg bg-pink-secondary px-3 py-2 text-[13px] font-medium text-pink-light">
-                {error}
-              </p>
-            ) : null}
 
             <div className="flex items-center justify-between gap-4">
               <label className="flex cursor-pointer items-center gap-2">
@@ -98,6 +110,7 @@ const LoginView = () => {
                   type="checkbox"
                   checked={keepSignedIn}
                   onChange={(e) => setKeepSignedIn(e.target.checked)}
+                  disabled={loading}
                   className="h-4 w-4 rounded border-[#D0D5DD] text-primary focus:ring-primary/20"
                 />
                 <span className="text-[14px] text-[#475467]">Keep me signed in</span>
@@ -109,36 +122,19 @@ const LoginView = () => {
 
             <button
               type="submit"
-              className="w-full rounded-md bg-primary py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-md bg-primary py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              Sign In
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
-
-          {/* <div className="mt-6 border-t border-[#E4E7EC] pt-5">
-            <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-              Demo accounts
-            </p>
-            <div className="space-y-2">
-              {Object.values(demoAccounts).map((account) => (
-                <button
-                  key={account.id}
-                  type="button"
-                  onClick={() => fillDemo(account)}
-                  className="flex w-full items-center justify-between rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-left transition-colors hover:border-primary hover:bg-secondary/40"
-                >
-                  <span>
-                    <span className="block text-[13px] font-semibold text-deep-blue">
-                      {ROLE_LABELS[account.role]}
-                    </span>
-                    <span className="text-[12px] text-[#64748B]">{account.email}</span>
-                  </span>
-                  <span className="text-[11px] font-medium text-primary">Use</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-[11px] text-[#98A2B3]">Password for all demo accounts: demo123</p>
-          </div> */}
         </div>
       </div>
     </section>

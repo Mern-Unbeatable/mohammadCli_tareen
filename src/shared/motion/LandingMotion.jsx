@@ -1,10 +1,32 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import {
-  landingFadeTransition,
-  landingFloatTransition,
-  landingPulseTransition,
-  landingViewport,
-} from './landingMotion';
+import { motion, useReducedMotion } from "framer-motion";
+
+export const landingEase = [0.22, 1, 0.36, 1];
+
+export const landingViewport = {
+  once: true,
+  amount: 0.18,
+  margin: "0px 0px -32px 0px",
+};
+
+export const landingFadeTransition = (delay = 0) => ({
+  duration: 0.65,
+  delay,
+  ease: landingEase,
+});
+
+export const landingFloatTransition = (duration = 5.5, delay = 0) => ({
+  duration,
+  delay,
+  repeat: Infinity,
+  ease: "easeInOut",
+});
+
+export const landingPulseTransition = (duration = 2.8, delay = 0) => ({
+  duration,
+  delay,
+  repeat: Infinity,
+  ease: "easeInOut",
+});
 
 const motionTags = {
   div: motion.div,
@@ -14,10 +36,10 @@ const motionTags = {
 
 export const FadeUp = ({
   children,
-  className = '',
+  className = "",
   delay = 0,
   inView = true,
-  as = 'div',
+  as = "div",
 }) => {
   const reduceMotion = useReducedMotion();
   const Tag = motionTags[as] ?? motion.div;
@@ -49,7 +71,13 @@ export const FadeUp = ({
   );
 };
 
-export const Float = ({ children, className = '', y = 8, duration = 5.5, delay = 0 }) => {
+export const Float = ({
+  children,
+  className = "",
+  y = 8,
+  duration = 5.5,
+  delay = 0,
+}) => {
   const reduceMotion = useReducedMotion();
 
   if (reduceMotion) {
@@ -67,7 +95,13 @@ export const Float = ({ children, className = '', y = 8, duration = 5.5, delay =
   );
 };
 
-export const Pulse = ({ children, className = '', duration = 2.8, delay = 0, scale = 0.92 }) => {
+export const Pulse = ({
+  children,
+  className = "",
+  duration = 2.8,
+  delay = 0,
+  scale = 0.92,
+}) => {
   const reduceMotion = useReducedMotion();
 
   if (reduceMotion) {
@@ -88,7 +122,7 @@ export const Pulse = ({ children, className = '', duration = 2.8, delay = 0, sca
   );
 };
 
-export const RingPulse = ({ className = '', duration = 5, delay = 0 }) => {
+export const RingPulse = ({ className = "", duration = 5, delay = 0 }) => {
   const reduceMotion = useReducedMotion();
 
   if (reduceMotion) {
@@ -98,7 +132,7 @@ export const RingPulse = ({ className = '', duration = 5, delay = 0 }) => {
   return (
     <motion.div
       className={className}
-      style={{ translateX: '-50%', translateY: '-50%' }}
+      style={{ translateX: "-50%", translateY: "-50%" }}
       animate={{
         scale: [1, 0.88, 1],
         opacity: [1, 0.65, 1],

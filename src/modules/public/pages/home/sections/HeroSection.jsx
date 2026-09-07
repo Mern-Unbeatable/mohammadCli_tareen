@@ -2,7 +2,8 @@ import { Link } from 'react-router';
 import { Check } from 'lucide-react';
 import heroImage from '@/assets/hero.png';
 import Container from '@/components/ui/Container';
-import { useAuth } from '@/shared/auth/AuthContext';
+import { useAuth } from '@/shared/auth/useAuth';
+
 import { FadeUp, Float, Pulse } from '@/shared/motion/LandingMotion';
 
 const features = [

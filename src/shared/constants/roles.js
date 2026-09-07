@@ -1,11 +1,17 @@
 export const USER_ROLES = {
-  USER: 'user',
-  ADMIN: 'admin',
-  SUPPLIER: 'supplier',
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+  SUPPLIER: 'SUPPLIER',
+  user: 'USER',
+  admin: 'ADMIN',
+  supplier: 'SUPPLIER',
 };
 
 export const ROLE_HOME_PATH = {
-  [USER_ROLES.USER]: '/feed',
-  [USER_ROLES.ADMIN]: '/admin',
-  [USER_ROLES.SUPPLIER]: '/supplier',
+  USER: '/feed',
+  ADMIN: '/admin',
+  SUPPLIER: '/supplier',
+  user: '/feed',
+  admin: '/admin',
+  supplier: '/supplier',
 };
