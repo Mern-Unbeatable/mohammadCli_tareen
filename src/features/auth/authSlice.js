@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { crudService, API_ENDPOINTS, tokenService } from '../../api';
+import { crudService, API_ENDPOINTS, tokenService, getApiErrorMessage } from '../../api';
 
 // Initial Auth State
 const initialState = {
@@ -38,12 +38,7 @@ export const loginUser = createAsyncThunk(
       }
       return payloadData;
     } catch (err) {
-      const errorMessage =
-        err?.message ||
-        err?.error?.message ||
-        err?.response?.data?.error?.message ||
-        'Invalid email or password';
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(getApiErrorMessage(err, 'Invalid email or password'));
     }
   }
 );
@@ -74,12 +69,7 @@ export const registerUser = createAsyncThunk(
       }
       return payloadData;
     } catch (err) {
-      const errorMessage =
-        err?.message ||
-        err?.error?.message ||
-        err?.response?.data?.error?.message ||
-        'Registration failed';
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(getApiErrorMessage(err, 'Registration failed'));
     }
   }
 );
@@ -98,7 +88,7 @@ export const fetchUserProfile = createAsyncThunk(
       }
       return userData;
     } catch (err) {
-      return rejectWithValue(err.message || 'Failed to fetch user profile');
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch user profile'));
     }
   }
 );

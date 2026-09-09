@@ -46,18 +46,19 @@ axiosInstance.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // Extract message from nested backend error format: { success: false, error: { message, code } }
+    const errorPayload = error.response?.data?.error;
     const backendMessage =
-      error.response?.data?.error?.message ||
+      errorPayload?.message ||
       error.response?.data?.message ||
-      (typeof error.response?.data?.error === 'string' ? error.response?.data?.error : null);
+      (typeof errorPayload === 'string' ? errorPayload : null);
+    const details = errorPayload?.details || error.response?.data?.errors || null;
 
-    // Standardized Error Object Structure
     const customError = {
       status: error.response?.status || 500,
-      code: error.response?.data?.error?.code || null,
+      code: errorPayload?.code || null,
       message: backendMessage || error.message || 'Something went wrong. Please try again.',
-      errors: error.response?.data?.errors || null,
+      details,
+      errors: details,
       raw: error,
     };
 
