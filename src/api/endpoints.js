@@ -1,6 +1,10 @@
 /**
  * Centralized API Endpoints Configuration for the entire project.
  * All API routes must be referenced from this single source of truth.
+ *
+ * VITE_API_BASE_URL must be the host only (no /api/v1).
+ * Example: https://mohamed430api.maktechgroup.tech
+ * Full path = baseURL + these prefixed routes → .../api/v1/auth/login
  */
 const API_PREFIX = '/api/v1';
 

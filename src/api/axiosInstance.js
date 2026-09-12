@@ -1,9 +1,19 @@
 import axios from 'axios';
 import { tokenService } from './tokenService';
 
-// Base API URL from environment variables with fallback
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mohamed430api.maktechgroup.tech';
+/**
+ * Host-only base URL. Path prefix `/api/v1` lives on each route in endpoints.js.
+ * Strip a trailing `/api/v1` (and slash) if someone puts it in VITE_API_BASE_URL by mistake.
+ */
+const normalizeBaseUrl = (url) =>
+  String(url || '')
+    .trim()
+    .replace(/\/api\/v1\/?$/i, '')
+    .replace(/\/+$/, '');
 
+const BASE_URL =
+  normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL) ||
+  'https://mohamed430api.maktechgroup.tech';
 
 /**
  * Production-ready Axios Instance configured with Interceptors
