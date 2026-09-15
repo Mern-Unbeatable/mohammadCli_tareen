@@ -8,7 +8,7 @@ import {
   refreshSession,
   changePassword,
   clearError,
-} from '@/features/auth/authSlice';
+} from '@/features/auth';
 import { normalizeAppRole, roleHomePath } from '@/shared/constants/roles';
 
 /**

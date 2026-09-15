@@ -55,7 +55,7 @@ const clearSessionAndRedirect = () => {
 
   Promise.all([
     import('../app/store'),
-    import('../features/auth/authSlice'),
+    import('../features/auth'),
     import('../app/router/index.jsx'),
   ])
     .then(([{ store }, { resetAuth }, { router }]) => {
@@ -111,7 +111,7 @@ const refreshAndRetry = async (originalRequest) => {
     // Keep Redux token in sync when possible
     import('../app/store')
       .then(async ({ store }) => {
-        const { tokenRefreshed } = await import('../features/auth/authSlice');
+        const { tokenRefreshed } = await import('../features/auth');
         store.dispatch(tokenRefreshed(accessToken));
       })
       .catch(() => {});

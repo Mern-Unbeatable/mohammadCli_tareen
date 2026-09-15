@@ -1,9 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { authApi, tokenService, unwrapUser, getApiErrorMessage } from '../../api';
+import { createSlice } from "@reduxjs/toolkit";
+import { tokenService } from "@/api/tokenService";
+import { unwrapUser } from "@/api/unwrapApiData";
+import {
+  loginUser,
+  registerUser,
+  fetchUserProfile,
+  refreshSession,
+  logoutUser,
+  changePassword,
+} from "./authThunks";
 
 /** Heal cookies/state if an older bug stored the API envelope as `user`. */
 const coerceStoredUser = (raw) => {
-  if (!raw || typeof raw !== 'object') return raw;
+  if (!raw || typeof raw !== "object") return raw;
   if (raw.role || raw.email || raw.id) return raw;
   return unwrapUser(raw) || raw;
 };
@@ -12,7 +21,7 @@ const initialUser = coerceStoredUser(tokenService.getUser());
 
 if (
   initialUser &&
-  typeof initialUser === 'object' &&
+  typeof initialUser === "object" &&
   initialUser.role &&
   tokenService.getUser() &&
   !tokenService.getUser().role
@@ -29,112 +38,21 @@ const initialState = {
   sessionReady: !tokenService.getToken(),
 };
 
-/**
- * POST /auth/login
- */
-export const loginUser = createAsyncThunk(
-  'auth/loginUser',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      return await authApi.login(credentials);
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Invalid email or password'));
-    }
-  },
-);
-
-/**
- * POST /auth/register
- */
-export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (formData, { rejectWithValue }) => {
-    try {
-      const { remember = true, ...body } = formData || {};
-      return await authApi.register(body, { remember });
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Registration failed'));
-    }
-  },
-);
-
-/**
- * GET /auth/me — bootstrap / revalidate
- */
-export const fetchUserProfile = createAsyncThunk(
-  'auth/fetchUserProfile',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await authApi.me();
-    } catch (err) {
-      // Try one refresh then me again when access token expired but refresh is valid
-      try {
-        if (tokenService.getRefreshToken()) {
-          await authApi.refresh();
-          return await authApi.me();
-        }
-      } catch {
-        // fall through
-      }
-      tokenService.clearAuth();
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch user profile'));
-    }
-  },
-);
-
-/**
- * POST /auth/refresh
- */
-export const refreshSession = createAsyncThunk(
-  'auth/refreshSession',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await authApi.refresh();
-    } catch (err) {
-      tokenService.clearAuth();
-      return rejectWithValue(getApiErrorMessage(err, 'Session expired'));
-    }
-  },
-);
-
-/**
- * POST /auth/logout { refreshToken }
- */
-export const logoutUser = createAsyncThunk('auth/logoutUser', async (_, { dispatch }) => {
-  try {
-    await authApi.logout();
-  } catch {
-    tokenService.clearAuth();
-  } finally {
-    dispatch(authSlice.actions.resetAuth());
-  }
-});
-
-/**
- * PATCH /users/me/password
- */
-export const changePassword = createAsyncThunk(
-  'auth/changePassword',
-  async (input, { rejectWithValue }) => {
-    try {
-      return await authApi.changePassword(input);
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to change password'));
-    }
-  },
-);
+const applyReset = (state) => {
+  state.user = null;
+  state.token = null;
+  state.isAuthenticated = false;
+  state.loading = false;
+  state.error = null;
+  state.sessionReady = true;
+};
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     resetAuth: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
-      state.sessionReady = true;
+      applyReset(state);
     },
     clearError: (state) => {
       state.error = null;
@@ -149,6 +67,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -164,6 +83,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -179,6 +99,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Profile bootstrap
       .addCase(fetchUserProfile.pending, (state) => {
         state.sessionReady = false;
       })
@@ -196,6 +117,7 @@ const authSlice = createSlice({
         state.sessionReady = true;
         state.error = action.payload;
       })
+      // Refresh
       .addCase(refreshSession.fulfilled, (state, action) => {
         state.token = action.payload?.accessToken || tokenService.getToken();
         state.isAuthenticated = !!(state.token && state.user);
@@ -206,6 +128,14 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.sessionReady = true;
       })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        applyReset(state);
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        applyReset(state);
+      })
+      // Change password
       .addCase(changePassword.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -220,5 +150,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { resetAuth, clearError, setSessionReady, tokenRefreshed } = authSlice.actions;
+export const { resetAuth, clearError, setSessionReady, tokenRefreshed } =
+  authSlice.actions;
 export default authSlice.reducer;
