@@ -124,6 +124,42 @@ export const API_ENDPOINTS = {
       APPLICATIONS: (jobId) => `/recruitment/${jobId}/applications`,
     },
 
+    GENERAL: {
+      LIST: "/general",
+      CREATE: "/general",
+      DETAILS: (postId) => `/general/${postId}`,
+      UPDATE: (postId) => `/general/${postId}`,
+      DELETE: (postId) => `/general/${postId}`,
+    },
+
+    BLOGS: {
+      LIST: "/blogs",
+      DETAILS: (slug) => `/blogs/${slug}`,
+    },
+
+    NOTIFICATIONS: {
+      LIST: "/notifications",
+      READ_ALL: "/notifications/read-all",
+      READ: (notificationId) => `/notifications/${notificationId}/read`,
+      DELETE: (notificationId) => `/notifications/${notificationId}`,
+    },
+
+    MESSAGES: {
+      LIST: "/messages",
+      DIRECT: "/messages/direct",
+      GROUP: "/messages/group",
+      THREAD: (conversationId) => `/messages/${conversationId}/messages`,
+    },
+
+    CONNECTIONS: {
+      LIST: "/connections",
+      DETAILS: (connectionId) => `/connections/${connectionId}`,
+      REQUEST: "/connections/request",
+      ACCEPT: (connectionId) => `/connections/${connectionId}/accept`,
+      DECLINE: (connectionId) => `/connections/${connectionId}/decline`,
+      REMOVE: (connectionId) => `/connections/${connectionId}`,
+    },
+
     PROFILE: {
       ME: "/users/me",
       UPDATE: "/users/me",
