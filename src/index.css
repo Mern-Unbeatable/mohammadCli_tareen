@@ -31,3 +31,56 @@ html {
 button  {
     cursor: pointer;
 }
+
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes page-loading-dots {
+    0% {
+        clip-path: inset(0 100% 0 0);
+    }
+    100% {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes page-shimmer {
+    0% {
+        transform: translateX(-120%);
+    }
+    100% {
+        transform: translateX(220%);
+    }
+}
+
+.page-loading-fallback {
+    animation: page-fade-in 0.35s ease-out;
+}
+
+.page-loading-dots {
+    display: inline-block;
+    width: 1.25em;
+    overflow: hidden;
+    vertical-align: baseline;
+    animation: page-loading-dots 1.2s steps(4, end) infinite;
+}
+
+.page-loading-shimmer {
+    animation: page-shimmer 1.4s ease-in-out infinite;
+}
+
+.page-loading-shimmer-delay-1 {
+    animation-delay: 0.15s;
+}
+
+.page-loading-shimmer-delay-2 {
+    animation-delay: 0.3s;
+}
