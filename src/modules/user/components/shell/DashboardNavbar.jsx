@@ -13,10 +13,11 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
 import Container from '@/components/ui/Container';
+import { useAuth } from '@/shared/auth/useAuth';
 import ProfileDropdown from './ProfileDropdown';
 import { currentUser, navItems } from '@/modules/user/data/dashboard';
 
@@ -34,8 +35,16 @@ const iconMap = {
 const DashboardNavbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    closeMenu();
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   const isNavActive = (item) => {
     if (item.id === 'home') return pathname === '/feed';
@@ -193,14 +202,14 @@ const DashboardNavbar = () => {
               </ul>
 
               <div className="mt-6 border-t border-[#E4E7EC] pt-4">
-                <Link
-                  to="/login"
-                  onClick={closeMenu}
+                <button
+                  type="button"
+                  onClick={handleLogout}
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E4E7EC] px-4 py-3 text-[14px] font-semibold text-[#475467] transition-colors hover:border-[#D0D5DD] hover:bg-[#F9FAFB]"
                 >
                   <LogOut className="h-5 w-5" />
                   Log out
-                </Link>
+                </button>
               </div>
             </Container>
           </div>

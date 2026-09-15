@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { loginUser, registerUser, logoutUser, clearError } from '@/features/auth/authSlice';
-import { ROLE_HOME_PATH } from '@/shared/constants/roles';
+import { normalizeAppRole, roleHomePath } from '@/shared/constants/roles';
 
 /**
  * Production custom hook connecting components directly to Redux Auth state & actions.
@@ -9,30 +9,29 @@ import { ROLE_HOME_PATH } from '@/shared/constants/roles';
  */
 export const useAuth = () => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, loading, error } = useSelector((state) => state.auth);
+  const { user, isAuthenticated, loading, error, sessionReady } = useSelector((state) => state.auth);
 
-  const rawRole = user?.role || user?.profileType || '';
-  const normalizedRole = rawRole ? rawRole.toUpperCase() : 'USER';
+  const role = normalizeAppRole(user);
+  const homePath = role ? roleHomePath(role) : '/login';
 
   const login = async (credentials) => {
-    // credentials format: { email, password, remember }
     const resultAction = await dispatch(loginUser(credentials));
-    
+
     if (loginUser.fulfilled.match(resultAction)) {
       const userPayload = resultAction.payload?.user;
-      const userRole = userPayload?.role ? userPayload.role.toUpperCase() : 'USER';
+      const userRole = normalizeAppRole(userPayload);
       return {
         ok: true,
         user: userPayload,
         role: userRole,
-        redirectTo: ROLE_HOME_PATH[userRole] || '/feed',
-      };
-    } else {
-      return {
-        ok: false,
-        error: resultAction.payload || 'Invalid email or password.',
+        redirectTo: userRole ? roleHomePath(userRole) : '/login',
       };
     }
+
+    return {
+      ok: false,
+      error: resultAction.payload || 'Invalid email or password.',
+    };
   };
 
   const register = async (formData) => {
@@ -40,19 +39,19 @@ export const useAuth = () => {
 
     if (registerUser.fulfilled.match(resultAction)) {
       const userPayload = resultAction.payload?.user;
-      const userRole = userPayload?.role ? userPayload.role.toUpperCase() : 'USER';
+      const userRole = normalizeAppRole(userPayload);
       return {
         ok: true,
         user: userPayload,
         role: userRole,
-        redirectTo: ROLE_HOME_PATH[userRole] || '/feed',
-      };
-    } else {
-      return {
-        ok: false,
-        error: resultAction.payload || 'Registration failed.',
+        redirectTo: userRole ? roleHomePath(userRole) : '/login',
       };
     }
+
+    return {
+      ok: false,
+      error: resultAction.payload || 'Registration failed.',
+    };
   };
 
   const logout = async () => {
@@ -62,20 +61,20 @@ export const useAuth = () => {
 
   return {
     user,
-    isAuthenticated: Boolean(isAuthenticated && user),
+    isAuthenticated: Boolean(isAuthenticated && user && role),
     loading,
     error,
-    role: normalizedRole,
+    sessionReady: Boolean(sessionReady),
+    role,
     login,
     register,
     logout,
     clearError: () => dispatch(clearError()),
-    homePath: isAuthenticated ? (ROLE_HOME_PATH[normalizedRole] || '/feed') : '/login',
-    isUser: normalizedRole === 'USER',
-    isAdmin: normalizedRole === 'ADMIN',
-    isSupplier: normalizedRole === 'SUPPLIER',
+    homePath,
+    isUser: role === 'USER',
+    isAdmin: role === 'ADMIN',
+    isSupplier: role === 'SUPPLIER',
   };
 };
 
 export default useAuth;
-

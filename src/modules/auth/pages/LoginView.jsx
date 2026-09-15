@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
-
+import { getSafeRedirectPath } from '@/shared/routing/safeRedirect';
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
@@ -12,18 +12,13 @@ const inputClass =
 const LoginView = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, loading, homePath } = useAuth();
+  const { login, loading, homePath } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    navigate(location.state?.from || homePath, { replace: true });
-  }, [isAuthenticated, homePath, location.state?.from, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +38,8 @@ const LoginView = () => {
     }
 
     toast.success('Login successful!');
-    navigate(location.state?.from || result.redirectTo || homePath, { replace: true });
+    const fallback = result.redirectTo || homePath;
+    navigate(getSafeRedirectPath(location.state?.from, fallback), { replace: true });
   };
 
   return (

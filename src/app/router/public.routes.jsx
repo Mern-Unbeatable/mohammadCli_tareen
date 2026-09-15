@@ -6,10 +6,15 @@ import NotFound from '@/shared/pages/NotFound';
 export const publicRoutes = {
   path: '/',
   element: <RootLayout />,
+  handle: { audience: 'public' },
   children: [
-    { index: true, element: <HomeView /> },
-    { path: 'developer', element: <DeveloperPage /> },
-    { path: 'developer/:componentId', element: <DeveloperPage /> },
-    { path: '*', element: <NotFound /> },
+    { index: true, element: <HomeView />, handle: { title: 'Home' } },
+    { path: 'developer', element: <DeveloperPage />, handle: { title: 'Developer' } },
+    {
+      path: 'developer/:componentId',
+      element: <DeveloperPage />,
+      handle: { title: 'Developer' },
+    },
+    { path: '*', element: <NotFound />, handle: { title: 'Not found' } },
   ],
 };
