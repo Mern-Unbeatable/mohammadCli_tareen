@@ -1,14 +1,21 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import DataTable from '@/components/data-display/DataTable/DataTable';
-import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
-import CategoryPill from '@/components/data-display/CategoryPill/CategoryPill';
-import Card from '@/components/ui/Card';
-import CreateAdModal from '@/modules/supplier/components/CreateAdModal';
-import { SUPPLIER_AD_ROWS } from '@/modules/supplier/data/advertisements';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import { panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+import DataTable from "@/components/data-display/DataTable/DataTable";
+import StatusBadge from "@/components/data-display/DataTable/StatusBadge";
+import CategoryPill from "@/components/data-display/CategoryPill/CategoryPill";
+import Card from "@/components/ui/Card";
+import CreateAdModal from "@/modules/supplier/components/CreateAdModal";
+import {
+  fetchSupplierAds,
+  clearSupplierAdsError,
+  statusFilterToApi,
+  toAdRowModel,
+} from "@/features/supplier/advertisements";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import { panelPrimaryBtn } from "@/shared/layout/PanelLayout/panelPageTheme";
 
 const PAGE_SIZE = 7;
 
@@ -19,96 +26,135 @@ const AdCell = ({ row }) => (
   </div>
 );
 
+const buildAdsQuery = ({ page, statusFilter, sortFilter, search }) => {
+  const params = {
+    page,
+    pageSize: PAGE_SIZE,
+    sort: sortFilter === "oldest" ? "asc" : "desc",
+    mine: true,
+  };
+
+  const status = statusFilterToApi(statusFilter);
+  if (status) params.status = status;
+
+  const q = search?.trim();
+  if (q) params.search = q;
+
+  return params;
+};
+
 const SupplierAdsView = () => {
   const navigate = useNavigate();
-  const [rows, setRows] = useState(SUPPLIER_AD_ROWS);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortFilter, setSortFilter] = useState('newest');
-  const [search, setSearch] = useState('');
+  const dispatch = useDispatch();
+  const { ads, adsMeta, adsLoading, error } = useSelector(
+    (state) => state.supplierAds,
+  );
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortFilter, setSortFilter] = useState("newest");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
+  const [resubmitAdId, setResubmitAdId] = useState(null);
 
-  const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    let result = rows.filter((row) => {
-      const statusOk =
-        statusFilter === 'all' || row.status.toLowerCase() === statusFilter;
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, sortFilter]);
 
-      if (!statusOk) return false;
-      if (!query) return true;
+  useEffect(() => {
+    dispatch(clearSupplierAdsError());
+    dispatch(
+      fetchSupplierAds(
+        buildAdsQuery({
+          page,
+          statusFilter,
+          sortFilter,
+          search: debouncedSearch,
+        }),
+      ),
+    );
+  }, [dispatch, page, statusFilter, sortFilter, debouncedSearch]);
 
-      return [row.title, row.category, row.status, row.duration, row.uploadDate].some((field) =>
-        String(field).toLowerCase().includes(query)
-      );
-    });
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
-    result = [...result].sort((a, b) => {
-      if (sortFilter === 'oldest') {
-        return a.uploadDate.localeCompare(b.uploadDate);
-      }
-      return b.uploadDate.localeCompare(a.uploadDate);
-    });
-
-    return result;
-  }, [rows, statusFilter, sortFilter, search]);
-
-  const pageRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [filteredRows, page]);
+  const tableRows = useMemo(
+    () => (ads || []).map(toAdRowModel).filter(Boolean),
+    [ads],
+  );
 
   const columns = useMemo(
     () => [
       {
-        key: 'title',
-        header: 'Advertisement',
+        key: "title",
+        header: "Advertisement",
         render: (_, row) => <AdCell row={row} />,
       },
       {
-        key: 'status',
-        header: 'Status',
+        key: "status",
+        header: "Status",
         render: (value) => <StatusBadge status={value} label={value} />,
       },
-      { key: 'views', header: 'Views' },
-      { key: 'clicks', header: 'Clicks' },
-      { key: 'duration', header: 'Duration' },
-      { key: 'uploadDate', header: 'Upload date' },
+      { key: "views", header: "Views" },
+      { key: "clicks", header: "Clicks" },
+      { key: "duration", header: "Duration" },
+      { key: "uploadDate", header: "Upload date" },
     ],
-    []
+    [],
   );
+
+  const openCreate = (adId = null) => {
+    setResubmitAdId(adId);
+    setCreateOpen(true);
+  };
 
   const rowActions = (row) => {
     const actions = [
       {
-        id: 'details',
-        label: 'See Details',
+        id: "details",
+        label: "See Details",
         onClick: () => navigate(`/supplier/ads/${row.id}`),
       },
     ];
 
-    if (row.status === 'Rejected') {
+    if (row.status === "Rejected") {
       actions.push({
-        id: 'resubmit',
-        label: 'Resubmit',
-        onClick: () => setCreateOpen(true),
+        id: "resubmit",
+        label: "Resubmit",
+        onClick: () => openCreate(row.id),
       });
     }
 
-    if (row.status === 'Expired') {
+    if (row.status === "Expired") {
       actions.push({
-        id: 'renew',
-        label: 'Renew',
-        onClick: () => setCreateOpen(true),
+        id: "renew",
+        label: "Renew",
+        onClick: () => openCreate(null),
       });
     }
 
     return actions;
   };
 
-  const handleCreated = (newRow) => {
-    setRows((prev) => [newRow, ...prev]);
+  const handleCreated = () => {
     setPage(1);
+    dispatch(
+      fetchSupplierAds(
+        buildAdsQuery({
+          page: 1,
+          statusFilter,
+          sortFilter,
+          search: debouncedSearch,
+        }),
+      ),
+    );
   };
 
   return (
@@ -117,75 +163,80 @@ const SupplierAdsView = () => {
         title="My Advertisement"
         subtitle="Create and manage your ads on here"
         action={
-          <button type="button" onClick={() => setCreateOpen(true)} className={panelPrimaryBtn}>
+          <button
+            type="button"
+            onClick={() => openCreate(null)}
+            className={panelPrimaryBtn}
+          >
             Create a advertisement
           </button>
         }
       />
 
       <Card className="overflow-hidden p-4 sm:p-5">
-        
-
-        <div>
-          <DataTable
-            showCard={false}
-            showSearch
-            searchValue={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            searchPlaceholder="Search advertisements..."
-            showFilters
-            filterLabel="Sort by:"
-            filters={[
-              {
-                id: 'status',
-                value: statusFilter,
-                options: [
-                  { value: 'all', label: 'All Status' },
-                  { value: 'active', label: 'Active' },
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'expired', label: 'Expired' },
-                  { value: 'rejected', label: 'Rejected' },
-                ],
-                onChange: (value) => {
-                  setStatusFilter(value);
-                  setPage(1);
-                },
+        <DataTable
+          showCard={false}
+          showSearch
+          searchValue={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          searchPlaceholder="Search advertisements..."
+          showFilters
+          filterLabel="Sort by:"
+          filters={[
+            {
+              id: "status",
+              value: statusFilter,
+              options: [
+                { value: "all", label: "All Status" },
+                { value: "active", label: "Active" },
+                { value: "pending", label: "Pending" },
+                { value: "expired", label: "Expired" },
+                { value: "rejected", label: "Rejected" },
+              ],
+              onChange: (value) => {
+                setStatusFilter(value);
+                setPage(1);
               },
-              {
-                id: 'sort',
-                value: sortFilter,
-                options: [
-                  { value: 'newest', label: 'Newest First' },
-                  { value: 'oldest', label: 'Oldest First' },
-                ],
-                onChange: (value) => {
-                  setSortFilter(value);
-                  setPage(1);
-                },
+            },
+            {
+              id: "sort",
+              value: sortFilter,
+              options: [
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+              ],
+              onChange: (value) => {
+                setSortFilter(value);
+                setPage(1);
               },
-            ]}
-            columns={columns}
-            data={pageRows}
-            showActions
-            getActions={rowActions}
-            showPagination
-            pagination={{
-              page,
-              pageSize: PAGE_SIZE,
-              total: filteredRows.length,
-              onPageChange: setPage,
-            }}
-            tableMinWidth="900px"
-          />
-        </div>
+            },
+          ]}
+          columns={columns}
+          data={tableRows}
+          loading={adsLoading}
+          showActions
+          getActions={rowActions}
+          showPagination
+          pagination={{
+            page,
+            pageSize: PAGE_SIZE,
+            total: adsMeta?.total || 0,
+            onPageChange: setPage,
+          }}
+          tableMinWidth="900px"
+        />
       </Card>
 
       <CreateAdModal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        editAdId={resubmitAdId}
+        onClose={() => {
+          setCreateOpen(false);
+          setResubmitAdId(null);
+        }}
         onCreated={handleCreated}
       />
     </PanelPage>
