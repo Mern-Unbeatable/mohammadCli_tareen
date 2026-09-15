@@ -64,6 +64,12 @@ const authSlice = createSlice({
       state.token = action.payload || tokenService.getToken();
       state.isAuthenticated = !!(state.token && state.user);
     },
+    setUser: (state, action) => {
+      const user = coerceStoredUser(action.payload) || null;
+      state.user = user;
+      if (user) tokenService.setUser(user);
+      state.isAuthenticated = !!(state.token && user);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -150,6 +156,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { resetAuth, clearError, setSessionReady, tokenRefreshed } =
+export const { resetAuth, clearError, setSessionReady, tokenRefreshed, setUser } =
   authSlice.actions;
 export default authSlice.reducer;

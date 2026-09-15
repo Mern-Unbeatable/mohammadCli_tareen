@@ -12,6 +12,7 @@ export {
   clearError,
   setSessionReady,
   tokenRefreshed,
+  setUser,
 } from "./authSlice";
 export {
   loginUser,
