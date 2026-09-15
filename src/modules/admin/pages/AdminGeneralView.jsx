@@ -1,22 +1,64 @@
-import { useMemo, useState } from 'react';
-import Pagination from '@/components/common/Pagination/Pagination';
-import GeneralPostCard from '@/components/data-display/GeneralPostCard/GeneralPostCard';
-import GeneralToolbar from '@/modules/user/components/general/GeneralToolbar';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import { filterGeneralPosts, generalPosts } from '@/modules/user/data/general';
-import { GRID_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
+import Pagination from "@/components/common/Pagination/Pagination";
+import GeneralPostCard from "@/components/data-display/GeneralPostCard/GeneralPostCard";
+import GeneralToolbar from "@/modules/user/components/general/GeneralToolbar";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import {
+  fetchGeneralPosts,
+  removeGeneralPost,
+} from "@/features/admin/general";
+import {
+  categoryToApi,
+  toGeneralPostModel,
+} from "@/features/admin/general/generalMappers";
+
+const PAGE_SIZE = 8;
+
+const buildPostsQuery = ({ page, category }) => {
+  const params = {
+    page,
+    pageSize: PAGE_SIZE,
+  };
+
+  const type = categoryToApi(category);
+  if (type) params.type = type;
+
+  return params;
+};
 
 const AdminGeneralView = () => {
-  const [category, setCategory] = useState('All');
-
-  const filtered = useMemo(
-    () => filterGeneralPosts(generalPosts, category),
-    [category]
+  const dispatch = useDispatch();
+  const { posts, postsMeta, postsLoading, error } = useSelector(
+    (state) => state.adminGeneral,
   );
 
-  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, GRID_PAGE_SIZE, [
-    category,
-  ]);
+  const [category, setCategory] = useState("All");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [category]);
+
+  useEffect(() => {
+    dispatch(fetchGeneralPosts(buildPostsQuery({ page, category })));
+  }, [dispatch, page, category]);
+
+  const pageItems = useMemo(
+    () => (posts || []).map(toGeneralPostModel).filter(Boolean),
+    [posts],
+  );
+
+  const handleDelete = async (postId) => {
+    const result = await dispatch(removeGeneralPost(postId));
+    if (removeGeneralPost.fulfilled.match(result)) {
+      toast.success("Post deleted");
+      return;
+    }
+    toast.error(result.payload || "Failed to delete post");
+  };
 
   return (
     <PanelPage>
@@ -28,19 +70,41 @@ const AdminGeneralView = () => {
         showCreatePost={false}
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {pageItems.map((post) => (
-          <GeneralPostCard
-            key={post.id}
-            post={post}
-            variant="admin"
-            detailHref={`/admin/general/${post.id}`}
-            onDelete={() => {}}
-          />
-        ))}
-      </div>
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
+      {postsLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading posts…
+        </div>
+      ) : pageItems.length === 0 ? (
+        <p className="py-16 text-center text-sm text-[#64748B]">
+          No general posts found for this filter.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {pageItems.map((post) => (
+            <GeneralPostCard
+              key={post.id}
+              post={post}
+              variant="admin"
+              detailHref={`/admin/general/${post.id}`}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      <Pagination
+        page={postsMeta?.page || page}
+        totalPages={postsMeta?.totalPages || 1}
+        onPageChange={setPage}
+        className="mt-2"
+      />
     </PanelPage>
   );
 };
