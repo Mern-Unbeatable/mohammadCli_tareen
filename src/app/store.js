@@ -4,6 +4,7 @@ import { adminDashboardReducer } from "../features/admin/dashboard";
 import { adminUsersReducer } from "../features/admin/users";
 import { adminRecruitmentReducer } from "../features/admin/recruitment";
 import { adminGeneralReducer } from "../features/admin/general";
+import { adminMarketplaceReducer } from "../features/admin/marketplace";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     adminUsers: adminUsersReducer,
     adminRecruitment: adminRecruitmentReducer,
     adminGeneral: adminGeneralReducer,
+    adminMarketplace: adminMarketplaceReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
