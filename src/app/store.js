@@ -1,18 +1,20 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { authReducer } from '../features/auth';
-import { adminReducer } from '../features/admin';
+import { configureStore } from "@reduxjs/toolkit";
+import { authReducer } from "../features/auth";
+import { adminDashboardReducer } from "../features/admin/dashboard";
+import { adminUsersReducer } from "../features/admin/users";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    admin: adminReducer,
+    adminDashboard: adminDashboardReducer,
+    adminUsers: adminUsersReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
     }),
-  devTools: import.meta.env.MODE !== 'production',
+  devTools: import.meta.env.MODE !== "production",
 });
 
 export default store;

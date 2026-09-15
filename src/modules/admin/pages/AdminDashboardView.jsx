@@ -1,38 +1,49 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Loader2, RefreshCw } from 'lucide-react';
-import StatCard from '@/components/data-display/StatCard/StatCard';
-import LineChartCard from '@/components/data-display/LineChartCard/LineChartCard';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Loader2, RefreshCw } from "lucide-react";
+import StatCard from "@/components/data-display/StatCard/StatCard";
+import LineChartCard from "@/components/data-display/LineChartCard/LineChartCard";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
   fetchAdminDashboardStats,
   fetchAdminStatistics,
   clearAdminError,
-} from '@/features/admin';
+} from "@/features/admin/dashboard";
 
-const PERIOD_OPTIONS = ['This year', 'This month', 'Last 3 months', 'Last 6 months'];
+const PERIOD_OPTIONS = [
+  "This year",
+  "This month",
+  "Last 3 months",
+  "Last 6 months",
+];
 
 const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2].map(String);
+const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2].map(
+  String,
+);
 
 /**
  * Slice 12-month chart series by UI period within the selected calendar year.
  */
-const filterChartData = (rawLabels = [], rawSeries = [], selectedPeriod = 'This year') => {
+const filterChartData = (
+  rawLabels = [],
+  rawSeries = [],
+  selectedPeriod = "This year",
+) => {
   if (!rawLabels.length) return { labels: [], series: rawSeries };
 
   const currentMonthIdx = new Date().getMonth();
   let startIndex = 0;
   let endIndex = rawLabels.length;
 
-  if (selectedPeriod === 'This month') {
+  if (selectedPeriod === "This month") {
     startIndex = currentMonthIdx;
     endIndex = currentMonthIdx + 1;
-  } else if (selectedPeriod === 'Last 3 months') {
+  } else if (selectedPeriod === "Last 3 months") {
     startIndex = Math.max(0, currentMonthIdx - 2);
     endIndex = currentMonthIdx + 1;
-  } else if (selectedPeriod === 'Last 6 months') {
+  } else if (selectedPeriod === "Last 6 months") {
     startIndex = Math.max(0, currentMonthIdx - 5);
     endIndex = currentMonthIdx + 1;
   }
@@ -77,11 +88,11 @@ const AdminDashboardView = () => {
     statisticsLoading,
     statsError,
     statisticsError,
-  } = useSelector((state) => state.admin);
+  } = useSelector((state) => state.adminDashboard);
 
   const [chartYear, setChartYear] = useState(String(currentYear));
-  const [userPeriod, setUserPeriod] = useState('This year');
-  const [revenuePeriod, setRevenuePeriod] = useState('This year');
+  const [userPeriod, setUserPeriod] = useState("This year");
+  const [revenuePeriod, setRevenuePeriod] = useState("This year");
 
   const loadDashboard = () => {
     dispatch(clearAdminError());
@@ -98,15 +109,15 @@ const AdminDashboardView = () => {
     if (!statistics?.series) return [];
     return [
       {
-        id: 'newUsers',
-        label: 'New Users',
-        color: '#F97316',
+        id: "newUsers",
+        label: "New Users",
+        color: "#F97316",
         values: statistics.series.newUsers || [],
       },
       {
-        id: 'newSubscribers',
-        label: 'Subscribers',
-        color: '#EC4899',
+        id: "newSubscribers",
+        label: "Subscribers",
+        color: "#EC4899",
         values: statistics.series.newSubscribers || [],
       },
     ];
@@ -116,23 +127,31 @@ const AdminDashboardView = () => {
     if (!statistics?.series) return [];
     return [
       {
-        id: 'monthlyRevenue',
-        label: 'Monthly Revenue (€)',
-        color: '#10B981',
+        id: "monthlyRevenue",
+        label: "Monthly Revenue (€)",
+        color: "#10B981",
         values: statistics.series.monthlyRevenue || [],
       },
       {
-        id: 'yearlyRevenue',
-        label: 'Yearly Revenue (€)',
-        color: '#3B82F6',
+        id: "yearlyRevenue",
+        label: "Yearly Revenue (€)",
+        color: "#3B82F6",
         values: statistics.series.yearlyRevenue || [],
       },
     ];
   }, [statistics]);
 
   const chartLabels = statistics?.labels || [];
-  const userGrowthFiltered = filterChartData(chartLabels, userGrowthSeries, userPeriod);
-  const revenueFiltered = filterChartData(chartLabels, revenueSeries, revenuePeriod);
+  const userGrowthFiltered = filterChartData(
+    chartLabels,
+    userGrowthSeries,
+    userPeriod,
+  );
+  const revenueFiltered = filterChartData(
+    chartLabels,
+    revenueSeries,
+    revenuePeriod,
+  );
 
   const hasStats = Array.isArray(stats) && stats.length > 0;
   const hasCharts =
@@ -166,7 +185,9 @@ const AdminDashboardView = () => {
       {loading ? (
         <div className="flex h-28 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">Loading dashboard…</span>
+          <span className="text-[14px] font-medium text-[#64748B]">
+            Loading dashboard…
+          </span>
         </div>
       ) : statsError ? (
         <ErrorState message={statsError} onRetry={loadDashboard} />
@@ -184,7 +205,9 @@ const AdminDashboardView = () => {
       {statisticsLoading ? (
         <div className="flex h-64 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">Loading charts…</span>
+          <span className="text-[14px] font-medium text-[#64748B]">
+            Loading charts…
+          </span>
         </div>
       ) : statisticsError ? (
         <ErrorState

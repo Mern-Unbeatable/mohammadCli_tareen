@@ -6,38 +6,11 @@ import {
 } from "@/api";
 
 /**
- * Admin HTTP helpers — no Redux. Used by thunks.
+ * Admin users HTTP helpers — no Redux. Used by usersThunks.
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-// Admin dashboard stats
-// ═══════════════════════════════════════════════════════════════════════
-export async function getDashboardStats() {
-  const response = await crudService.get(API_ENDPOINTS.ADMIN.DASHBOARD);
-  const data = unwrapApiData(response) || response;
-  return Array.isArray(data?.stats)
-    ? data.stats
-    : Array.isArray(data)
-      ? data
-      : [];
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Admin statistics
-// ═══════════════════════════════════════════════════════════════════════
-export async function getStatistics(yearArg) {
-  const year =
-    typeof yearArg === "number"
-      ? yearArg
-      : yearArg?.year || new Date().getFullYear();
-  const response = await crudService.get(API_ENDPOINTS.ADMIN.STATISTICS, {
-    year,
-  });
-  return unwrapApiData(response) || response;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Admin users list
+// Users list
 // ═══════════════════════════════════════════════════════════════════════
 export async function getUsersList(params = {}) {
   const response = await crudService.get(
@@ -81,7 +54,7 @@ export async function getUsersList(params = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Admin user details
+// User details
 // ═══════════════════════════════════════════════════════════════════════
 export async function getUserById(userId) {
   const response = await crudService.get(
@@ -91,7 +64,7 @@ export async function getUserById(userId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Admin user status
+// User status
 // ═══════════════════════════════════════════════════════════════════════
 export async function patchUserStatus(userId, status, reason) {
   const response = await crudService.patch(
@@ -104,7 +77,4 @@ export async function patchUserStatus(userId, status, reason) {
   return { userId, status, data: unwrapApiData(response) ?? response };
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Admin get API error message
-// ═══════════════════════════════════════════════════════════════════════
 export { getApiErrorMessage };

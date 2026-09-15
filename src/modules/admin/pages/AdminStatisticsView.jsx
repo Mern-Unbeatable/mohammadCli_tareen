@@ -1,34 +1,45 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Loader2, RefreshCw } from 'lucide-react';
-import StatCard from '@/components/data-display/StatCard/StatCard';
-import LineChartCard from '@/components/data-display/LineChartCard/LineChartCard';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Loader2, RefreshCw } from "lucide-react";
+import StatCard from "@/components/data-display/StatCard/StatCard";
+import LineChartCard from "@/components/data-display/LineChartCard/LineChartCard";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
   fetchAdminDashboardStats,
   fetchAdminStatistics,
   clearAdminError,
-} from '@/features/admin';
+} from "@/features/admin/dashboard";
 
-const PERIOD_OPTIONS = ['This year', 'This month', 'Last 3 months', 'Last 6 months'];
+const PERIOD_OPTIONS = [
+  "This year",
+  "This month",
+  "Last 3 months",
+  "Last 6 months",
+];
 const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2].map(String);
+const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2].map(
+  String,
+);
 
-const filterChartData = (rawLabels = [], rawSeries = [], selectedPeriod = 'This year') => {
+const filterChartData = (
+  rawLabels = [],
+  rawSeries = [],
+  selectedPeriod = "This year",
+) => {
   if (!rawLabels.length) return { labels: [], series: rawSeries };
 
   const currentMonthIdx = new Date().getMonth();
   let startIndex = 0;
   let endIndex = rawLabels.length;
 
-  if (selectedPeriod === 'This month') {
+  if (selectedPeriod === "This month") {
     startIndex = currentMonthIdx;
     endIndex = currentMonthIdx + 1;
-  } else if (selectedPeriod === 'Last 3 months') {
+  } else if (selectedPeriod === "Last 3 months") {
     startIndex = Math.max(0, currentMonthIdx - 2);
     endIndex = currentMonthIdx + 1;
-  } else if (selectedPeriod === 'Last 6 months') {
+  } else if (selectedPeriod === "Last 6 months") {
     startIndex = Math.max(0, currentMonthIdx - 5);
     endIndex = currentMonthIdx + 1;
   }
@@ -77,16 +88,16 @@ const AdminStatisticsView = () => {
     statisticsLoading,
     statsError,
     statisticsError,
-  } = useSelector((state) => state.admin);
+  } = useSelector((state) => state.adminDashboard);
 
   const [chartYear, setChartYear] = useState(String(currentYear));
   const [periods, setPeriods] = useState({
-    userGrowth: 'This year',
-    revenue: 'This year',
-    newUsers: 'This year',
-    subscribers: 'This year',
-    monthlyRev: 'This year',
-    yearlyRev: 'This year',
+    userGrowth: "This year",
+    revenue: "This year",
+    newUsers: "This year",
+    subscribers: "This year",
+    monthlyRev: "This year",
+    yearlyRev: "This year",
   });
 
   const setPeriod = (key, value) => {
@@ -111,75 +122,85 @@ const AdminStatisticsView = () => {
     if (!labels.length) return [];
     return [
       {
-        key: 'userGrowth',
-        title: 'User Growth',
+        key: "userGrowth",
+        title: "User Growth",
         series: [
-          { id: 'newUsers', label: 'New Users', color: '#F97316', values: series.newUsers || [] },
           {
-            id: 'newSubscribers',
-            label: 'Subscribers',
-            color: '#EC4899',
+            id: "newUsers",
+            label: "New Users",
+            color: "#F97316",
+            values: series.newUsers || [],
+          },
+          {
+            id: "newSubscribers",
+            label: "Subscribers",
+            color: "#EC4899",
             values: series.newSubscribers || [],
           },
         ],
       },
       {
-        key: 'revenue',
-        title: 'Revenue',
+        key: "revenue",
+        title: "Revenue",
         series: [
           {
-            id: 'monthlyRevenue',
-            label: 'Monthly Revenue (€)',
-            color: '#10B981',
+            id: "monthlyRevenue",
+            label: "Monthly Revenue (€)",
+            color: "#10B981",
             values: series.monthlyRevenue || [],
           },
           {
-            id: 'yearlyRevenue',
-            label: 'Yearly Revenue (€)',
-            color: '#3B82F6',
+            id: "yearlyRevenue",
+            label: "Yearly Revenue (€)",
+            color: "#3B82F6",
             values: series.yearlyRevenue || [],
           },
         ],
       },
       {
-        key: 'newUsers',
-        title: 'New Users',
+        key: "newUsers",
+        title: "New Users",
         series: [
-          { id: 'newUsersOnly', label: 'New Users', color: '#F97316', values: series.newUsers || [] },
+          {
+            id: "newUsersOnly",
+            label: "New Users",
+            color: "#F97316",
+            values: series.newUsers || [],
+          },
         ],
       },
       {
-        key: 'monthlyRev',
-        title: 'Monthly Subscription Revenue',
+        key: "monthlyRev",
+        title: "Monthly Subscription Revenue",
         series: [
           {
-            id: 'monthlyOnly',
-            label: 'Monthly (€)',
-            color: '#10B981',
+            id: "monthlyOnly",
+            label: "Monthly (€)",
+            color: "#10B981",
             values: series.monthlyRevenue || [],
           },
         ],
       },
       {
-        key: 'subscribers',
-        title: 'New Subscribers',
+        key: "subscribers",
+        title: "New Subscribers",
         series: [
           {
-            id: 'subsOnly',
-            label: 'Subscribers',
-            color: '#EC4899',
+            id: "subsOnly",
+            label: "Subscribers",
+            color: "#EC4899",
             values: series.newSubscribers || [],
           },
         ],
       },
       {
-        key: 'yearlyRev',
-        title: 'Yearly Subscription Revenue',
+        key: "yearlyRev",
+        title: "Yearly Subscription Revenue",
         series: [
           {
-            id: 'yearlyOnly',
-            label: 'Yearly (€)',
-            color: '#3B82F6',
+            id: "yearlyOnly",
+            label: "Yearly (€)",
+            color: "#3B82F6",
             values: series.yearlyRevenue || [],
           },
         ],
@@ -213,7 +234,9 @@ const AdminStatisticsView = () => {
       {loading ? (
         <div className="flex h-28 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">Loading KPIs…</span>
+          <span className="text-[14px] font-medium text-[#64748B]">
+            Loading KPIs…
+          </span>
         </div>
       ) : statsError ? (
         <ErrorState message={statsError} onRetry={load} />
@@ -230,7 +253,9 @@ const AdminStatisticsView = () => {
       {statisticsLoading ? (
         <div className="flex h-64 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">Loading charts…</span>
+          <span className="text-[14px] font-medium text-[#64748B]">
+            Loading charts…
+          </span>
         </div>
       ) : statisticsError ? (
         <ErrorState
@@ -242,7 +267,11 @@ const AdminStatisticsView = () => {
       ) : (
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {charts.map((chart) => {
-            const filtered = filterChartData(labels, chart.series, periods[chart.key]);
+            const filtered = filterChartData(
+              labels,
+              chart.series,
+              periods[chart.key],
+            );
             return (
               <LineChartCard
                 key={chart.key}

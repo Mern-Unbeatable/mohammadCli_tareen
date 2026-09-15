@@ -1,40 +1,25 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
-  fetchAdminDashboardStats,
-  fetchAdminStatistics,
   fetchUsersList,
   fetchUserDetails,
   updateUserStatus,
-} from "./adminThunks";
+} from "./usersThunks";
 
 const initialState = {
-  // Dashboard / statistics
-  stats: [],
-  statistics: null,
-  loading: false,
-  statisticsLoading: false,
-  statsError: null,
-  statisticsError: null,
-
-  // Users
   users: [],
   usersMeta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
   selectedUser: null,
   usersLoading: false,
   selectedUserLoading: false,
-
-  // Shared
   error: null,
 };
 
-const adminSlice = createSlice({
-  name: "admin",
+const usersSlice = createSlice({
+  name: "adminUsers",
   initialState,
   reducers: {
-    clearAdminError: (state) => {
+    clearUsersError: (state) => {
       state.error = null;
-      state.statsError = null;
-      state.statisticsError = null;
     },
     clearSelectedUser: (state) => {
       state.selectedUser = null;
@@ -42,39 +27,6 @@ const adminSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Dashboard KPIs
-      .addCase(fetchAdminDashboardStats.pending, (state) => {
-        state.loading = true;
-        state.statsError = null;
-        state.error = null;
-      })
-      .addCase(fetchAdminDashboardStats.fulfilled, (state, action) => {
-        state.loading = false;
-        state.stats = action.payload;
-        state.statsError = null;
-      })
-      .addCase(fetchAdminDashboardStats.rejected, (state, action) => {
-        state.loading = false;
-        state.stats = [];
-        state.statsError = action.payload;
-        state.error = action.payload;
-      })
-      // Statistics charts
-      .addCase(fetchAdminStatistics.pending, (state) => {
-        state.statisticsLoading = true;
-        state.statisticsError = null;
-      })
-      .addCase(fetchAdminStatistics.fulfilled, (state, action) => {
-        state.statisticsLoading = false;
-        state.statistics = action.payload;
-        state.statisticsError = null;
-      })
-      .addCase(fetchAdminStatistics.rejected, (state, action) => {
-        state.statisticsLoading = false;
-        state.statistics = null;
-        state.statisticsError = action.payload;
-        state.error = action.payload;
-      })
       // Users list
       .addCase(fetchUsersList.pending, (state) => {
         state.usersLoading = true;
@@ -114,5 +66,5 @@ const adminSlice = createSlice({
   },
 });
 
-export const { clearAdminError, clearSelectedUser } = adminSlice.actions;
-export default adminSlice.reducer;
+export const { clearUsersError, clearSelectedUser } = usersSlice.actions;
+export default usersSlice.reducer;
