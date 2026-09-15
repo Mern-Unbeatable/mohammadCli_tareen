@@ -4,6 +4,7 @@ import { IoIosArrowDown } from 'react-icons/io';
 import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
+import { getSafeRedirectPath } from '@/shared/routing/safeRedirect';
 
 const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
 const inputClass =
@@ -70,7 +71,7 @@ const PasswordField = ({ id, label, value, onChange, visible, onToggle, disabled
 
 const RegisterView = () => {
   const navigate = useNavigate();
-  const { register, loading } = useAuth();
+  const { register, loading, homePath } = useAuth();
 
   const [profileType, setProfileType] = useState('laboratory');
   const [firstName, setFirstName] = useState('');
@@ -135,7 +136,7 @@ const RegisterView = () => {
     }
 
     toast.success('Account created successfully!');
-    navigate(result.redirectTo || '/feed', { replace: true });
+    navigate(getSafeRedirectPath(result.redirectTo, homePath || '/feed'), { replace: true });
   };
 
   return (

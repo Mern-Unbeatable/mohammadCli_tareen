@@ -1,58 +1,113 @@
 import { Navigate } from 'react-router';
 import RequireRole from '@/shared/auth/RequireRole';
 import { USER_ROLES } from '@/shared/constants/roles';
+import { lazyPage } from '@/shared/routing/lazyPage';
 import UserDashboardLayout from '@/modules/user/layout/UserDashboardLayout';
-import FeedView from '@/modules/user/pages/feed/FeedView';
-import ContactsView from '@/modules/user/pages/contacts/ContactsView';
-import ContactProfileView from '@/modules/user/pages/contacts/ContactProfileView';
-import MarketplaceView from '@/modules/user/pages/marketplace/MarketplaceView';
-import SavedListingsView from '@/modules/user/pages/marketplace/SavedListingsView';
-import MyListingsView from '@/modules/user/pages/marketplace/MyListingsView';
-import CreateListingView from '@/modules/user/pages/marketplace/CreateListingView';
-import ListingDetailView from '@/modules/user/pages/marketplace/ListingDetailView';
-import RecruitmentView from '@/modules/user/pages/recruitment/RecruitmentView';
-import MyJobsView from '@/modules/user/pages/recruitment/MyJobsView';
-import PostJobView from '@/modules/user/pages/recruitment/PostJobView';
-import JobDetailView from '@/modules/user/pages/recruitment/JobDetailView';
-import GeneralView from '@/modules/user/pages/general/GeneralView';
-import MyGeneralPostsView from '@/modules/user/pages/general/MyGeneralPostsView';
-import GeneralPostDetailView from '@/modules/user/pages/general/GeneralPostDetailView';
-import MessagesView from '@/modules/user/pages/messages/MessagesView';
-import BlogsView from '@/modules/user/pages/blogs/BlogsView';
-import BlogDetailView from '@/modules/user/pages/blogs/BlogDetailView';
-import NotificationsView from '@/modules/user/pages/notifications/NotificationsView';
-import SubscriptionView from '@/modules/user/pages/subscription/SubscriptionView';
-import ProfileView from '@/modules/user/pages/profile/ProfileView';
-import ProfileSetupView from '@/modules/user/pages/profile/ProfileSetupView';
+
+const FeedView = lazyPage(() => import('@/modules/user/pages/feed/FeedView'));
+const ContactsView = lazyPage(() => import('@/modules/user/pages/contacts/ContactsView'));
+const ContactProfileView = lazyPage(() => import('@/modules/user/pages/contacts/ContactProfileView'));
+const MarketplaceView = lazyPage(() => import('@/modules/user/pages/marketplace/MarketplaceView'));
+const SavedListingsView = lazyPage(() => import('@/modules/user/pages/marketplace/SavedListingsView'));
+const MyListingsView = lazyPage(() => import('@/modules/user/pages/marketplace/MyListingsView'));
+const CreateListingView = lazyPage(() => import('@/modules/user/pages/marketplace/CreateListingView'));
+const ListingDetailView = lazyPage(() => import('@/modules/user/pages/marketplace/ListingDetailView'));
+const RecruitmentView = lazyPage(() => import('@/modules/user/pages/recruitment/RecruitmentView'));
+const MyJobsView = lazyPage(() => import('@/modules/user/pages/recruitment/MyJobsView'));
+const PostJobView = lazyPage(() => import('@/modules/user/pages/recruitment/PostJobView'));
+const JobDetailView = lazyPage(() => import('@/modules/user/pages/recruitment/JobDetailView'));
+const GeneralView = lazyPage(() => import('@/modules/user/pages/general/GeneralView'));
+const MyGeneralPostsView = lazyPage(() => import('@/modules/user/pages/general/MyGeneralPostsView'));
+const GeneralPostDetailView = lazyPage(() => import('@/modules/user/pages/general/GeneralPostDetailView'));
+const MessagesView = lazyPage(() => import('@/modules/user/pages/messages/MessagesView'));
+const BlogsView = lazyPage(() => import('@/modules/user/pages/blogs/BlogsView'));
+const BlogDetailView = lazyPage(() => import('@/modules/user/pages/blogs/BlogDetailView'));
+const NotificationsView = lazyPage(() => import('@/modules/user/pages/notifications/NotificationsView'));
+const SubscriptionView = lazyPage(() => import('@/modules/user/pages/subscription/SubscriptionView'));
+const ProfileView = lazyPage(() => import('@/modules/user/pages/profile/ProfileView'));
+const ProfileSetupView = lazyPage(() => import('@/modules/user/pages/profile/ProfileSetupView'));
 
 export const userRoutes = {
   element: <RequireRole allowedRoles={[USER_ROLES.USER]} />,
+  handle: { requiredRole: USER_ROLES.USER, audience: 'user' },
   children: [
     {
       element: <UserDashboardLayout />,
       children: [
-        { path: '/feed', element: <FeedView /> },
-        { path: '/contacts', element: <ContactsView /> },
-        { path: '/contacts/:contactId', element: <ContactProfileView /> },
-        { path: '/marketplace', element: <MarketplaceView /> },
-        { path: '/marketplace/saved', element: <SavedListingsView /> },
-        { path: '/marketplace/my-listings', element: <MyListingsView /> },
-        { path: '/marketplace/create', element: <CreateListingView /> },
-        { path: '/marketplace/:listingId', element: <ListingDetailView /> },
-        { path: '/recruitment', element: <RecruitmentView /> },
-        { path: '/recruitment/my-jobs', element: <MyJobsView /> },
-        { path: '/recruitment/create', element: <PostJobView /> },
-        { path: '/recruitment/:jobId', element: <JobDetailView /> },
-        { path: '/general', element: <GeneralView /> },
-        { path: '/general/my-posts', element: <MyGeneralPostsView /> },
-        { path: '/general/:postId', element: <GeneralPostDetailView /> },
-        { path: '/messages', element: <MessagesView /> },
-        { path: '/blogs', element: <BlogsView /> },
-        { path: '/blogs/:slug', element: <BlogDetailView /> },
-        { path: '/notifications', element: <NotificationsView /> },
-        { path: '/subscription', element: <SubscriptionView /> },
-        { path: '/profile', element: <ProfileView /> },
-        { path: '/profile/edit', element: <ProfileSetupView /> },
+        { path: '/feed', element: <FeedView />, handle: { title: 'Feed' } },
+        { path: '/contacts', element: <ContactsView />, handle: { title: 'Contacts' } },
+        {
+          path: '/contacts/:contactId',
+          element: <ContactProfileView />,
+          handle: { title: 'Contact' },
+        },
+        { path: '/marketplace', element: <MarketplaceView />, handle: { title: 'Marketplace' } },
+        {
+          path: '/marketplace/saved',
+          element: <SavedListingsView />,
+          handle: { title: 'Saved listings' },
+        },
+        {
+          path: '/marketplace/my-listings',
+          element: <MyListingsView />,
+          handle: { title: 'My listings' },
+        },
+        {
+          path: '/marketplace/create',
+          element: <CreateListingView />,
+          handle: { title: 'Create listing' },
+        },
+        {
+          path: '/marketplace/:listingId',
+          element: <ListingDetailView />,
+          handle: { title: 'Listing' },
+        },
+        { path: '/recruitment', element: <RecruitmentView />, handle: { title: 'Recruitment' } },
+        {
+          path: '/recruitment/my-jobs',
+          element: <MyJobsView />,
+          handle: { title: 'My jobs' },
+        },
+        {
+          path: '/recruitment/create',
+          element: <PostJobView />,
+          handle: { title: 'Post job' },
+        },
+        {
+          path: '/recruitment/:jobId',
+          element: <JobDetailView />,
+          handle: { title: 'Job' },
+        },
+        { path: '/general', element: <GeneralView />, handle: { title: 'General' } },
+        {
+          path: '/general/my-posts',
+          element: <MyGeneralPostsView />,
+          handle: { title: 'My posts' },
+        },
+        {
+          path: '/general/:postId',
+          element: <GeneralPostDetailView />,
+          handle: { title: 'Post' },
+        },
+        { path: '/messages', element: <MessagesView />, handle: { title: 'Messages' } },
+        { path: '/blogs', element: <BlogsView />, handle: { title: 'Blogs' } },
+        { path: '/blogs/:slug', element: <BlogDetailView />, handle: { title: 'Blog' } },
+        {
+          path: '/notifications',
+          element: <NotificationsView />,
+          handle: { title: 'Notifications' },
+        },
+        {
+          path: '/subscription',
+          element: <SubscriptionView />,
+          handle: { title: 'Subscription' },
+        },
+        { path: '/profile', element: <ProfileView />, handle: { title: 'Profile' } },
+        {
+          path: '/profile/edit',
+          element: <ProfileSetupView />,
+          handle: { title: 'Edit profile' },
+        },
         { path: '/dashboard', element: <Navigate to="/feed" replace /> },
       ],
     },
