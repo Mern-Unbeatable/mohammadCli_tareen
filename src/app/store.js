@@ -14,6 +14,7 @@ import { adminProfileReducer } from "../features/admin/profile";
 import { supplierDashboardReducer } from "../features/supplier/dashboard";
 import { supplierAdsReducer } from "../features/supplier/advertisements";
 import { supplierContactsReducer } from "../features/supplier/contacts";
+import { supplierRecruitmentReducer } from "../features/supplier/recruitment";
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     supplierDashboard: supplierDashboardReducer,
     supplierAds: supplierAdsReducer,
     supplierContacts: supplierContactsReducer,
+    supplierRecruitment: supplierRecruitmentReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
