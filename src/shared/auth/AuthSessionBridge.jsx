@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile, setSessionReady } from '@/features/auth/authSlice';
 import { tokenService } from '@/api/tokenService';
+import AppBootLoadingScreen from '@/shared/ui/AppBootLoadingScreen';
 
 /**
  * Bootstraps auth when a token cookie exists: revalidates via /auth/me.
@@ -26,11 +27,7 @@ const AuthSessionBridge = ({ children }) => {
   }, [dispatch]);
 
   if (!sessionReady) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] text-sm text-[#64748B]">
-        Loading session…
-      </div>
-    );
+    return <AppBootLoadingScreen />;
   }
 
   return children;
