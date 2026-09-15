@@ -47,7 +47,9 @@ export const API_ENDPOINTS = {
     },
 
     BLOGS: {
+      LIST: "/blogs",
       CREATE: "/blogs",
+      BY_SLUG: (slug) => `/blogs/${slug}`,
       UPDATE: (blogId) => `/blogs/${blogId}`,
       DELETE: (blogId) => `/blogs/${blogId}`,
     },

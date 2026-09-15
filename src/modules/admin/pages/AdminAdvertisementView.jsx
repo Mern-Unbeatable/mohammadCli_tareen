@@ -1,14 +1,24 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import DataTable from '@/components/data-display/DataTable/DataTable';
-import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
-import CategoryPill from '@/components/data-display/CategoryPill/CategoryPill';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import ReasonModal from '@/modules/admin/components/ReasonModal';
-import { ADMIN_AD_ROWS } from '@/modules/admin/data/advertisements';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+import DataTable from "@/components/data-display/DataTable/DataTable";
+import StatusBadge from "@/components/data-display/DataTable/StatusBadge";
+import CategoryPill from "@/components/data-display/CategoryPill/CategoryPill";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import ReasonModal from "@/modules/admin/components/ReasonModal";
+import {
+  fetchAdsList,
+  reviewAdvertisement,
+} from "@/features/admin/advertisements";
+import {
+  statusFilterToApi,
+  statusLabelToReviewApi,
+  toAdRowModel,
+} from "@/features/admin/advertisements/adsMappers";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 const AdCell = ({ row }) => (
   <div>
@@ -17,132 +27,174 @@ const AdCell = ({ row }) => (
   </div>
 );
 
+const buildAdsQuery = ({ page, statusFilter, search }) => {
+  const params = {
+    page,
+    pageSize: PAGE_SIZE,
+  };
+
+  const status = statusFilterToApi(statusFilter);
+  if (status) params.status = status;
+
+  const q = search?.trim();
+  if (q) params.search = q;
+
+  return params;
+};
+
 const AdminAdvertisementView = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [rows, setRows] = useState(ADMIN_AD_ROWS);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [search, setSearch] = useState('');
+
+  const { ads, adsMeta, adsLoading, actionLoading, error } = useSelector(
+    (state) => state.adminAds,
+  );
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [rejectTarget, setRejectTarget] = useState(null);
 
-  const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    return rows.filter((row) => {
-      const statusOk =
-        statusFilter === 'all' || row.status.toLowerCase() === statusFilter;
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
 
-      if (!statusOk) return false;
-      if (!query) return true;
+  useEffect(() => {
+    dispatch(
+      fetchAdsList(
+        buildAdsQuery({
+          page,
+          statusFilter,
+          search: debouncedSearch,
+        }),
+      ),
+    );
+  }, [dispatch, page, statusFilter, debouncedSearch]);
 
-      return [row.title, row.category, row.status, row.duration, row.uploadDate].some((field) =>
-        String(field).toLowerCase().includes(query)
-      );
-    });
-  }, [rows, statusFilter, search]);
+  const tableRows = useMemo(
+    () => (ads || []).map(toAdRowModel).filter(Boolean),
+    [ads],
+  );
 
-  const pageRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [filteredRows, page]);
+  const handleReview = async (adId, label, rejectionReason) => {
+    const apiStatus = statusLabelToReviewApi(label);
+    if (!apiStatus) {
+      toast.info("Pending is the default submission state and cannot be set by review.");
+      return;
+    }
 
-  const updateStatus = (rowId, status) => {
-    setRows((prev) => prev.map((row) => (row.id === rowId ? { ...row, status } : row)));
+    const result = await dispatch(
+      reviewAdvertisement({
+        adId,
+        status: apiStatus,
+        rejectionReason,
+      }),
+    );
+
+    if (reviewAdvertisement.fulfilled.match(result)) {
+      toast.success(`Advertisement marked ${label}`);
+      return;
+    }
+    toast.error(result.payload || "Failed to update advertisement");
   };
 
   const columns = useMemo(
     () => [
       {
-        key: 'title',
-        header: 'Advertisement',
+        key: "title",
+        header: "Advertisement",
         render: (_, row) => <AdCell row={row} />,
       },
       {
-        key: 'status',
-        header: 'Status',
+        key: "status",
+        header: "Status",
         render: (value) => <StatusBadge status={value} label={value} />,
       },
-      { key: 'views', header: 'Views' },
-      { key: 'clicks', header: 'Clicks' },
-      { key: 'duration', header: 'Duration' },
-      { key: 'uploadDate', header: 'Upload date' },
+      { key: "views", header: "Views" },
+      { key: "clicks", header: "Clicks" },
+      { key: "duration", header: "Duration" },
+      { key: "uploadDate", header: "Upload date" },
     ],
-    []
+    [],
   );
 
   const rowActions = (row) => [
     {
-      id: 'details',
-      label: 'See Details',
+      id: "details",
+      label: "See Details",
       onClick: () => navigate(`/admin/advertisement/${row.id}`),
     },
     {
-      id: 'active',
-      label: 'Active',
-      disabled: () => row.status === 'Active',
-      onClick: () => updateStatus(row.id, 'Active'),
+      id: "active",
+      label: "Active",
+      disabled: () => row.status === "Active" || actionLoading,
+      onClick: () => handleReview(row.id, "Active"),
     },
     {
-      id: 'pending',
-      label: 'Pending',
-      disabled: () => row.status === 'Pending',
-      onClick: () => updateStatus(row.id, 'Pending'),
+      id: "expired",
+      label: "Expired",
+      disabled: () => row.status === "Expired" || actionLoading,
+      onClick: () => handleReview(row.id, "Expired"),
     },
     {
-      id: 'expired',
-      label: 'Expired',
-      disabled: () => row.status === 'Expired',
-      onClick: () => updateStatus(row.id, 'Expired'),
-    },
-    {
-      id: 'rejected',
-      label: 'Rejected',
-      variant: 'danger',
-      disabled: () => row.status === 'Rejected',
+      id: "rejected",
+      label: "Rejected",
+      variant: "danger",
+      disabled: () => row.status === "Rejected" || actionLoading,
       onClick: () => setRejectTarget(row),
     },
   ];
 
   return (
     <PanelPage>
-      <PanelPageHeader title="Advertisement" subtitle="Manage advertisement post" />
+      <PanelPageHeader
+        title="Advertisement"
+        subtitle="Manage advertisement post"
+      />
+
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
 
       <DataTable
         showSearch
         searchValue={search}
-        onSearchChange={(value) => {
-          setSearch(value);
-          setPage(1);
-        }}
+        onSearchChange={setSearch}
         searchPlaceholder="Search advertisements..."
         showFilters
         filterLabel="Sort by:"
         filters={[
           {
-            id: 'status',
+            id: "status",
             value: statusFilter,
             options: [
-              { value: 'all', label: 'All Status' },
-              { value: 'active', label: 'Active' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'expired', label: 'Expired' },
-              { value: 'rejected', label: 'Rejected' },
+              { value: "all", label: "All Status" },
+              { value: "active", label: "Active" },
+              { value: "pending", label: "Pending" },
+              { value: "expired", label: "Expired" },
+              { value: "rejected", label: "Rejected" },
             ],
-            onChange: (value) => {
-              setStatusFilter(value);
-              setPage(1);
-            },
+            onChange: setStatusFilter,
           },
         ]}
         columns={columns}
-        data={pageRows}
+        data={tableRows}
+        loading={adsLoading}
         showActions
         getActions={rowActions}
         showPagination
         pagination={{
-          page,
+          page: adsMeta?.page || page,
           pageSize: PAGE_SIZE,
-          total: filteredRows.length,
+          total: adsMeta?.total || 0,
           onPageChange: setPage,
         }}
         tableMinWidth="1000px"
@@ -150,17 +202,19 @@ const AdminAdvertisementView = () => {
 
       <ReasonModal
         open={Boolean(rejectTarget)}
-        title="Rejected User"
-        submitLabel="Suspend"
-        placeholder="Why rejected this advertisement"
+        title="Reject advertisement"
+        submitLabel="Reject"
+        placeholder="Why reject this advertisement?"
         description={
           rejectTarget
             ? `Rejecting "${rejectTarget.title}" will remove it from active promotion.`
             : undefined
         }
         onClose={() => setRejectTarget(null)}
-        onConfirm={() => {
-          if (rejectTarget) updateStatus(rejectTarget.id, 'Rejected');
+        onConfirm={(reason) => {
+          if (rejectTarget) {
+            handleReview(rejectTarget.id, "Rejected", reason);
+          }
         }}
       />
     </PanelPage>

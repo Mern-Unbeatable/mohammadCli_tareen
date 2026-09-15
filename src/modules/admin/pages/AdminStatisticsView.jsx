@@ -7,9 +7,12 @@ import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
   fetchAdminDashboardStats,
-  fetchAdminStatistics,
   clearAdminError,
 } from "@/features/admin/dashboard";
+import {
+  fetchAdminStatistics,
+  clearStatisticsError,
+} from "@/features/admin/statistics";
 
 const PERIOD_OPTIONS = [
   "This year",
@@ -81,14 +84,12 @@ const ErrorState = ({ message, onRetry }) => (
  */
 const AdminStatisticsView = () => {
   const dispatch = useDispatch();
-  const {
-    stats,
-    statistics,
-    loading,
-    statisticsLoading,
-    statsError,
-    statisticsError,
-  } = useSelector((state) => state.adminDashboard);
+  const { stats, loading, statsError } = useSelector(
+    (state) => state.adminDashboard,
+  );
+  const { statistics, statisticsLoading, statisticsError } = useSelector(
+    (state) => state.adminStatistics,
+  );
 
   const [chartYear, setChartYear] = useState(String(currentYear));
   const [periods, setPeriods] = useState({
@@ -106,6 +107,7 @@ const AdminStatisticsView = () => {
 
   const load = () => {
     dispatch(clearAdminError());
+    dispatch(clearStatisticsError());
     dispatch(fetchAdminDashboardStats());
     dispatch(fetchAdminStatistics(Number(chartYear)));
   };

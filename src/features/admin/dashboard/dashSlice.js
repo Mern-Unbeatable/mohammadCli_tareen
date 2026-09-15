@@ -1,16 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
-import {
-  fetchAdminDashboardStats,
-  fetchAdminStatistics,
-} from "./dashThunks";
+import { fetchAdminDashboardStats } from "./dashThunks";
 
 const initialState = {
   stats: [],
-  statistics: null,
   loading: false,
-  statisticsLoading: false,
   statsError: null,
-  statisticsError: null,
   error: null,
 };
 
@@ -21,12 +15,10 @@ const dashSlice = createSlice({
     clearAdminError: (state) => {
       state.error = null;
       state.statsError = null;
-      state.statisticsError = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Dashboard KPIs
       .addCase(fetchAdminDashboardStats.pending, (state) => {
         state.loading = true;
         state.statsError = null;
@@ -41,22 +33,6 @@ const dashSlice = createSlice({
         state.loading = false;
         state.stats = [];
         state.statsError = action.payload;
-        state.error = action.payload;
-      })
-      // Statistics charts
-      .addCase(fetchAdminStatistics.pending, (state) => {
-        state.statisticsLoading = true;
-        state.statisticsError = null;
-      })
-      .addCase(fetchAdminStatistics.fulfilled, (state, action) => {
-        state.statisticsLoading = false;
-        state.statistics = action.payload;
-        state.statisticsError = null;
-      })
-      .addCase(fetchAdminStatistics.rejected, (state, action) => {
-        state.statisticsLoading = false;
-        state.statistics = null;
-        state.statisticsError = action.payload;
         state.error = action.payload;
       });
   },

@@ -1,21 +1,24 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import * as dashApi from "./dashApi";
+import * as statsApi from "./statsApi";
 
 /**
- * Admin dashboard async thunks — orchestration only; HTTP lives in dashApi.
+ * Admin statistics async thunks — orchestration only; HTTP in statsApi.
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-// Dashboard KPIs
+// Annual chart series
 // ═══════════════════════════════════════════════════════════════════════
-export const fetchAdminDashboardStats = createAsyncThunk(
-  "adminDashboard/fetchAdminDashboardStats",
-  async (_, { rejectWithValue }) => {
+export const fetchAdminStatistics = createAsyncThunk(
+  "adminStatistics/fetchAdminStatistics",
+  async (yearArg, { rejectWithValue }) => {
     try {
-      return await dashApi.getDashboardStats();
+      return await statsApi.getStatistics(yearArg);
     } catch (err) {
       return rejectWithValue(
-        dashApi.getApiErrorMessage(err, "Failed to load dashboard stats"),
+        statsApi.getApiErrorMessage(
+          err,
+          "Failed to load statistics chart data",
+        ),
       );
     }
   },
