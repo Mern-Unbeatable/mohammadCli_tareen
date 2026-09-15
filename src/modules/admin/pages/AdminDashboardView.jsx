@@ -1,28 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import StatCard from '@/components/data-display/StatCard/StatCard';
 import LineChartCard from '@/components/data-display/LineChartCard/LineChartCard';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import { fetchAdminDashboardStats, fetchAdminStatistics } from '@/features/admin/adminSlice';
 import {
-  DEMO_CHART_MONTHS,
-  DEMO_REVENUE_CHART,
-  DEMO_STAT_CARDS,
-  DEMO_USER_GROWTH_CHART,
-} from '@/data/demoData';
+  fetchAdminDashboardStats,
+  fetchAdminStatistics,
+  clearAdminError,
+} from '@/features/admin';
 
-const filterPeriodOptions = ['This year', 'This month', 'Last 3 months', 'Last 6 months'];
+const PERIOD_OPTIONS = ['This year', 'This month', 'Last 3 months', 'Last 6 months'];
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2].map(String);
 
 /**
- * Filters labels and series values based on selected period dropdown option
+ * Slice 12-month chart series by UI period within the selected calendar year.
  */
 const filterChartData = (rawLabels = [], rawSeries = [], selectedPeriod = 'This year') => {
   if (!rawLabels.length) return { labels: [], series: rawSeries };
 
-  const currentMonthIdx = new Date().getMonth(); // 0 to 11
-
+  const currentMonthIdx = new Date().getMonth();
   let startIndex = 0;
   let endIndex = rawLabels.length;
 
@@ -35,116 +35,184 @@ const filterChartData = (rawLabels = [], rawSeries = [], selectedPeriod = 'This 
   } else if (selectedPeriod === 'Last 6 months') {
     startIndex = Math.max(0, currentMonthIdx - 5);
     endIndex = currentMonthIdx + 1;
-  } else {
-    // 'This year'
-    startIndex = 0;
-    endIndex = rawLabels.length;
   }
 
-  const labels = rawLabels.slice(startIndex, endIndex);
-  const series = rawSeries.map((s) => ({
-    ...s,
-    values: (s.values || []).slice(startIndex, endIndex),
-  }));
-
-  return { labels, series };
+  return {
+    labels: rawLabels.slice(startIndex, endIndex),
+    series: rawSeries.map((s) => ({
+      ...s,
+      values: (s.values || []).slice(startIndex, endIndex),
+    })),
+  };
 };
+
+const EmptyState = ({ message }) => (
+  <div className="rounded-xl border border-dashed border-[#D0D5DD] bg-white px-6 py-10 text-center">
+    <p className="text-[14px] text-[#64748B]">{message}</p>
+  </div>
+);
+
+const ErrorState = ({ message, onRetry }) => (
+  <div className="flex flex-col items-center gap-3 rounded-xl border border-[#FEE4E2] bg-[#FFFBFA] px-6 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
+    <p className="text-[14px] font-medium text-[#B42318]">{message}</p>
+    {onRetry ? (
+      <button
+        type="button"
+        onClick={onRetry}
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Retry
+      </button>
+    ) : null}
+  </div>
+);
 
 const AdminDashboardView = () => {
   const dispatch = useDispatch();
-  const { stats, statistics, loading } = useSelector((state) => state.admin);
+  const {
+    stats,
+    statistics,
+    loading,
+    statisticsLoading,
+    statsError,
+    statisticsError,
+  } = useSelector((state) => state.admin);
 
-  const [userYear, setUserYear] = useState('This year');
-  const [revenueYear, setRevenueYear] = useState('This year');
+  const [chartYear, setChartYear] = useState(String(currentYear));
+  const [userPeriod, setUserPeriod] = useState('This year');
+  const [revenuePeriod, setRevenuePeriod] = useState('This year');
+
+  const loadDashboard = () => {
+    dispatch(clearAdminError());
+    dispatch(fetchAdminDashboardStats());
+    dispatch(fetchAdminStatistics(Number(chartYear)));
+  };
 
   useEffect(() => {
-    dispatch(fetchAdminDashboardStats());
-    dispatch(fetchAdminStatistics());
-  }, [dispatch]);
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when year changes
+  }, [dispatch, chartYear]);
 
-  // Use API stats if present, otherwise fallback to DEMO_STAT_CARDS
-  const displayStats = stats && stats.length > 0 ? stats : DEMO_STAT_CARDS;
+  const userGrowthSeries = useMemo(() => {
+    if (!statistics?.series) return [];
+    return [
+      {
+        id: 'newUsers',
+        label: 'New Users',
+        color: '#F97316',
+        values: statistics.series.newUsers || [],
+      },
+      {
+        id: 'newSubscribers',
+        label: 'Subscribers',
+        color: '#EC4899',
+        values: statistics.series.newSubscribers || [],
+      },
+    ];
+  }, [statistics]);
 
-  // Base API statistics or fallbacks
-  const rawChartLabels = statistics?.labels || DEMO_CHART_MONTHS;
-  const rawUserGrowthSeries = statistics?.series
-    ? [
-        {
-          id: 'newUsers',
-          label: 'New Users',
-          color: '#F97316',
-          values: statistics.series.newUsers || [],
-        },
-        {
-          id: 'newSubscribers',
-          label: 'Subscribers',
-          color: '#EC4899',
-          values: statistics.series.newSubscribers || [],
-        },
-      ]
-    : DEMO_USER_GROWTH_CHART.series;
+  const revenueSeries = useMemo(() => {
+    if (!statistics?.series) return [];
+    return [
+      {
+        id: 'monthlyRevenue',
+        label: 'Monthly Revenue (€)',
+        color: '#10B981',
+        values: statistics.series.monthlyRevenue || [],
+      },
+      {
+        id: 'yearlyRevenue',
+        label: 'Yearly Revenue (€)',
+        color: '#3B82F6',
+        values: statistics.series.yearlyRevenue || [],
+      },
+    ];
+  }, [statistics]);
 
-  const rawRevenueSeries = statistics?.series
-    ? [
-        {
-          id: 'monthlyRevenue',
-          label: 'Monthly Revenue (€)',
-          color: '#10B981',
-          values: statistics.series.monthlyRevenue || [],
-        },
-        {
-          id: 'yearlyRevenue',
-          label: 'Yearly Revenue (€)',
-          color: '#3B82F6',
-          values: statistics.series.yearlyRevenue || [],
-        },
-      ]
-    : DEMO_REVENUE_CHART.series;
+  const chartLabels = statistics?.labels || [];
+  const userGrowthFiltered = filterChartData(chartLabels, userGrowthSeries, userPeriod);
+  const revenueFiltered = filterChartData(chartLabels, revenueSeries, revenuePeriod);
 
-  // Apply active period filter to chart data
-  const userGrowthFiltered = filterChartData(rawChartLabels, rawUserGrowthSeries, userYear);
-  const revenueFiltered = filterChartData(rawChartLabels, rawRevenueSeries, revenueYear);
+  const hasStats = Array.isArray(stats) && stats.length > 0;
+  const hasCharts =
+    chartLabels.length > 0 &&
+    (userGrowthSeries.length > 0 || revenueSeries.length > 0);
 
   return (
     <PanelPage>
-      <PanelPageHeader
-        title="Dashboard"
-        subtitle="Overview of your Lab Unity platform."
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <PanelPageHeader
+          title="Dashboard"
+          subtitle="Overview of your Lab Unity platform."
+        />
+        <label className="relative inline-flex min-w-[120px] shrink-0 items-center self-start">
+          <span className="sr-only">Statistics year</span>
+          <select
+            value={chartYear}
+            onChange={(e) => setChartYear(e.target.value)}
+            className="h-9 w-full cursor-pointer appearance-none rounded-lg border border-[#E4E7EC] bg-white py-1.5 pl-3 pr-8 text-[13px] font-medium text-deep-blue outline-none focus:border-primary"
+          >
+            {YEAR_OPTIONS.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
+      {/* KPI cards */}
       {loading ? (
         <div className="flex h-28 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
           <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">
-            Loading statistics from API...
-          </span>
+          <span className="text-[14px] font-medium text-[#64748B]">Loading dashboard…</span>
         </div>
+      ) : statsError ? (
+        <ErrorState message={statsError} onRetry={loadDashboard} />
+      ) : !hasStats ? (
+        <EmptyState message="No dashboard statistics available yet." />
       ) : (
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6">
-          {displayStats.map((stat) => (
+          {stats.map((stat) => (
             <StatCard key={stat.id} {...stat} />
           ))}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <LineChartCard
-          title="User Growth"
-          series={userGrowthFiltered.series}
-          labels={userGrowthFiltered.labels}
-          yearOptions={filterPeriodOptions}
-          yearValue={userYear}
-          onYearChange={setUserYear}
+      {/* Charts */}
+      {statisticsLoading ? (
+        <div className="flex h-64 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+          <span className="text-[14px] font-medium text-[#64748B]">Loading charts…</span>
+        </div>
+      ) : statisticsError ? (
+        <ErrorState
+          message={statisticsError}
+          onRetry={() => dispatch(fetchAdminStatistics(Number(chartYear)))}
         />
-        <LineChartCard
-          title="Revenue"
-          series={revenueFiltered.series}
-          labels={revenueFiltered.labels}
-          yearOptions={filterPeriodOptions}
-          yearValue={revenueYear}
-          onYearChange={setRevenueYear}
-        />
-      </div>
+      ) : !hasCharts ? (
+        <EmptyState message="No chart data for the selected year." />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <LineChartCard
+            title="User Growth"
+            series={userGrowthFiltered.series}
+            labels={userGrowthFiltered.labels}
+            yearOptions={PERIOD_OPTIONS}
+            yearValue={userPeriod}
+            onYearChange={setUserPeriod}
+          />
+          <LineChartCard
+            title="Revenue"
+            series={revenueFiltered.series}
+            labels={revenueFiltered.labels}
+            yearOptions={PERIOD_OPTIONS}
+            yearValue={revenuePeriod}
+            onYearChange={setRevenuePeriod}
+          />
+        </div>
+      )}
     </PanelPage>
   );
 };

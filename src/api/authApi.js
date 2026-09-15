@@ -128,7 +128,10 @@ export const authApi = {
    * @param {{ currentPassword: string, newPassword: string, confirmPassword: string }} input
    */
   changePassword: async (input) => {
-    const response = await axiosInstance.patch(API_ENDPOINTS.USERS.CHANGE_PASSWORD, input);
+    const response = await axiosInstance.patch(
+      API_ENDPOINTS.USER.PROFILE.CHANGE_PASSWORD,
+      input,
+    );
     return unwrapApiData(response) ?? response;
   },
 };

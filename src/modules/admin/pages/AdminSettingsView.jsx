@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Calculator, Check, Trash2, Wallet } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Calculator, Check, Loader2, Trash2, Wallet } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
 import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
@@ -10,6 +11,14 @@ import {
   DEFAULT_SPONSORED_TIERS,
   SUBSCRIPTION_FEATURES,
 } from '@/modules/admin/data/settings';
+import { crudService, API_ENDPOINTS, unwrapApiData, getApiErrorMessage } from '@/api';
+
+const SETTINGS_KEYS = {
+  subscription: 'subscription_pricing',
+  sponsored: 'sponsored_pricing',
+  marketplaceCategories: 'marketplace_categories',
+  generalCategories: 'general_categories',
+};
 
 const inputClass =
   'w-full rounded-lg border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 lg:text-[15px]';
@@ -43,15 +52,61 @@ const PriceField = ({ id, label, value, onChange }) => (
 );
 
 const AdminSettingsView = () => {
+  const [loading, setLoading] = useState(true);
+  const [savingKey, setSavingKey] = useState(null);
   const [monthlyPrice, setMonthlyPrice] = useState('200.00');
   const [yearlyPrice, setYearlyPrice] = useState('18.00');
   const [sponsoredTiers, setSponsoredTiers] = useState(DEFAULT_SPONSORED_TIERS);
   const [marketplaceCategories, setMarketplaceCategories] = useState(
-    DEFAULT_MARKETPLACE_CATEGORIES
+    DEFAULT_MARKETPLACE_CATEGORIES,
   );
   const [generalCategories, setGeneralCategories] = useState(DEFAULT_GENERAL_CATEGORIES);
   const [newMarketplaceCategory, setNewMarketplaceCategory] = useState('');
   const [newGeneralCategory, setNewGeneralCategory] = useState('');
+
+  const loadSettings = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await crudService.get(API_ENDPOINTS.ADMIN.SETTINGS);
+      const data = unwrapApiData(response) || {};
+
+      const sub = data[SETTINGS_KEYS.subscription];
+      if (sub?.monthly != null) setMonthlyPrice(String(sub.monthly));
+      if (sub?.yearly != null) setYearlyPrice(String(sub.yearly));
+
+      const sponsored = data[SETTINGS_KEYS.sponsored];
+      if (Array.isArray(sponsored) && sponsored.length) {
+        setSponsoredTiers(sponsored);
+      }
+
+      const marketCats = data[SETTINGS_KEYS.marketplaceCategories];
+      if (Array.isArray(marketCats)) setMarketplaceCategories(marketCats);
+
+      const generalCats = data[SETTINGS_KEYS.generalCategories];
+      if (Array.isArray(generalCats)) setGeneralCategories(generalCats);
+    } catch (err) {
+      // Keep defaults when no settings exist yet
+      toast.info(getApiErrorMessage(err, 'Using default settings until saved.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const saveSetting = async (key, value, successMessage) => {
+    try {
+      setSavingKey(key);
+      await crudService.put(API_ENDPOINTS.ADMIN.SETTING(key), { value });
+      toast.success(successMessage);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save setting'));
+    } finally {
+      setSavingKey(null);
+    }
+  };
 
   const addCategory = (value, setter, listSetter) => {
     const trimmed = value.trim();
@@ -59,6 +114,21 @@ const AdminSettingsView = () => {
     listSetter((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
     setter('');
   };
+
+  if (loading) {
+    return (
+      <PanelPage>
+        <PanelPageHeader
+          title="Settings"
+          subtitle="Manage your subscription and Sponsored Price"
+        />
+        <div className="flex h-48 items-center justify-center rounded-xl bg-white shadow-sm">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+          <span className="text-[14px] text-[#64748B]">Loading settings…</span>
+        </div>
+      </PanelPage>
+    );
+  }
 
   return (
     <PanelPage>
@@ -94,8 +164,19 @@ const AdminSettingsView = () => {
                 onChange={(event) => setYearlyPrice(event.target.value)}
               />
             </div>
-            <button type="button" className={`${panelPrimaryBtn} w-full lg:w-auto lg:shrink-0`}>
-              Save
+            <button
+              type="button"
+              disabled={savingKey === SETTINGS_KEYS.subscription}
+              onClick={() =>
+                saveSetting(
+                  SETTINGS_KEYS.subscription,
+                  { monthly: monthlyPrice, yearly: yearlyPrice },
+                  'Subscription pricing saved',
+                )
+              }
+              className={`${panelPrimaryBtn} w-full lg:w-auto lg:shrink-0 disabled:opacity-60`}
+            >
+              {savingKey === SETTINGS_KEYS.subscription ? 'Saving…' : 'Save'}
             </button>
           </div>
 
@@ -142,14 +223,21 @@ const AdminSettingsView = () => {
                   onChange={(event) =>
                     setSponsoredTiers((prev) =>
                       prev.map((item) =>
-                        item.id === tier.id ? { ...item, price: event.target.value } : item
-                      )
+                        item.id === tier.id ? { ...item, price: event.target.value } : item,
+                      ),
                     )
                   }
                 />
               </div>
-              <button type="button" className={`${panelPrimaryBtn} w-full sm:w-auto sm:shrink-0`}>
-                Save
+              <button
+                type="button"
+                disabled={savingKey === SETTINGS_KEYS.sponsored}
+                onClick={() =>
+                  saveSetting(SETTINGS_KEYS.sponsored, sponsoredTiers, 'Sponsored pricing saved')
+                }
+                className={`${panelPrimaryBtn} w-full sm:w-auto sm:shrink-0 disabled:opacity-60`}
+              >
+                {savingKey === SETTINGS_KEYS.sponsored ? 'Saving…' : 'Save'}
               </button>
             </div>
           ))}
@@ -158,7 +246,23 @@ const AdminSettingsView = () => {
 
       <Card className="p-4 sm:p-5">
         <div className="mb-3 flex flex-col gap-3">
-          <h2 className={panelPageTheme.cardTitle}>Marketplace category</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className={panelPageTheme.cardTitle}>Marketplace category</h2>
+            <button
+              type="button"
+              disabled={savingKey === SETTINGS_KEYS.marketplaceCategories}
+              onClick={() =>
+                saveSetting(
+                  SETTINGS_KEYS.marketplaceCategories,
+                  marketplaceCategories,
+                  'Marketplace categories saved',
+                )
+              }
+              className={`${panelPrimaryBtn} disabled:opacity-60`}
+            >
+              {savingKey === SETTINGS_KEYS.marketplaceCategories ? 'Saving…' : 'Save categories'}
+            </button>
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
@@ -170,7 +274,11 @@ const AdminSettingsView = () => {
             <button
               type="button"
               onClick={() =>
-                addCategory(newMarketplaceCategory, setNewMarketplaceCategory, setMarketplaceCategories)
+                addCategory(
+                  newMarketplaceCategory,
+                  setNewMarketplaceCategory,
+                  setMarketplaceCategories,
+                )
               }
               className={`${panelPrimaryBtn} w-full sm:w-auto sm:shrink-0`}
             >
@@ -193,7 +301,23 @@ const AdminSettingsView = () => {
 
       <Card className="p-4 sm:p-5">
         <div className="mb-3 flex flex-col gap-3">
-          <h2 className={panelPageTheme.cardTitle}>General category</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className={panelPageTheme.cardTitle}>General category</h2>
+            <button
+              type="button"
+              disabled={savingKey === SETTINGS_KEYS.generalCategories}
+              onClick={() =>
+                saveSetting(
+                  SETTINGS_KEYS.generalCategories,
+                  generalCategories,
+                  'General categories saved',
+                )
+              }
+              className={`${panelPrimaryBtn} disabled:opacity-60`}
+            >
+              {savingKey === SETTINGS_KEYS.generalCategories ? 'Saving…' : 'Save categories'}
+            </button>
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"

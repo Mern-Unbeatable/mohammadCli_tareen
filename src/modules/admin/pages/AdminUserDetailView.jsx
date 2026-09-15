@@ -10,7 +10,7 @@ import ProfileHero, {
 import ActivitySection from '@/components/data-display/ActivitySection/ActivitySection';
 import { SubscriptionDetailsCard } from '@/modules/user/components/profile/ProfileSections';
 import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import { fetchUserDetails, clearSelectedUser } from '@/features/admin/adminSlice';
+import { fetchUserDetails, clearSelectedUser } from '@/features/admin';
 import { getAdminMemberPosts } from '@/modules/admin/data/users';
 
 const AdminUserDetailView = () => {
