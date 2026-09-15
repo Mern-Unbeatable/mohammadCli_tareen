@@ -3,8 +3,9 @@ import Cookies from 'js-cookie';
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user_info';
+const REMEMBER_KEY = 'auth_remember';
 
-/** Session cookie (no Expires) when remember is false */
+/** Persistent cookie lifetimes when remember=true */
 const REMEMBER_ACCESS_DAYS = 7;
 const REMEMBER_REFRESH_DAYS = 30;
 const REMEMBER_USER_DAYS = 7;
@@ -14,30 +15,38 @@ const baseCookieOptions = () => ({
   sameSite: 'Strict',
 });
 
+const withExpiry = (remember, days) => {
+  const options = { ...baseCookieOptions() };
+  if (remember) {
+    options.expires = days;
+  }
+  return options;
+};
+
 /**
- * Token Service handles reading, writing, and removing authentication tokens in Cookies.
- *
- * Note: Prefer server-set HttpOnly cookies for access/refresh tokens when the API supports
- * them. Until then, tokens remain in JS-readable cookies for Bearer auth.
+ * Token Service — JS-readable cookies for Bearer auth.
+ * Prefer server HttpOnly cookies when the API supports cookie sessions.
  */
 export const tokenService = {
+  getRemember: () => {
+    const raw = Cookies.get(REMEMBER_KEY);
+    if (raw === '0' || raw === 'false') return false;
+    return true;
+  },
+
+  setRemember: (remember) => {
+    Cookies.set(REMEMBER_KEY, remember ? '1' : '0', withExpiry(true, REMEMBER_REFRESH_DAYS));
+  },
+
   getToken: () => Cookies.get(TOKEN_KEY) || null,
 
-  /**
-   * @param {string} token
-   * @param {{ remember?: boolean, expires?: number }} [options]
-   *   remember=true → persistent cookie; remember=false → session cookie
-   */
   setToken: (token, options = {}) => {
-    const { remember = true, expires } = options;
-    const cookieOptions = { ...baseCookieOptions() };
-
-    if (typeof expires === 'number') {
-      cookieOptions.expires = expires;
-    } else if (remember) {
-      cookieOptions.expires = REMEMBER_ACCESS_DAYS;
-    }
-
+    const remember = options.remember ?? tokenService.getRemember();
+    const expires = options.expires;
+    const cookieOptions =
+      typeof expires === 'number'
+        ? { ...baseCookieOptions(), expires }
+        : withExpiry(remember, REMEMBER_ACCESS_DAYS);
     Cookies.set(TOKEN_KEY, token, cookieOptions);
   },
 
@@ -47,20 +56,13 @@ export const tokenService = {
 
   getRefreshToken: () => Cookies.get(REFRESH_TOKEN_KEY) || null,
 
-  /**
-   * @param {string} refreshToken
-   * @param {{ remember?: boolean, expires?: number }} [options]
-   */
   setRefreshToken: (refreshToken, options = {}) => {
-    const { remember = true, expires } = options;
-    const cookieOptions = { ...baseCookieOptions() };
-
-    if (typeof expires === 'number') {
-      cookieOptions.expires = expires;
-    } else if (remember) {
-      cookieOptions.expires = REMEMBER_REFRESH_DAYS;
-    }
-
+    const remember = options.remember ?? tokenService.getRemember();
+    const expires = options.expires;
+    const cookieOptions =
+      typeof expires === 'number'
+        ? { ...baseCookieOptions(), expires }
+        : withExpiry(remember, REMEMBER_REFRESH_DAYS);
     Cookies.set(REFRESH_TOKEN_KEY, refreshToken, cookieOptions);
   },
 
@@ -77,20 +79,13 @@ export const tokenService = {
     }
   },
 
-  /**
-   * @param {object} userData
-   * @param {{ remember?: boolean, expires?: number }} [options]
-   */
   setUser: (userData, options = {}) => {
-    const { remember = true, expires } = options;
-    const cookieOptions = { ...baseCookieOptions() };
-
-    if (typeof expires === 'number') {
-      cookieOptions.expires = expires;
-    } else if (remember) {
-      cookieOptions.expires = REMEMBER_USER_DAYS;
-    }
-
+    const remember = options.remember ?? tokenService.getRemember();
+    const expires = options.expires;
+    const cookieOptions =
+      typeof expires === 'number'
+        ? { ...baseCookieOptions(), expires }
+        : withExpiry(remember, REMEMBER_USER_DAYS);
     Cookies.set(USER_KEY, JSON.stringify(userData), cookieOptions);
   },
 
@@ -98,10 +93,30 @@ export const tokenService = {
     Cookies.remove(USER_KEY);
   },
 
+  /**
+   * Persist a full auth session from login/register/refresh payloads.
+   * @returns {{ accessToken: string|null, refreshToken: string|null, user: object|null }}
+   */
+  persistSession: ({ accessToken, refreshToken, user, remember = true } = {}) => {
+    tokenService.setRemember(Boolean(remember));
+    const opts = { remember: Boolean(remember) };
+
+    if (accessToken) tokenService.setToken(accessToken, opts);
+    if (refreshToken) tokenService.setRefreshToken(refreshToken, opts);
+    if (user) tokenService.setUser(user, opts);
+
+    return {
+      accessToken: accessToken || tokenService.getToken(),
+      refreshToken: refreshToken || tokenService.getRefreshToken(),
+      user: user || tokenService.getUser(),
+    };
+  },
+
   clearAuth: () => {
     Cookies.remove(TOKEN_KEY);
     Cookies.remove(REFRESH_TOKEN_KEY);
     Cookies.remove(USER_KEY);
+    Cookies.remove(REMEMBER_KEY);
   },
 };
 

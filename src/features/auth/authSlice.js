@@ -1,12 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import {
-  crudService,
-  API_ENDPOINTS,
-  tokenService,
-  getApiErrorMessage,
-  unwrapApiData,
-  unwrapUser,
-} from '../../api';
+import { authApi, tokenService, unwrapUser, getApiErrorMessage } from '../../api';
 
 /** Heal cookies/state if an older bug stored the API envelope as `user`. */
 const coerceStoredUser = (raw) => {
@@ -17,7 +10,6 @@ const coerceStoredUser = (raw) => {
 
 const initialUser = coerceStoredUser(tokenService.getUser());
 
-// Heal corrupted cookie shape from older /auth/me parsing
 if (
   initialUser &&
   typeof initialUser === 'object' &&
@@ -28,129 +20,108 @@ if (
   tokenService.setUser(initialUser);
 }
 
-// Initial Auth State
 const initialState = {
   user: initialUser,
   token: tokenService.getToken(),
   isAuthenticated: !!(tokenService.getToken() && initialUser),
   loading: false,
   error: null,
-  // When a token exists, AuthSessionBridge revalidates before marking ready.
   sessionReady: !tokenService.getToken(),
 };
 
-const persistSession = (payload, remember = true) => {
-  const payloadData = unwrapApiData(payload) || payload;
-  const accessToken = payloadData?.accessToken || payloadData?.token;
-  const refreshToken = payloadData?.refreshToken;
-  const user = unwrapUser(payloadData) || payloadData?.user || null;
-  const cookieOpts = { remember: Boolean(remember) };
-
-  if (accessToken) {
-    tokenService.setToken(accessToken, cookieOpts);
-  }
-  if (refreshToken) {
-    tokenService.setRefreshToken(refreshToken, cookieOpts);
-  }
-  if (user) {
-    tokenService.setUser(user, cookieOpts);
-  }
-
-  return {
-    accessToken: accessToken || null,
-    user,
-  };
-};
-
 /**
- * Login Async Thunk
+ * POST /auth/login
  */
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
     try {
-      const { remember = true, ...body } = credentials || {};
-      const response = await crudService.post(API_ENDPOINTS.AUTH.LOGIN, {
-        ...body,
-        remember,
-      });
-
-      const persisted = persistSession(response, remember);
-      const payloadData = unwrapApiData(response) || response;
-      return {
-        ...payloadData,
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        remember,
-      };
+      return await authApi.login(credentials);
     } catch (err) {
       return rejectWithValue(getApiErrorMessage(err, 'Invalid email or password'));
     }
-  }
+  },
 );
 
 /**
- * Register Async Thunk
+ * POST /auth/register
  */
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (formData, { rejectWithValue }) => {
     try {
       const { remember = true, ...body } = formData || {};
-      const response = await crudService.post(API_ENDPOINTS.AUTH.REGISTER, body);
-
-      const persisted = persistSession(response, remember);
-      const payloadData = unwrapApiData(response) || response;
-      return {
-        ...payloadData,
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        remember,
-      };
+      return await authApi.register(body, { remember });
     } catch (err) {
       return rejectWithValue(getApiErrorMessage(err, 'Registration failed'));
     }
-  }
+  },
 );
 
 /**
- * Fetch Profile Async Thunk — used on bootstrap to revalidate session
+ * GET /auth/me — bootstrap / revalidate
  */
 export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await crudService.get(API_ENDPOINTS.AUTH.ME);
-      // /auth/me → { success, data: user } (not { data: { user } })
-      const userData = unwrapUser(response);
-      if (!userData) {
-        tokenService.clearAuth();
-        return rejectWithValue('Invalid session profile response');
-      }
-      tokenService.setUser(userData);
-      return userData;
+      return await authApi.me();
     } catch (err) {
+      // Try one refresh then me again when access token expired but refresh is valid
+      try {
+        if (tokenService.getRefreshToken()) {
+          await authApi.refresh();
+          return await authApi.me();
+        }
+      } catch {
+        // fall through
+      }
       tokenService.clearAuth();
       return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch user profile'));
     }
-  }
+  },
 );
 
 /**
- * Logout Async Thunk
+ * POST /auth/refresh
  */
-export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
-  async (_, { dispatch }) => {
+export const refreshSession = createAsyncThunk(
+  'auth/refreshSession',
+  async (_, { rejectWithValue }) => {
     try {
-      await crudService.post(API_ENDPOINTS.AUTH.LOGOUT);
-    } catch {
-      // Ignore API logout error and clear local session anyway
-    } finally {
+      return await authApi.refresh();
+    } catch (err) {
       tokenService.clearAuth();
-      dispatch(authSlice.actions.resetAuth());
+      return rejectWithValue(getApiErrorMessage(err, 'Session expired'));
     }
+  },
+);
+
+/**
+ * POST /auth/logout { refreshToken }
+ */
+export const logoutUser = createAsyncThunk('auth/logoutUser', async (_, { dispatch }) => {
+  try {
+    await authApi.logout();
+  } catch {
+    tokenService.clearAuth();
+  } finally {
+    dispatch(authSlice.actions.resetAuth());
   }
+});
+
+/**
+ * PATCH /users/me/password
+ */
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (input, { rejectWithValue }) => {
+    try {
+      return await authApi.changePassword(input);
+    } catch (err) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to change password'));
+    }
+  },
 );
 
 const authSlice = createSlice({
@@ -171,6 +142,10 @@ const authSlice = createSlice({
     setSessionReady: (state, action) => {
       state.sessionReady = Boolean(action.payload);
     },
+    tokenRefreshed: (state, action) => {
+      state.token = action.payload || tokenService.getToken();
+      state.isAuthenticated = !!(state.token && state.user);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -182,7 +157,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
-        state.token = action.payload?.accessToken || action.payload?.token || null;
+        state.token = action.payload?.accessToken || null;
         state.sessionReady = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -197,7 +172,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
-        state.token = action.payload?.accessToken || action.payload?.token || null;
+        state.token = action.payload?.accessToken || null;
         state.sessionReady = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -209,8 +184,8 @@ const authSlice = createSlice({
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.user = action.payload;
-        state.isAuthenticated = !!(action.payload && (state.token || tokenService.getToken()));
-        state.token = state.token || tokenService.getToken();
+        state.token = tokenService.getToken();
+        state.isAuthenticated = !!(action.payload && state.token);
         state.sessionReady = true;
         state.error = null;
       })
@@ -220,9 +195,30 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.sessionReady = true;
         state.error = action.payload;
+      })
+      .addCase(refreshSession.fulfilled, (state, action) => {
+        state.token = action.payload?.accessToken || tokenService.getToken();
+        state.isAuthenticated = !!(state.token && state.user);
+      })
+      .addCase(refreshSession.rejected, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.sessionReady = true;
+      })
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { resetAuth, clearError, setSessionReady } = authSlice.actions;
+export const { resetAuth, clearError, setSessionReady, tokenRefreshed } = authSlice.actions;
 export default authSlice.reducer;
