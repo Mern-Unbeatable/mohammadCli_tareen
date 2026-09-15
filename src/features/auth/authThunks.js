@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { tokenService } from "@/api/tokenService";
+import { tokenService } from "@/api/cookies";
 import * as authApi from "./authApi";
 
 /**

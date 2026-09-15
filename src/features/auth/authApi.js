@@ -1,7 +1,7 @@
-import { API_ENDPOINTS } from "@/api/endpoints";
-import { tokenService } from "@/api/tokenService";
+import { API_ENDPOINTS } from "@/api/httpEndpoints";
+import { tokenService } from "@/api/cookies";
 import { unwrapApiData, unwrapUser } from "@/api/unwrapApiData";
-import { getApiErrorMessage } from "@/api/getApiErrorMessage";
+import { getApiErrorMessage } from "@/api/httpError";
 import axiosInstance, { bareAuthClient } from "@/api/axiosInstance";
 
 /**
@@ -10,7 +10,8 @@ import axiosInstance, { bareAuthClient } from "@/api/axiosInstance";
  */
 
 const toError = (error, fallback) => {
-  const payload = error?.response?.data?.error || error?.response?.data || error;
+  const payload =
+    error?.response?.data?.error || error?.response?.data || error;
   const message =
     payload?.message ||
     (typeof payload === "string" ? payload : null) ||

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { tokenService } from "@/api/tokenService";
+import { tokenService } from "@/api/cookies";
 import { unwrapUser } from "@/api/unwrapApiData";
 import {
   loginUser,
