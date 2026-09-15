@@ -151,13 +151,13 @@ export const API_ENDPOINTS = {
       THREAD: (conversationId) => `/messages/${conversationId}/messages`,
     },
 
-    CONNECTIONS: {
-      LIST: "/connections",
-      DETAILS: (connectionId) => `/connections/${connectionId}`,
-      REQUEST: "/connections/request",
-      ACCEPT: (connectionId) => `/connections/${connectionId}/accept`,
-      DECLINE: (connectionId) => `/connections/${connectionId}/decline`,
-      REMOVE: (connectionId) => `/connections/${connectionId}`,
+    CONTACTS: {
+      LIST: "/contacts",
+      DETAILS: (contactId) => `/contacts/${contactId}`,
+      REQUEST: "/contacts/request",
+      ACCEPT: (connectionId) => `/contacts/${connectionId}/accept`,
+      DECLINE: (connectionId) => `/contacts/${connectionId}/decline`,
+      REMOVE: (connectionId) => `/contacts/${connectionId}`,
     },
 
     PROFILE: {

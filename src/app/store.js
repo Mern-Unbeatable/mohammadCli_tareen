@@ -13,6 +13,7 @@ import { adminSettingsReducer } from "../features/admin/settings";
 import { adminProfileReducer } from "../features/admin/profile";
 import { supplierDashboardReducer } from "../features/supplier/dashboard";
 import { supplierAdsReducer } from "../features/supplier/advertisements";
+import { supplierContactsReducer } from "../features/supplier/contacts";
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ export const store = configureStore({
     adminProfile: adminProfileReducer,
     supplierDashboard: supplierDashboardReducer,
     supplierAds: supplierAdsReducer,
+    supplierContacts: supplierContactsReducer,
   },
 
   middleware: (getDefaultMiddleware) =>

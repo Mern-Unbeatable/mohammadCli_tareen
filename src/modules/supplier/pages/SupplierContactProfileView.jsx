@@ -1,34 +1,74 @@
-import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { ChevronLeft } from 'lucide-react';
-import ContactProfilePageContent from '@/components/data-display/ContactProfilePageContent/ContactProfilePageContent';
-import ReportPostModal from '@/modules/user/components/feed/ReportPostModal';
-import { feedPosts } from '@/modules/user/data/dashboard';
-import { getContactById } from '@/modules/user/data/contacts';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import NotFound from '@/shared/pages/NotFound';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
+import ContactProfilePageContent from "@/components/data-display/ContactProfilePageContent/ContactProfilePageContent";
+import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
+import {
+  fetchContactDetails,
+  requestContactConnection,
+  clearContactsError,
+  clearSelectedContact,
+  toContactProfileModel,
+} from "@/features/supplier/contacts";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import NotFound from "@/shared/pages/NotFound";
 
 const SupplierContactProfileView = () => {
   const { contactId } = useParams();
-  const contact = getContactById(contactId);
-  const [connected, setConnected] = useState(false);
-  const [pending, setPending] = useState(false);
+  const dispatch = useDispatch();
+  const {
+    selectedContact,
+    selectedContactLoading,
+    connectingId,
+    error,
+  } = useSelector((state) => state.supplierContacts);
+
   const [reportPost, setReportPost] = useState(null);
+  const [notFound, setNotFound] = useState(false);
 
-  const activity = useMemo(
-    () => feedPosts.filter((post) => contact?.postIds.includes(post.id)),
-    [contact]
-  );
+  useEffect(() => {
+    if (!contactId) return undefined;
+    dispatch(clearContactsError());
+    dispatch(fetchContactDetails(contactId)).then((result) => {
+      if (fetchContactDetails.rejected.match(result)) {
+        setNotFound(true);
+      }
+    });
+    return () => {
+      dispatch(clearSelectedContact());
+    };
+  }, [dispatch, contactId]);
 
+  useEffect(() => {
+    if (error && !selectedContactLoading) toast.error(error);
+  }, [error, selectedContactLoading]);
+
+  if (notFound) return <NotFound />;
+
+  if (selectedContactLoading || (!selectedContact && !error)) {
+    return (
+      <PanelPage>
+        <div className="flex h-64 items-center justify-center rounded-xl bg-white shadow-sm">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+          <span className="text-[14px] text-[#64748B]">Loading profile…</span>
+        </div>
+      </PanelPage>
+    );
+  }
+
+  const contact = toContactProfileModel(selectedContact);
   if (!contact) return <NotFound />;
 
-  const handleConnect = () => {
-    if (connected || pending) return;
-    setPending(true);
-    setTimeout(() => {
-      setPending(false);
-      setConnected(true);
-    }, 900);
+  const handleConnect = async () => {
+    if (contact.connected || contact.pending || connectingId === contact.id) {
+      return;
+    }
+    const result = await dispatch(requestContactConnection(contact.id));
+    if (requestContactConnection.fulfilled.match(result)) {
+      toast.success("Connection request sent");
+    }
   };
 
   return (
@@ -44,10 +84,10 @@ const SupplierContactProfileView = () => {
 
         <ContactProfilePageContent
           contact={contact}
-          posts={activity}
+          posts={[]}
           onReport={setReportPost}
-          connected={connected}
-          pending={pending}
+          connected={contact.connected}
+          pending={contact.pending || connectingId === contact.id}
           onConnect={handleConnect}
           messageHref="/supplier/messages"
         />
