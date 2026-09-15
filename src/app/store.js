@@ -9,6 +9,7 @@ import { adminMarketplaceReducer } from "../features/admin/marketplace";
 import { adminReportsReducer } from "../features/admin/reports";
 import { adminAdsReducer } from "../features/admin/advertisements";
 import { adminBlogsReducer } from "../features/admin/blogs";
+import { adminSettingsReducer } from "../features/admin/settings";
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     adminReports: adminReportsReducer,
     adminAds: adminAdsReducer,
     adminBlogs: adminBlogsReducer,
+    adminSettings: adminSettingsReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
