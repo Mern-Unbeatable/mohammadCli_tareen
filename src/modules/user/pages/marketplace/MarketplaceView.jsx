@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Pagination from '@/components/common/Pagination/Pagination';
+import { CardSkeleton } from '@/components/common/Skeleton';
 import Container from '@/components/ui/Container';
 import ListingCard from '@/components/data-display/ListingCard/ListingCard';
 import MarketplaceToolbar from '@/modules/user/components/marketplace/MarketplaceToolbar';
@@ -90,10 +90,11 @@ const MarketplaceView = () => {
           <h2 className="mb-4 text-[16px] font-bold text-deep-blue">Featured listings</h2>
 
           {listingsLoading && !pageItems.length ? (
-            <div className="flex h-40 items-center justify-center rounded-xl border border-[#E4E7EC] bg-white">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-              <span className="text-[14px] text-[#64748B]">Loading listings…</span>
-            </div>
+            <CardSkeleton
+              variant="listing"
+              count={GRID_PAGE_SIZE}
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            />
           ) : pageItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {pageItems.map((listing) => (

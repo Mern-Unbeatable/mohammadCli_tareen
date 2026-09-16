@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import JobCard from "@/components/data-display/JobCard/JobCard";
 import RecruitmentToolbar from "@/modules/user/components/recruitment/RecruitmentToolbar";
 import SupplierRecruitmentActions from "@/modules/supplier/components/SupplierRecruitmentActions";
@@ -15,6 +15,7 @@ import {
 } from "@/features/supplier/recruitment";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import { LIST_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
 const JOB_BASE = "/supplier/recruitment";
 
@@ -94,10 +95,11 @@ const SupplierMyJobsView = () => {
       />
 
       {jobsLoading && !filtered.length ? (
-        <div className="flex h-40 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] text-[#64748B]">Loading your jobs…</span>
-        </div>
+        <CardSkeleton
+          variant="job"
+          count={LIST_PAGE_SIZE}
+          className="space-y-4"
+        />
       ) : (
         <div className="space-y-4">
           {filtered.length > 0 ? (

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useDispatch } from "react-redux";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import {
   contactsApi,
   requestContactConnection,
@@ -33,18 +34,11 @@ const EmptyRow = ({ message }) => (
   <p className="px-4 py-6 text-center text-[12px] text-[#64748B]">{message}</p>
 );
 
-const LoadingRow = () => (
-  <div className="flex items-center justify-center gap-2 px-4 py-8 text-[12px] text-[#64748B]">
-    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-    Loading…
-  </div>
-);
-
 const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
   <Card>
     <SectionTitle>People you may know</SectionTitle>
     {loading && !people.length ? (
-      <LoadingRow />
+      <CardSkeleton variant="sidebarPerson" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
     ) : people.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {people.map((person) => {
@@ -107,7 +101,7 @@ const MarketplaceList = ({ items, loading }) => (
   <Card>
     <SectionTitle>Latest in the marketplace</SectionTitle>
     {loading && !items.length ? (
-      <LoadingRow />
+      <CardSkeleton variant="sidebarListing" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
     ) : items.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {items.map(({ id, title, meta, price, to }) => (
@@ -135,7 +129,7 @@ const JobsList = ({ items, loading }) => (
   <Card>
     <SectionTitle>Jobs for you</SectionTitle>
     {loading && !items.length ? (
-      <LoadingRow />
+      <CardSkeleton variant="sidebarJob" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
     ) : items.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {items.map(({ id, title, company, location, type, to }) => (

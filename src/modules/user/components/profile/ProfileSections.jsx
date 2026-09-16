@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
+import { CardSkeleton } from '@/components/common/Skeleton';
 import {
   cancelSubscription,
 } from '@/features/user/subscriptions';
@@ -139,9 +140,12 @@ export const MyReportsCard = ({ reports = [], loading = false }) => (
     </div>
 
     {loading && !reports.length ? (
-      <p className="px-5 py-8 text-center text-[13px] text-[#64748B] sm:px-6">
-        Loading reports…
-      </p>
+      <CardSkeleton
+        variant="reportRow"
+        count={3}
+        as="ul"
+        className="divide-y divide-[#E4E7EC]"
+      />
     ) : reports.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {reports.map((report) => (

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
+import { CardSkeleton } from '@/components/common/Skeleton';
 import JobCard from '@/components/data-display/JobCard/JobCard';
 import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
 import {
@@ -15,6 +15,7 @@ import {
   toJobCardModel,
   formatPostedAgo,
 } from '@/features/user/recruitment';
+import { LIST_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
 
 const JOB_BASE = '/recruitment';
 
@@ -115,10 +116,11 @@ const MyJobsView = () => {
 
         <div className="mt-6 space-y-4">
           {jobsLoading && !filtered.length ? (
-            <div className="flex h-40 items-center justify-center rounded-xl bg-white shadow-sm">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-              <span className="text-[14px] text-[#64748B]">Loading your jobs…</span>
-            </div>
+            <CardSkeleton
+              variant="job"
+              count={LIST_PAGE_SIZE}
+              className="space-y-4"
+            />
           ) : filtered.length > 0 ? (
             filtered.map((job, index) => (
               <JobCard
@@ -150,10 +152,11 @@ const MyJobsView = () => {
           </div>
 
           {applicationsLoading && !myApplications.length ? (
-            <div className="flex h-32 items-center justify-center rounded-xl bg-white shadow-sm">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-              <span className="text-[14px] text-[#64748B]">Loading applications…</span>
-            </div>
+            <CardSkeleton
+              variant="application"
+              count={3}
+              className="space-y-3"
+            />
           ) : myApplications.length ? (
             <div className="space-y-3">
               {myApplications.map((app) => (

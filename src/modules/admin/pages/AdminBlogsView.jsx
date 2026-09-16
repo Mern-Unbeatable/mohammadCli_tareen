@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import BlogAdminCard from "@/components/data-display/BlogAdminCard/BlogAdminCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
@@ -70,11 +70,12 @@ const AdminBlogsView = () => {
         </p>
       ) : null}
 
-      {blogsLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading blogs…
-        </div>
+      {blogsLoading && !pageItems.length ? (
+        <CardSkeleton
+          variant="generalPost"
+          count={8}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
       ) : pageItems.length === 0 ? (
         <p className="py-16 text-center text-sm text-[#64748B]">
           No blog posts yet. Create your first article.

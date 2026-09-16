@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import GeneralPostCard from "@/components/data-display/GeneralPostCard/GeneralPostCard";
 import GeneralToolbar from "@/modules/user/components/general/GeneralToolbar";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
@@ -76,11 +76,12 @@ const AdminGeneralView = () => {
         </p>
       ) : null}
 
-      {postsLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading posts…
-        </div>
+      {postsLoading && !pageItems.length ? (
+        <CardSkeleton
+          variant="generalPost"
+          count={8}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
       ) : pageItems.length === 0 ? (
         <p className="py-16 text-center text-sm text-[#64748B]">
           No general posts found for this filter.

@@ -4,12 +4,12 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   Search,
   Sparkles,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import Container from "@/components/ui/Container";
 import LatestHubCard from "@/components/data-display/BlogCard/LatestHubCard";
 import BlogGridCard from "@/components/data-display/BlogCard/BlogGridCard";
@@ -77,7 +77,6 @@ const SupplierBlogsView = () => {
   );
 
   const totalPages = Math.max(1, blogsMeta?.totalPages || 1);
-  const loading = blogsLoading || latestLoading;
 
   const scrollCarousel = (direction) => {
     const container = carouselRef.current;
@@ -167,11 +166,24 @@ const SupplierBlogsView = () => {
               </div>
             </div>
 
-            {loading && !latestItems.length ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-sm text-[#64748B]">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading articles…
-              </div>
+            {latestLoading && !latestItems.length ? (
+              <>
+                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:hidden">
+                  <CardSkeleton
+                    variant="blogHub"
+                    count={3}
+                    className="flex gap-3"
+                    itemClassName="w-[min(calc(100vw-2.5rem),320px)] shrink-0"
+                  />
+                </div>
+                <div className="hidden md:block">
+                  <CardSkeleton
+                    variant="blogHub"
+                    count={3}
+                    className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                  />
+                </div>
+              </>
             ) : (
               <>
                 <div
@@ -224,7 +236,13 @@ const SupplierBlogsView = () => {
               Previous Article
             </h2>
 
-            {archiveItems.length > 0 ? (
+            {blogsLoading && !archiveItems.length ? (
+              <CardSkeleton
+                variant="blogGrid"
+                count={GRID_PAGE_SIZE}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              />
+            ) : archiveItems.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {archiveItems.map((article) => (

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import ListingCard from "@/components/data-display/ListingCard/ListingCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
@@ -94,11 +94,12 @@ const AdminMarketplaceView = () => {
         </p>
       ) : null}
 
-      {listingsLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading listings…
-        </div>
+      {listingsLoading && !pageItems.length ? (
+        <CardSkeleton
+          variant="listing"
+          count={8}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
       ) : pageItems.length === 0 ? (
         <p className="py-16 text-center text-sm text-[#64748B]">
           No listings found for this category.

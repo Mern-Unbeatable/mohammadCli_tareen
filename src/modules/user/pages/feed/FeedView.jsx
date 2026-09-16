@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import LeftSidebar from "@/modules/user/components/shell/LeftSidebar";
 import RightSidebar from "@/modules/user/components/shell/RightSidebar";
 import FeedPost from "@/modules/user/components/feed/FeedPost";
@@ -119,9 +119,11 @@ const FeedView = () => {
             />
 
             {postsLoading && mappedPosts.length === 0 ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              </div>
+              <CardSkeleton
+                variant="feedPost"
+                count={3}
+                className="space-y-4"
+              />
             ) : mappedPosts.length === 0 ? (
               <p className="rounded-xl border border-[#E4E7EC] bg-white px-4 py-10 text-center text-[14px] text-[#64748B]">
                 No posts yet. Be the first to share something with the

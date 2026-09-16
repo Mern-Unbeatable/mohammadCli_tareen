@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import JobCard from "@/components/data-display/JobCard/JobCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
@@ -114,11 +115,12 @@ const AdminRecruitmentView = () => {
         </p>
       ) : null}
 
-      {jobsLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading jobs…
-        </div>
+      {jobsLoading && !pageItems.length ? (
+        <CardSkeleton
+          variant="job"
+          count={5}
+          className="space-y-3"
+        />
       ) : pageItems.length === 0 ? (
         <p className="py-16 text-center text-sm text-[#64748B]">
           No job listings found for these filters.

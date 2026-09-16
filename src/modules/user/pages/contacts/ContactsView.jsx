@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Pagination from '@/components/common/Pagination/Pagination';
+import { CardSkeleton } from '@/components/common/Skeleton';
 import Container from '@/components/ui/Container';
 import ContactCard from '@/components/data-display/ContactCard/ContactCard';
 import {
@@ -130,10 +130,11 @@ const ContactsView = () => {
         </p>
 
         {contactsLoading && !cards.length ? (
-          <div className="flex h-48 items-center justify-center rounded-xl bg-white shadow-sm">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-            <span className="text-[14px] text-[#64748B]">Loading contacts…</span>
-          </div>
+          <CardSkeleton
+            variant="contact"
+            count={GRID_PAGE_SIZE}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          />
         ) : cards.length ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cards.map((contact) => (
