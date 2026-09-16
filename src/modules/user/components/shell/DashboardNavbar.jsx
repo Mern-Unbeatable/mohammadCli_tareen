@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   BookOpen,
@@ -12,26 +12,23 @@ import {
   Store,
   Users,
   X,
-} from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router';
-<<<<<<< HEAD
-=======
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
->>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
-import logo from '@/assets/logo.png';
-import Avatar from '@/components/ui/Avatar';
-import Container from '@/components/ui/Container';
-import { useAuth } from '@/shared/auth/useAuth';
-import ProfileDropdown from './ProfileDropdown';
-import { navItems } from '@/modules/user/data/dashboard';
+} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import logo from "@/assets/logo.png";
+import Avatar from "@/components/ui/Avatar";
+import Container from "@/components/ui/Container";
+import { useAuth } from "@/shared/auth/useAuth";
+import ProfileDropdown from "./ProfileDropdown";
+import { navItems } from "@/modules/user/data/dashboard";
 import {
   fetchGlobalSearch,
   clearSearchResults,
   clearSearchError,
   toSearchResultsModel,
-} from '@/features/user/search';
-import { toProfilePageUser } from '@/features/user/profile';
+} from "@/features/user/search";
+import { toProfilePageUser } from "@/features/user/profile";
 
 const iconMap = {
   home: Home,
@@ -45,26 +42,26 @@ const iconMap = {
 };
 
 const resultLabel = (item, type) => {
-  if (type === 'users') {
+  if (type === "users") {
     return (
       item.name ||
-      [item.firstName, item.lastName].filter(Boolean).join(' ') ||
+      [item.firstName, item.lastName].filter(Boolean).join(" ") ||
       item.email ||
-      'User'
+      "User"
     );
   }
-  if (type === 'posts') return item.content || item.title || 'Post';
-  if (type === 'blogs') return item.title || item.slug || 'Blog';
-  return item.title || item.name || 'Result';
+  if (type === "posts") return item.content || item.title || "Post";
+  if (type === "blogs") return item.title || item.slug || "Blog";
+  return item.title || item.name || "Result";
 };
 
 const resultHref = (item, type) => {
-  if (type === 'users') return `/contacts/${item.id}`;
-  if (type === 'jobs') return `/recruitment/${item.id}`;
-  if (type === 'listings') return `/marketplace/${item.id}`;
-  if (type === 'posts') return '/feed';
-  if (type === 'blogs') return `/blogs/${item.slug || item.id}`;
-  return '#';
+  if (type === "users") return `/contacts/${item.id}`;
+  if (type === "jobs") return `/recruitment/${item.id}`;
+  if (type === "listings") return `/marketplace/${item.id}`;
+  if (type === "posts") return "/feed";
+  if (type === "blogs") return `/blogs/${item.slug || item.id}`;
+  return "#";
 };
 
 const SearchDropdown = ({ open, loading, groups, onSelect }) => {
@@ -107,47 +104,44 @@ const SearchDropdown = ({ open, loading, groups, onSelect }) => {
 
 const DashboardNavbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const mobileSearchRef = useRef(null);
   const desktopSearchRef = useRef(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const { logout } = useAuth();
-=======
   const dispatch = useDispatch();
   const { logout } = useAuth();
   const { results, loading, error } = useSelector((state) => state.userSearch);
   const { user } = useSelector((state) => state.userProfile);
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
->>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
 
   const closeMenu = () => setMenuOpen(false);
 
   const handleLogout = async () => {
     closeMenu();
     await logout();
-    navigate('/login', { replace: true });
+    navigate("/login", { replace: true });
   };
 
   const isNavActive = (item) => {
-    if (item.id === 'home') return pathname === '/feed';
-    if (item.id === 'contacts') return pathname.startsWith('/contacts');
-    if (item.id === 'marketplace') return pathname.startsWith('/marketplace');
-    if (item.id === 'recruitment') return pathname.startsWith('/recruitment');
-    if (item.id === 'general') return pathname.startsWith('/general');
-    if (item.id === 'messages') return pathname.startsWith('/messages');
-    if (item.id === 'blogs') return pathname.startsWith('/blogs');
-    if (item.id === 'notifications') return pathname.startsWith('/notifications');
+    if (item.id === "home") return pathname === "/feed";
+    if (item.id === "contacts") return pathname.startsWith("/contacts");
+    if (item.id === "marketplace") return pathname.startsWith("/marketplace");
+    if (item.id === "recruitment") return pathname.startsWith("/recruitment");
+    if (item.id === "general") return pathname.startsWith("/general");
+    if (item.id === "messages") return pathname.startsWith("/messages");
+    if (item.id === "blogs") return pathname.startsWith("/blogs");
+    if (item.id === "notifications")
+      return pathname.startsWith("/notifications");
     return pathname === item.to;
   };
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [menuOpen]);
 
@@ -175,19 +169,19 @@ const DashboardNavbar = () => {
       const inDesktop = desktopSearchRef.current?.contains(event.target);
       if (!inMobile && !inDesktop) setSearchOpen(false);
     };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
   const model = useMemo(() => toSearchResultsModel(results), [results]);
 
   const groups = useMemo(() => {
     const entries = [
-      ['users', 'People', model.users],
-      ['jobs', 'Jobs', model.jobs],
-      ['listings', 'Listings', model.listings],
-      ['posts', 'Posts', model.posts],
-      ['blogs', 'Blogs', model.blogs],
+      ["users", "People", model.users],
+      ["jobs", "Jobs", model.jobs],
+      ["listings", "Listings", model.listings],
+      ["posts", "Posts", model.posts],
+      ["blogs", "Blogs", model.blogs],
     ];
     return entries
       .map(([type, label, items]) => ({
@@ -202,9 +196,9 @@ const DashboardNavbar = () => {
 
   const handleSelect = (href) => {
     setSearchOpen(false);
-    setQuery('');
+    setQuery("");
     dispatch(clearSearchResults());
-    if (href && href !== '#') navigate(href);
+    if (href && href !== "#") navigate(href);
   };
 
   const onQueryChange = (value) => {
@@ -217,7 +211,11 @@ const DashboardNavbar = () => {
       <header className="sticky top-0 z-[70] border-b border-[#E4E7EC] bg-white">
         {/* Mobile & tablet */}
         <div className="mx-auto flex h-14 w-full items-center gap-1.5 px-4 sm:gap-2 sm:px-6 xl:hidden">
-          <Link to="/" className="flex shrink-0 items-center gap-2" onClick={closeMenu}>
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2"
+            onClick={closeMenu}
+          >
             <img src={logo} alt="Lab Unity" className="h-7 w-auto sm:h-8" />
             <span className="hidden text-[16px] font-bold text-deep-blue sm:inline lg:text-[17px]">
               Lab Unity
@@ -259,11 +257,15 @@ const DashboardNavbar = () => {
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-deep-blue hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
           >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
 
@@ -271,10 +273,15 @@ const DashboardNavbar = () => {
         <Container className="hidden h-[62px] items-center gap-4 xl:flex xl:gap-6">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src={logo} alt="Lab Unity" className="h-8 w-auto" />
-            <span className="text-[17px] font-bold text-deep-blue">Lab Unity</span>
+            <span className="text-[17px] font-bold text-deep-blue">
+              Lab Unity
+            </span>
           </Link>
 
-          <div ref={desktopSearchRef} className="relative mx-auto max-w-[420px] flex-1">
+          <div
+            ref={desktopSearchRef}
+            className="relative mx-auto max-w-[420px] flex-1"
+          >
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
               type="search"
@@ -303,8 +310,8 @@ const DashboardNavbar = () => {
                   to={to}
                   className={`flex min-w-[68px] flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     active
-                      ? 'text-primary'
-                      : 'text-[#64748B] hover:bg-[#F9FAFB] hover:text-deep-blue'
+                      ? "text-primary"
+                      : "text-[#64748B] hover:bg-[#F9FAFB] hover:text-deep-blue"
                   }`}
                 >
                   <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
@@ -314,7 +321,10 @@ const DashboardNavbar = () => {
             })}
           </nav>
 
-          <div className="mx-1 h-8 w-px shrink-0 bg-[#E4E7EC]" aria-hidden="true" />
+          <div
+            className="mx-1 h-8 w-px shrink-0 bg-[#E4E7EC]"
+            aria-hidden="true"
+          />
 
           <ProfileDropdown />
         </Container>
@@ -334,19 +344,19 @@ const DashboardNavbar = () => {
               <div className="mb-4 flex items-center gap-3 border-b border-[#E4E7EC] pb-4">
                 <Avatar
                   src={profileUser?.avatar}
-                  alt={profileUser?.name || 'Member'}
-                  initials={profileUser?.initials || 'MB'}
+                  alt={profileUser?.name || "Member"}
+                  initials={profileUser?.initials || "MB"}
                   size="md"
                   className="bg-[#FEF3C7] text-[#B45309]"
                 />
                 <div>
                   <p className="text-[14px] font-semibold text-deep-blue">
-                    {profileUser?.name || 'Member'}
+                    {profileUser?.name || "Member"}
                   </p>
                   <p className="text-[12px] text-[#64748B]">
                     {[profileUser?.title, profileUser?.company]
                       .filter(Boolean)
-                      .join(' · ')}
+                      .join(" · ")}
                   </p>
                 </div>
               </div>
@@ -362,8 +372,8 @@ const DashboardNavbar = () => {
                         onClick={closeMenu}
                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-[13px] font-medium transition-colors ${
                           active
-                            ? 'bg-secondary text-primary'
-                            : 'text-[#475467] hover:bg-[#F9FAFB]'
+                            ? "bg-secondary text-primary"
+                            : "text-[#475467] hover:bg-[#F9FAFB]"
                         }`}
                       >
                         <Icon className="h-5 w-5 shrink-0" />
