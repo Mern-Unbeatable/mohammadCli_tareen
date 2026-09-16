@@ -1,13 +1,25 @@
-import { useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import Pagination from '@/components/common/Pagination/Pagination';
-import JobCard from '@/components/data-display/JobCard/JobCard';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import { filterJobs, jobs, levels } from '@/modules/user/data/recruitment';
-import { LIST_PAGE_SIZE, usePaginatedList } from '@/shared/hooks/usePaginatedList';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import { ChevronDown } from "lucide-react";
+import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import JobCard from "@/components/data-display/JobCard/JobCard";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import {
+  fetchJobsList,
+  removeJob,
+} from "@/features/admin/recruitment";
+import {
+  RECRUITMENT_LEVEL_OPTIONS,
+  RECRUITMENT_TIME_OPTIONS,
+  levelToApi,
+  timeToApi,
+  toJobCardModel,
+} from "@/features/admin/recruitment/recruitmentMappers";
 
-const timeFilters = ['All Time', 'Last 7 days', 'Last 30 days', 'Last 90 days'];
+const PAGE_SIZE = 10;
 
 const FilterSelect = ({ label, value, options, onChange }) => (
   <label className="relative inline-flex w-full min-w-0 sm:min-w-[140px] sm:w-auto">
@@ -27,15 +39,52 @@ const FilterSelect = ({ label, value, options, onChange }) => (
   </label>
 );
 
-const AdminRecruitmentView = () => {
-  const [timeFilter, setTimeFilter] = useState('All Time');
-  const [level, setLevel] = useState('All');
+const buildJobsQuery = ({ page, timeFilter, level }) => {
+  const params = {
+    page,
+    pageSize: PAGE_SIZE,
+  };
 
-  const filtered = useMemo(() => filterJobs(jobs, '', level), [level]);
-  const { page, setPage, totalPages, pageItems } = usePaginatedList(filtered, LIST_PAGE_SIZE, [
-    level,
-    timeFilter,
-  ]);
+  const since = timeToApi(timeFilter);
+  if (since) params.since = since;
+
+  const levelApi = levelToApi(level);
+  if (levelApi) params.level = levelApi;
+
+  return params;
+};
+
+const AdminRecruitmentView = () => {
+  const dispatch = useDispatch();
+  const { jobs, jobsMeta, jobsLoading, error } = useSelector(
+    (state) => state.adminRecruitment,
+  );
+
+  const [timeFilter, setTimeFilter] = useState("All Time");
+  const [level, setLevel] = useState("All");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [timeFilter, level]);
+
+  useEffect(() => {
+    dispatch(fetchJobsList(buildJobsQuery({ page, timeFilter, level })));
+  }, [dispatch, page, timeFilter, level]);
+
+  const pageItems = useMemo(
+    () => (jobs || []).map(toJobCardModel).filter(Boolean),
+    [jobs],
+  );
+
+  const handleDelete = async (jobId) => {
+    const result = await dispatch(removeJob(jobId));
+    if (removeJob.fulfilled.match(result)) {
+      toast.success("Job deleted");
+      return;
+    }
+    toast.error(result.payload || "Failed to delete job");
+  };
 
   return (
     <PanelPage>
@@ -47,27 +96,55 @@ const AdminRecruitmentView = () => {
             <FilterSelect
               label="Time filter"
               value={timeFilter}
-              options={timeFilters}
+              options={RECRUITMENT_TIME_OPTIONS}
               onChange={setTimeFilter}
             />
-            <FilterSelect label="Level filter" value={level} options={levels} onChange={setLevel} />
+            <FilterSelect
+              label="Level filter"
+              value={level}
+              options={RECRUITMENT_LEVEL_OPTIONS}
+              onChange={setLevel}
+            />
           </div>
         }
       />
 
-      <div className="space-y-3">
-        {pageItems.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            variant="admin"
-            detailHref={`/admin/recruitment/${job.id}`}
-            onDelete={() => {}}
-          />
-        ))}
-      </div>
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-2" />
+      {jobsLoading && !pageItems.length ? (
+        <CardSkeleton
+          variant="job"
+          count={5}
+          className="space-y-3"
+        />
+      ) : pageItems.length === 0 ? (
+        <p className="py-16 text-center text-sm text-[#64748B]">
+          No job listings found for these filters.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {pageItems.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              variant="admin"
+              detailHref={`/admin/recruitment/${job.id}`}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      <Pagination
+        page={jobsMeta?.page || page}
+        totalPages={jobsMeta?.totalPages || 1}
+        onPageChange={setPage}
+        className="mt-2"
+      />
     </PanelPage>
   );
 };

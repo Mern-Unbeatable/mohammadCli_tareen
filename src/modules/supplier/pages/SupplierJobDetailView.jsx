@@ -1,14 +1,55 @@
-import { Link, useParams } from 'react-router';
-import { ChevronLeft } from 'lucide-react';
-import JobDetailCard from '@/components/data-display/JobDetailCard/JobDetailCard';
-import { getJobById } from '@/modules/user/data/recruitment';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import NotFound from '@/shared/pages/NotFound';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { ChevronLeft } from "lucide-react";
+import { toast } from "react-toastify";
+import JobDetailCard from "@/components/data-display/JobDetailCard/JobDetailCard";
+import { JobDetailSkeleton } from "@/components/common/Skeleton";
+import {
+  fetchSupplierJobDetails,
+  clearSelectedJob,
+  clearRecruitmentError,
+  toJobDetailModel,
+} from "@/features/supplier/recruitment";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import NotFound from "@/shared/pages/NotFound";
 
 const SupplierJobDetailView = () => {
   const { jobId } = useParams();
-  const job = getJobById(jobId);
+  const dispatch = useDispatch();
+  const { selectedJob, selectedJobLoading, error } = useSelector(
+    (state) => state.supplierRecruitment,
+  );
+  const [notFound, setNotFound] = useState(false);
 
+  useEffect(() => {
+    if (!jobId) return undefined;
+    dispatch(clearRecruitmentError());
+    dispatch(fetchSupplierJobDetails(jobId)).then((result) => {
+      if (fetchSupplierJobDetails.rejected.match(result)) {
+        setNotFound(true);
+      }
+    });
+    return () => {
+      dispatch(clearSelectedJob());
+    };
+  }, [dispatch, jobId]);
+
+  useEffect(() => {
+    if (error && !selectedJobLoading) toast.error(error);
+  }, [error, selectedJobLoading]);
+
+  if (notFound) return <NotFound />;
+
+  if (selectedJobLoading || (!selectedJob && !error)) {
+    return (
+      <PanelPage>
+        <JobDetailSkeleton />
+      </PanelPage>
+    );
+  }
+
+  const job = toJobDetailModel(selectedJob);
   if (!job) return <NotFound />;
 
   return (

@@ -1,27 +1,44 @@
-import { useEffect, useState } from 'react';
-import { X, Image, FileText } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
-import { currentUser } from '@/modules/user/data/dashboard';
+import { useEffect, useState } from "react";
+import { X, Image, FileText, Loader2 } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 
 const postTypes = [
-  { id: 'post', label: 'Create Post' },
-  { id: 'question', label: 'Ask a Question' },
-  { id: 'information', label: 'Share Information' },
+  { id: "information", label: "Create Post" },
+  { id: "question", label: "Ask a Question" },
+  { id: "suppliers", label: "Share Information" },
 ];
 
-const CreatePostModal = ({ open, onClose }) => {
-  const [postType, setPostType] = useState('post');
-  const [content, setContent] = useState('');
+const CreatePostModal = ({
+  open,
+  onClose,
+  user,
+  onPublish,
+  submitting = false,
+}) => {
+  const [postType, setPostType] = useState("information");
+  const [content, setContent] = useState("");
 
   useEffect(() => {
-    if (!open) return undefined;
-    document.body.style.overflow = 'hidden';
+    if (!open) {
+      setContent("");
+      setPostType("information");
+      return undefined;
+    }
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [open]);
 
   if (!open) return null;
+
+  const displayName = user?.name || "You";
+  const company = user?.company || "";
+
+  const handlePublish = async () => {
+    if (!content.trim() || submitting || !onPublish) return;
+    await onPublish({ type: postType, content });
+  };
 
   return (
     <div
@@ -37,7 +54,10 @@ const CreatePostModal = ({ open, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-[#E4E7EC] px-4 py-3.5 sm:px-5 sm:py-4">
-          <h2 id="create-post-title" className="text-[17px] font-bold text-deep-blue sm:text-[18px]">
+          <h2
+            id="create-post-title"
+            className="text-[17px] font-bold text-deep-blue sm:text-[18px]"
+          >
             Create Post
           </h2>
           <button
@@ -53,15 +73,15 @@ const CreatePostModal = ({ open, onClose }) => {
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           <div className="mb-4 flex items-center gap-3">
             <Avatar
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              initials={currentUser.initials}
+              src={user?.avatar}
+              alt={displayName}
+              initials={user?.initials || "U"}
               size="md"
             />
             <p className="text-[13px] text-[#64748B]">
-              Posting as{' '}
-              <span className="font-semibold text-deep-blue">{currentUser.name}</span> ·{' '}
-              {currentUser.company}
+              Posting as{" "}
+              <span className="font-semibold text-deep-blue">{displayName}</span>
+              {company ? ` · ${company}` : null}
             </p>
           </div>
 
@@ -73,8 +93,8 @@ const CreatePostModal = ({ open, onClose }) => {
                 onClick={() => setPostType(id)}
                 className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:px-3.5 sm:text-[12px] ${
                   postType === id
-                    ? 'border-primary bg-secondary text-primary'
-                    : 'border-[#E4E7EC] text-[#475467] hover:border-primary/40'
+                    ? "border-primary bg-secondary text-primary"
+                    : "border-[#E4E7EC] text-[#475467] hover:border-primary/40"
                 }`}
               >
                 {label}
@@ -93,7 +113,7 @@ const CreatePostModal = ({ open, onClose }) => {
           <div className="mt-3 rounded-lg bg-[#F9FAFB] px-3 py-5 text-center text-[13px] text-[#98A2B3] sm:px-4 sm:py-6">
             {content.trim()
               ? content
-              : 'Nothing written yet — your post will appear here as you type.'}
+              : "Nothing written yet — your post will appear here as you type."}
           </div>
         </div>
 
@@ -116,9 +136,11 @@ const CreatePostModal = ({ open, onClose }) => {
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="w-full rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 sm:w-auto sm:px-6"
+            disabled={!content.trim() || submitting}
+            onClick={handlePublish}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-6"
           >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Publish
           </button>
         </div>

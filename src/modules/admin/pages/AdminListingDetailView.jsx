@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { BadgeCheck, ChevronLeft, MessageCircle } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
-import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
-import { formatPrice, getListingById } from '@/modules/user/data/marketplace';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import NotFound from '@/shared/pages/NotFound';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useParams } from "react-router";
+import { BadgeCheck, ChevronLeft, MessageCircle } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import { ListingDetailSkeleton } from "@/components/common/Skeleton";
+import { formatPrice } from "@/modules/user/data/marketplace";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import NotFound from "@/shared/pages/NotFound";
+import {
+  fetchListingDetails,
+  clearSelectedListing,
+} from "@/features/admin/marketplace";
+import { toListingCardModel } from "@/features/admin/marketplace/marketplaceMappers";
 
 const SpecTile = ({ label, value }) => (
   <div className="rounded-xl border border-[#E4E7EC] bg-[#F9FAFB] px-4 py-3.5">
@@ -17,10 +24,40 @@ const SpecTile = ({ label, value }) => (
 
 const AdminListingDetailView = () => {
   const { listingId } = useParams();
-  const listing = getListingById(listingId);
+  const dispatch = useDispatch();
   const [activeImage, setActiveImage] = useState(0);
 
-  if (!listing) return <NotFound />;
+  const { selectedListing, selectedListingLoading, error } = useSelector(
+    (state) => state.adminMarketplace,
+  );
+
+  useEffect(() => {
+    if (listingId) {
+      dispatch(fetchListingDetails(listingId));
+    }
+    return () => {
+      dispatch(clearSelectedListing());
+    };
+  }, [dispatch, listingId]);
+
+  const listing = useMemo(
+    () => toListingCardModel(selectedListing),
+    [selectedListing],
+  );
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [listing?.id]);
+
+  if (selectedListingLoading) {
+    return (
+      <PanelPage>
+        <ListingDetailSkeleton />
+      </PanelPage>
+    );
+  }
+
+  if ((error && !selectedListing) || !listing) return <NotFound />;
 
   const images = listing.images?.length ? listing.images : [listing.image];
 
@@ -54,8 +91,8 @@ const AdminListingDetailView = () => {
                     aria-label={`View image ${index + 1}`}
                     className={`aspect-[4/3] overflow-hidden rounded-xl border-2 transition-colors ${
                       activeImage === index
-                        ? 'border-primary'
-                        : 'border-transparent hover:border-[#D0D5DD]'
+                        ? "border-primary"
+                        : "border-transparent hover:border-[#D0D5DD]"
                     }`}
                   >
                     <img src={src} alt="" className="h-full w-full object-cover" />
@@ -86,7 +123,10 @@ const AdminListingDetailView = () => {
                 <SpecTile label="Location" value={listing.location} />
                 <SpecTile label="Condition" value={listing.condition} />
                 <SpecTile label="Year of manufacture" value={listing.year} />
-                <SpecTile label="Exchange considered" value="Yes, against consumables" />
+                <SpecTile
+                  label="Listed"
+                  value={listing.listedAt || "—"}
+                />
               </div>
             </div>
           </Card>
@@ -127,18 +167,22 @@ const AdminListingDetailView = () => {
                   className={listing.seller.avatarClass}
                 />
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-deep-blue">{listing.seller.name}</p>
+                  <p className="text-[14px] font-semibold text-deep-blue">
+                    {listing.seller.name}
+                  </p>
                   <p className="mt-0.5 text-[12px] leading-snug text-[#64748B]">
                     {listing.seller.title} · {listing.seller.company}
                   </p>
                 </div>
               </div>
-              <Link
-                to={`/admin/users/amina-haddad`}
-                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-[13px] font-semibold text-primary hover:bg-[#E3EEF8]"
-              >
-                View seller profile
-              </Link>
+              {listing.seller.id ? (
+                <Link
+                  to={`/admin/users/${listing.seller.id}`}
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-[13px] font-semibold text-primary hover:bg-[#E3EEF8]"
+                >
+                  View seller profile
+                </Link>
+              ) : null}
             </Card>
           </div>
         </aside>

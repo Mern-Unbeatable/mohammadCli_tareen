@@ -1,15 +1,33 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
+<<<<<<< HEAD
 import { loginUser, registerUser, logoutUser, clearError } from '@/features/auth/authSlice';
+=======
+import {
+  loginUser,
+  registerUser,
+  logoutUser,
+  fetchUserProfile,
+  refreshSession,
+  changePassword,
+  clearError,
+} from '@/features/auth';
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
 import { normalizeAppRole, roleHomePath } from '@/shared/constants/roles';
 
 /**
- * Production custom hook connecting components directly to Redux Auth state & actions.
- * No React Context wrapper required.
+ * Auth hook — mirrors Postman Auth flow:
+ * login / register / refresh / logout / me / changePassword
  */
 export const useAuth = () => {
   const dispatch = useDispatch();
+<<<<<<< HEAD
   const { user, isAuthenticated, loading, error, sessionReady } = useSelector((state) => state.auth);
+=======
+  const { user, isAuthenticated, loading, error, sessionReady, token } = useSelector(
+    (state) => state.auth,
+  );
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
 
   const role = normalizeAppRole(user);
   const homePath = role ? roleHomePath(role) : '/login';
@@ -59,8 +77,39 @@ export const useAuth = () => {
     toast.info('Logged out successfully');
   };
 
+  const refresh = async () => {
+    const resultAction = await dispatch(refreshSession());
+    if (refreshSession.fulfilled.match(resultAction)) {
+      return { ok: true, ...resultAction.payload };
+    }
+    return { ok: false, error: resultAction.payload || 'Session expired.' };
+  };
+
+  const fetchProfile = async () => {
+    const resultAction = await dispatch(fetchUserProfile());
+    if (fetchUserProfile.fulfilled.match(resultAction)) {
+      return { ok: true, user: resultAction.payload };
+    }
+    return { ok: false, error: resultAction.payload || 'Failed to load profile.' };
+  };
+
+  const updatePassword = async (input) => {
+    const resultAction = await dispatch(changePassword(input));
+    if (changePassword.fulfilled.match(resultAction)) {
+      toast.success('Password updated');
+      return { ok: true };
+    }
+    const message = resultAction.payload || 'Failed to change password.';
+    toast.error(message);
+    return { ok: false, error: message };
+  };
+
   return {
     user,
+<<<<<<< HEAD
+=======
+    token,
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
     isAuthenticated: Boolean(isAuthenticated && user && role),
     loading,
     error,
@@ -69,6 +118,9 @@ export const useAuth = () => {
     login,
     register,
     logout,
+    refresh,
+    fetchProfile,
+    changePassword: updatePassword,
     clearError: () => dispatch(clearError()),
     homePath,
     isUser: role === 'USER',

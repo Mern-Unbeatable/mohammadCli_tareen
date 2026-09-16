@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   BadgeCheck,
   ChevronLeft,
   Heart,
   MessageCircle,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
 import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import { formatPrice, getListingById } from '@/modules/user/data/marketplace';
+import { ListingDetailSkeleton } from '@/components/common/Skeleton';
+import {
+  fetchListingDetails,
+  toggleSaveListing,
+  enquireListing,
+  clearMarketplaceError,
+  clearSelectedListing,
+  toListingDetailModel,
+} from '@/features/user/marketplace';
+import { formatPrice } from '@/modules/user/data/marketplace';
 import NotFound from '@/shared/pages/NotFound';
 
 const SpecTile = ({ label, value }) => (
@@ -23,11 +34,17 @@ const SpecTile = ({ label, value }) => (
 const ImageGallery = ({ images, title, activeImage, onSelect }) => (
   <div>
     <div className="overflow-hidden rounded-2xl bg-[#F9FAFB]">
-      <img
-        src={images[activeImage]}
-        alt={title}
-        className="aspect-[16/10] w-full object-cover"
-      />
+      {images[activeImage] ? (
+        <img
+          src={images[activeImage]}
+          alt={title}
+          className="aspect-[16/10] w-full object-cover"
+        />
+      ) : (
+        <div className="flex aspect-[16/10] w-full items-center justify-center text-[13px] text-[#98A2B3]">
+          No image
+        </div>
+      )}
     </div>
 
     {images.length > 1 && (
@@ -55,13 +72,80 @@ const ImageGallery = ({ images, title, activeImage, onSelect }) => (
 
 const ListingDetailView = () => {
   const { listingId } = useParams();
-  const listing = getListingById(listingId);
-  const [activeImage, setActiveImage] = useState(0);
-  const [saved, setSaved] = useState(false);
+  const dispatch = useDispatch();
+  const {
+    selectedListing,
+    selectedListingLoading,
+    enquiring,
+    error,
+  } = useSelector((state) => state.userMarketplace);
 
+  const [activeImage, setActiveImage] = useState(0);
+  const [enquireOpen, setEnquireOpen] = useState(false);
+  const [enquireMessage, setEnquireMessage] = useState('');
+
+  useEffect(() => {
+    dispatch(clearMarketplaceError());
+    dispatch(clearSelectedListing());
+    if (listingId) dispatch(fetchListingDetails(listingId));
+    return () => {
+      dispatch(clearSelectedListing());
+    };
+  }, [dispatch, listingId]);
+
+  useEffect(() => {
+    if (error && !selectedListingLoading) toast.error(error);
+  }, [error, selectedListingLoading]);
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [listingId, selectedListing?.id]);
+
+  if (selectedListingLoading && !selectedListing) {
+    return (
+      <main className="pt-6 pb-8 sm:pt-8">
+        <Container>
+          <ListingDetailSkeleton />
+        </Container>
+      </main>
+    );
+  }
+
+  if (!selectedListingLoading && !selectedListing) {
+    return <NotFound />;
+  }
+
+  const listing = toListingDetailModel(selectedListing);
   if (!listing) return <NotFound />;
 
-  const images = listing.images?.length ? listing.images : [listing.image];
+  const images = listing.images?.length ? listing.images : listing.image ? [listing.image] : [];
+  const saved = Boolean(listing.isSaved);
+
+  const handleToggleSave = async () => {
+    const result = await dispatch(toggleSaveListing(listing.id));
+    if (toggleSaveListing.rejected.match(result)) {
+      toast.error(result.payload || 'Failed to update saved listing');
+    }
+  };
+
+  const handleEnquire = async (e) => {
+    e.preventDefault();
+    const message = enquireMessage.trim();
+    if (!message) {
+      toast.error('Please enter a message');
+      return;
+    }
+    const result = await dispatch(
+      enquireListing({ listingId: listing.id, message }),
+    );
+    if (enquireListing.fulfilled.match(result)) {
+      toast.success('Enquiry sent');
+      setEnquireOpen(false);
+      setEnquireMessage('');
+      return;
+    }
+    toast.error(result.payload || 'Failed to send enquiry');
+  };
 
   return (
     <main className="pt-6 pb-8 sm:pt-8">
@@ -124,6 +208,7 @@ const ListingDetailView = () => {
               <div className="mt-5 space-y-2.5">
                 <button
                   type="button"
+                  onClick={() => setEnquireOpen(true)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -131,7 +216,7 @@ const ListingDetailView = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSaved((prev) => !prev)}
+                  onClick={handleToggleSave}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-pink-secondary px-4 py-2.5 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
                 >
                   <Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
@@ -165,17 +250,68 @@ const ListingDetailView = () => {
                     </p>
                   </div>
                 </div>
-                <Link
-                  to={`/contacts/${listing.seller.id}`}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-[13px] font-semibold text-primary hover:bg-[#E3EEF8]"
-                >
-                  View seller profile
-                </Link>
+                {listing.seller.id ? (
+                  <Link
+                    to={`/contacts/${listing.seller.id}`}
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-[13px] font-semibold text-primary hover:bg-[#E3EEF8]"
+                  >
+                    View seller profile
+                  </Link>
+                ) : null}
               </Card>
             </div>
           </aside>
         </div>
       </Container>
+
+      {enquireOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+          onClick={() => setEnquireOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-[420px] rounded-t-2xl bg-white p-5 sm:rounded-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="enquire-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="enquire-title" className="text-[17px] font-bold text-deep-blue">
+              Contact seller
+            </h2>
+            <p className="mt-1 text-[13px] text-[#64748B]">
+              Send a short message about this listing.
+            </p>
+            <form onSubmit={handleEnquire} className="mt-4 space-y-3">
+              <textarea
+                value={enquireMessage}
+                onChange={(e) => setEnquireMessage(e.target.value)}
+                rows={4}
+                placeholder="Hi, is this still available?"
+                className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+                required
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEnquireOpen(false)}
+                  className="rounded-md px-4 py-2 text-[13px] font-semibold text-[#64748B] hover:bg-[#F9FAFB]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={enquiring}
+                  className="rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#066BB0] disabled:opacity-60"
+                >
+                  {enquiring ? 'Sending…' : 'Send'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 };

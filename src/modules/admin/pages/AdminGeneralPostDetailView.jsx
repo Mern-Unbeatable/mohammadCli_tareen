@@ -1,19 +1,52 @@
-import { Link, useParams } from 'react-router';
-import { Calendar, ChevronLeft, MapPin, Share2 } from 'lucide-react';
-import { getGeneralPostById } from '@/modules/user/data/general';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import NotFound from '@/shared/pages/NotFound';
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useParams } from "react-router";
+import { Calendar, ChevronLeft, MapPin, Share2 } from "lucide-react";
+import { GeneralPostDetailSkeleton } from "@/components/common/Skeleton";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import NotFound from "@/shared/pages/NotFound";
+import {
+  fetchGeneralPostDetails,
+  clearSelectedPost,
+} from "@/features/admin/general";
+import { toGeneralPostModel } from "@/features/admin/general/generalMappers";
 
 const typeStyles = {
-  news: 'bg-[#FEF3E8] text-[#E67E22]',
-  document: 'bg-pink-secondary text-pink-light',
+  news: "bg-[#FEF3E8] text-[#E67E22]",
+  document: "bg-pink-secondary text-pink-light",
 };
 
 const AdminGeneralPostDetailView = () => {
   const { postId } = useParams();
-  const post = getGeneralPostById(postId);
+  const dispatch = useDispatch();
 
-  if (!post) return <NotFound />;
+  const { selectedPost, selectedPostLoading, error } = useSelector(
+    (state) => state.adminGeneral,
+  );
+
+  useEffect(() => {
+    if (postId) {
+      dispatch(fetchGeneralPostDetails(postId));
+    }
+    return () => {
+      dispatch(clearSelectedPost());
+    };
+  }, [dispatch, postId]);
+
+  const post = useMemo(
+    () => toGeneralPostModel(selectedPost),
+    [selectedPost],
+  );
+
+  if (selectedPostLoading) {
+    return (
+      <PanelPage>
+        <GeneralPostDetailSkeleton />
+      </PanelPage>
+    );
+  }
+
+  if ((error && !selectedPost) || !post) return <NotFound />;
 
   return (
     <PanelPage>
@@ -25,18 +58,20 @@ const AdminGeneralPostDetailView = () => {
         Back to General
       </Link>
 
-      <img
-        src={post.image}
-        alt=""
-        className="aspect-[21/9] w-full rounded-2xl object-cover sm:aspect-[16/7]"
-      />
+      {post.image ? (
+        <img
+          src={post.image}
+          alt=""
+          className="aspect-[21/9] w-full rounded-2xl object-cover sm:aspect-[16/7]"
+        />
+      ) : null}
 
       <span
         className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-          typeStyles[post.type]
+          typeStyles[post.type] || typeStyles.news
         }`}
       >
-        {post.type === 'news' ? 'News' : 'Document'}
+        {post.type === "news" ? "News" : "Document"}
       </span>
 
       <h1 className="text-[24px] font-bold leading-tight text-deep-blue sm:text-[28px]">
@@ -55,21 +90,26 @@ const AdminGeneralPostDetailView = () => {
       </div>
 
       <div className="space-y-4">
-        {post.body.map((paragraph) => (
-          <p key={paragraph} className="text-[14px] leading-[1.75] text-[#475467]">
+        {post.body.map((paragraph, index) => (
+          <p
+            key={`${index}-${paragraph.slice(0, 24)}`}
+            className="text-[14px] leading-[1.75] text-[#475467]"
+          >
             {paragraph}
           </p>
         ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {post.type === 'document' ? (
-          <button
-            type="button"
+        {post.type === "document" && post.documentUrl ? (
+          <a
+            href={post.documentUrl}
+            target="_blank"
+            rel="noreferrer"
             className="inline-flex flex-1 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0] sm:flex-none sm:min-w-[200px]"
           >
             Download
-          </button>
+          </a>
         ) : null}
         <button
           type="button"

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   crudService,
@@ -152,18 +153,72 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+=======
+import { createSlice } from "@reduxjs/toolkit";
+import { tokenService } from "@/api/cookies";
+import { unwrapUser } from "@/api/unwrapApiData";
+import {
+  loginUser,
+  registerUser,
+  fetchUserProfile,
+  refreshSession,
+  logoutUser,
+  changePassword,
+} from "./authThunks";
+
+/** Heal cookies/state if an older bug stored the API envelope as `user`. */
+const coerceStoredUser = (raw) => {
+  if (!raw || typeof raw !== "object") return raw;
+  if (raw.role || raw.email || raw.id) return raw;
+  return unwrapUser(raw) || raw;
+};
+
+const initialUser = coerceStoredUser(tokenService.getUser());
+
+if (
+  initialUser &&
+  typeof initialUser === "object" &&
+  initialUser.role &&
+  tokenService.getUser() &&
+  !tokenService.getUser().role
+) {
+  tokenService.setUser(initialUser);
+}
+
+const initialState = {
+  user: initialUser,
+  token: tokenService.getToken(),
+  isAuthenticated: !!(tokenService.getToken() && initialUser),
+  loading: false,
+  error: null,
+  sessionReady: !tokenService.getToken(),
+};
+
+const applyReset = (state) => {
+  state.user = null;
+  state.token = null;
+  state.isAuthenticated = false;
+  state.loading = false;
+  state.error = null;
+  state.sessionReady = true;
+};
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     resetAuth: (state) => {
+<<<<<<< HEAD
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
       state.sessionReady = true;
+=======
+      applyReset(state);
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
     },
     clearError: (state) => {
       state.error = null;
@@ -171,6 +226,19 @@ const authSlice = createSlice({
     setSessionReady: (state, action) => {
       state.sessionReady = Boolean(action.payload);
     },
+<<<<<<< HEAD
+=======
+    tokenRefreshed: (state, action) => {
+      state.token = action.payload || tokenService.getToken();
+      state.isAuthenticated = !!(state.token && state.user);
+    },
+    setUser: (state, action) => {
+      const user = coerceStoredUser(action.payload) || null;
+      state.user = user;
+      if (user) tokenService.setUser(user);
+      state.isAuthenticated = !!(state.token && user);
+    },
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
   },
   extraReducers: (builder) => {
     builder
@@ -182,7 +250,11 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
+<<<<<<< HEAD
         state.token = action.payload?.accessToken || action.payload?.token || null;
+=======
+        state.token = action.payload?.accessToken || null;
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
         state.sessionReady = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -197,20 +269,33 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
+<<<<<<< HEAD
         state.token = action.payload?.accessToken || action.payload?.token || null;
+=======
+        state.token = action.payload?.accessToken || null;
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
         state.sessionReady = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+<<<<<<< HEAD
+=======
+      // Profile bootstrap
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
       .addCase(fetchUserProfile.pending, (state) => {
         state.sessionReady = false;
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.user = action.payload;
+<<<<<<< HEAD
         state.isAuthenticated = !!(action.payload && (state.token || tokenService.getToken()));
         state.token = state.token || tokenService.getToken();
+=======
+        state.token = tokenService.getToken();
+        state.isAuthenticated = !!(action.payload && state.token);
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
         state.sessionReady = true;
         state.error = null;
       })
@@ -220,9 +305,47 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.sessionReady = true;
         state.error = action.payload;
+<<<<<<< HEAD
+=======
+      })
+      // Refresh
+      .addCase(refreshSession.fulfilled, (state, action) => {
+        state.token = action.payload?.accessToken || tokenService.getToken();
+        state.isAuthenticated = !!(state.token && state.user);
+      })
+      .addCase(refreshSession.rejected, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.sessionReady = true;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        applyReset(state);
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        applyReset(state);
+      })
+      // Change password
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
       });
   },
 });
 
+<<<<<<< HEAD
 export const { resetAuth, clearError, setSessionReady } = authSlice.actions;
+=======
+export const { resetAuth, clearError, setSessionReady, tokenRefreshed, setUser } =
+  authSlice.actions;
+>>>>>>> c808644a0c9b437c860d4ddfa30cdae891b67166
 export default authSlice.reducer;

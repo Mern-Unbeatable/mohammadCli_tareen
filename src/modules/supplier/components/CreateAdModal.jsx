@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 import {
   Check,
@@ -14,6 +15,7 @@ import {
   Video,
   X,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
 import AdDetailCard from '@/modules/supplier/components/AdDetailCard';
 import {
@@ -22,6 +24,11 @@ import {
   getCategoryById,
   getDurationById,
 } from '@/modules/supplier/data/advertisements';
+import {
+  createSupplierAd,
+  updateSupplierAd,
+  formToCreatePayload,
+} from '@/features/supplier/advertisements';
 import { panelPrimaryBtn, panelSecondaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 
 const STEPPER_STEPS_INITIAL = [
@@ -77,8 +84,10 @@ const defaultForm = {
   videoName: '',
 };
 
-const CreateAdModal = ({ open, onClose, onCreated }) => {
+const CreateAdModal = ({ open, onClose, onCreated, editAdId = null }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { saving } = useSelector((state) => state.supplierAds);
   const dialogRef = useRef(null);
   const [step, setStep] = useState('type');
   const [form, setForm] = useState(defaultForm);
@@ -208,18 +217,35 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
   const stepperSteps = step === 'type' ? STEPPER_STEPS_INITIAL : STEPPER_STEPS_FULL;
   const stepperCurrent = step;
 
-  const handlePay = () => {
-    setSuccess(true);
-    onCreated?.({
-      id: `ad-${Date.now()}`,
-      title: form.title || previewAd.title,
-      category: category?.label,
-      status: 'Pending',
-      views: '—',
-      clicks: '—',
-      duration: duration?.label || '14 days',
-      uploadDate: new Date().toISOString().slice(0, 10),
-    });
+  const handlePay = async () => {
+    if (saving) return;
+    const payload = formToCreatePayload(form);
+    if (!payload.title || !payload.description) {
+      setError('Please complete the advertisement details before submitting.');
+      return;
+    }
+
+    const result = editAdId
+      ? await dispatch(updateSupplierAd({ adId: editAdId, payload }))
+      : await dispatch(createSupplierAd(payload));
+
+    const matched = editAdId
+      ? updateSupplierAd.fulfilled.match(result)
+      : createSupplierAd.fulfilled.match(result);
+
+    if (matched) {
+      setSuccess(true);
+      onCreated?.(result.payload);
+      return;
+    }
+
+    const message =
+      result.payload ||
+      (editAdId
+        ? 'Failed to resubmit advertisement'
+        : 'Failed to create advertisement');
+    setError(message);
+    toast.error(message);
   };
 
   const handleFinish = () => {
@@ -324,8 +350,13 @@ const CreateAdModal = ({ open, onClose, onCreated }) => {
                   </button>
 
                   {step === 'payment' ? (
-                    <button type="button" onClick={handlePay} className={`${panelPrimaryBtn} min-w-0 flex-1`}>
-                      Pay {duration?.price || '€60'}
+                    <button
+                      type="button"
+                      onClick={handlePay}
+                      disabled={saving}
+                      className={`${panelPrimaryBtn} min-w-0 flex-1 disabled:opacity-60`}
+                    >
+                      {saving ? 'Submitting…' : `Pay ${duration?.price || '€60'}`}
                     </button>
                   ) : (
                     <button type="button" onClick={goNext} className={`${panelPrimaryBtn} min-w-0 flex-1`}>
