@@ -29,6 +29,8 @@ import { userSearchReducer } from "../features/user/search";
 import { userFeedReducer } from "../features/user/feed";
 import { userNotificationsReducer } from "../features/user/notifications";
 import { userSubscriptionsReducer } from "../features/user/subscriptions";
+import { userGeneralReducer } from "../features/user/general";
+import { userBlogsReducer } from "../features/user/blogs";
 
 export const store = configureStore({
   reducer: {
@@ -62,6 +64,8 @@ export const store = configureStore({
     userFeed: userFeedReducer,
     userNotifications: userNotificationsReducer,
     userSubscriptions: userSubscriptionsReducer,
+    userGeneral: userGeneralReducer,
+    userBlogs: userBlogsReducer,
   },
 
   middleware: (getDefaultMiddleware) =>

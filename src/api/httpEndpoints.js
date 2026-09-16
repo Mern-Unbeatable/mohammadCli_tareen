@@ -232,6 +232,11 @@ export const API_ENDPOINTS = {
       DELETE: (postId) => `/general/${postId}`,
     },
 
+    BLOGS: {
+      LIST: "/blogs",
+      DETAILS: (slug) => `/blogs/${slug}`,
+    },
+
     MESSAGES: {
       LIST: "/messages",
       DIRECT: "/messages/direct",

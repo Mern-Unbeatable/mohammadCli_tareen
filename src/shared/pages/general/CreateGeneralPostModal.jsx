@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { FileText, Newspaper, Paperclip, X } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import { useAuth } from "@/shared/auth/useAuth";
-import { generalAuthor } from "@/modules/user/data/general";
 
 const postTypes = [
   {
@@ -67,8 +66,9 @@ const CreateGeneralPostModal = ({
     [user?.profile?.firstName, user?.profile?.lastName]
       .filter(Boolean)
       .join(" ") ||
-    generalAuthor.name;
-  const authorCompany = user?.profile?.company || generalAuthor.company;
+    user?.email ||
+    "Member";
+  const authorCompany = user?.profile?.company || "";
   const authorInitials =
     user?.profile?.initials ||
     authorName
@@ -77,8 +77,8 @@ const CreateGeneralPostModal = ({
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase())
       .join("") ||
-    generalAuthor.initials;
-  const authorAvatar = user?.profile?.avatar || generalAuthor.avatar;
+    "MB";
+  const authorAvatar = user?.profile?.avatar || null;
 
   useEffect(() => {
     if (!open) return undefined;
