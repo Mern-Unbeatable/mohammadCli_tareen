@@ -4,6 +4,7 @@ import {
   unwrapApiData,
   getApiErrorMessage,
 } from "@/api";
+import { unwrapSubscribePayload } from "./subscriptionsMappers";
 
 /**
  * User subscriptions HTTP helpers — no Redux. Used by subscriptionsThunks.
@@ -26,6 +27,15 @@ export async function subscribe(plan) {
   const response = await crudService.post(
     API_ENDPOINTS.USER.SUBSCRIPTIONS.SUBSCRIBE,
     payload,
+  );
+  const data = unwrapApiData(response) || response;
+  return unwrapSubscribePayload(data);
+}
+
+export async function confirmCheckout(sessionId) {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.SUBSCRIPTIONS.CONFIRM_CHECKOUT,
+    { sessionId },
   );
   return unwrapApiData(response) || response;
 }

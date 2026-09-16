@@ -47,6 +47,22 @@ export const subscribe = createAsyncThunk(
   },
 );
 
+export const confirmCheckout = createAsyncThunk(
+  "userSubscriptions/confirmCheckout",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      return await subscriptionsApi.confirmCheckout(sessionId);
+    } catch (err) {
+      return rejectWithValue(
+        subscriptionsApi.getApiErrorMessage(
+          err,
+          "Failed to confirm checkout",
+        ),
+      );
+    }
+  },
+);
+
 export const cancelSubscription = createAsyncThunk(
   "userSubscriptions/cancelSubscription",
   async (_, { rejectWithValue }) => {

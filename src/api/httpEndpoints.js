@@ -270,6 +270,7 @@ export const API_ENDPOINTS = {
     SUBSCRIPTIONS: {
       ME: "/subscriptions/me",
       SUBSCRIBE: "/subscriptions/subscribe",
+      CONFIRM_CHECKOUT: "/subscriptions/confirm-checkout",
       CANCEL: "/subscriptions/cancel",
     },
 

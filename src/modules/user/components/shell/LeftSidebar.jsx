@@ -59,34 +59,61 @@ const ProfileCard = ({ user }) => {
 };
 
 const TrialCard = ({ user }) => {
-  if (!user || user.membershipStatus !== "trial") return null;
+  if (!user) return null;
 
-  const total = user.trialDaysTotal || 90;
-  const left = user.trialDaysLeft ?? 0;
-  const progress = Math.min(100, Math.max(0, ((total - left) / total) * 100));
+  if (user.membershipStatus === "trial") {
+    const total = user.trialDaysTotal || 90;
+    const left = user.trialDaysLeft ?? 0;
+    const progress = Math.min(100, Math.max(0, ((total - left) / total) * 100));
 
-  return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-semibold text-deep-blue">Free trial</p>
-        <span className="text-[12px] text-[#64748B]">
-          {left} of {total} days remaining
-        </span>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E4E7EC]">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${100 - progress}%` }}
-        />
-      </div>
-      <Link
-        to="/subscription"
-        className="mt-3 flex w-full items-center justify-center rounded-md border border-primary py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-      >
-        View plans
-      </Link>
-    </Card>
-  );
+    return (
+      <Card className="p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[13px] font-semibold text-deep-blue">Free trial</p>
+          <span className="text-[12px] text-[#64748B]">
+            {left} of {total} days remaining
+          </span>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E4E7EC]">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${100 - progress}%` }}
+          />
+        </div>
+        <Link
+          to="/subscription"
+          className="mt-3 flex w-full items-center justify-center rounded-md border border-primary py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+        >
+          View plans
+        </Link>
+      </Card>
+    );
+  }
+
+  if (
+    user.membershipStatus === "expired" ||
+    user.membershipStatus === "free" ||
+    (user.membershipStatus === "cancelled" && !user.isActive)
+  ) {
+    return (
+      <Card className="p-4">
+        <p className="text-[13px] font-semibold text-deep-blue">Membership</p>
+        <p className="mt-1 text-[12px] text-[#64748B]">
+          {user.membershipStatus === "expired"
+            ? "Your membership has expired."
+            : "Upgrade for full Lab Unity access."}
+        </p>
+        <Link
+          to="/subscription"
+          className="mt-3 flex w-full items-center justify-center rounded-md border border-primary py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+        >
+          View plans
+        </Link>
+      </Card>
+    );
+  }
+
+  return null;
 };
 
 const QuickLinksCard = () => (

@@ -3,6 +3,7 @@ import {
   fetchMySubscription,
   fetchPlans,
   subscribe,
+  confirmCheckout,
   cancelSubscription,
 } from "./subscriptionsThunks";
 
@@ -55,10 +56,23 @@ const subscriptionsSlice = createSlice({
       })
       .addCase(subscribe.fulfilled, (state, action) => {
         state.saving = false;
-        state.subscription = action.payload;
+        state.subscription =
+          action.payload?.subscription || action.payload || null;
       })
       .addCase(subscribe.rejected, (state, action) => {
         state.saving = false;
+        state.error = action.payload;
+      })
+      .addCase(confirmCheckout.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(confirmCheckout.fulfilled, (state, action) => {
+        state.loading = false;
+        state.subscription = action.payload;
+      })
+      .addCase(confirmCheckout.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       })
       .addCase(cancelSubscription.pending, (state) => {

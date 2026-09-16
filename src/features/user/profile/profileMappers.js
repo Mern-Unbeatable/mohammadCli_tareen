@@ -88,7 +88,17 @@ export function toProfilePageUser(user) {
     "Member";
   const subscription = user.subscription || {};
   const status = String(subscription.status || "").toUpperCase();
-  const isPremium = ["ACTIVE", "TRIAL"].includes(status);
+  const isActive = Boolean(
+    subscription.isActive ?? ["ACTIVE", "TRIAL"].includes(status),
+  );
+  const cancelAtPeriodEnd = Boolean(subscription.cancelAtPeriodEnd);
+
+  let membershipStatus = "free";
+  if (status === "TRIAL" && isActive) membershipStatus = "trial";
+  else if (status === "ACTIVE" && isActive) membershipStatus = "premium";
+  else if (status === "CANCELLED" && isActive) membershipStatus = "cancelled";
+  else if (status === "EXPIRED") membershipStatus = "expired";
+  else if (status === "CANCELLED") membershipStatus = "cancelled";
 
   return {
     id: user.id,
@@ -115,16 +125,15 @@ export function toProfilePageUser(user) {
     avatar: profile.avatar || null,
     coverPhoto: profile.coverPhoto || null,
     connections: profile.connections ?? 0,
-    membershipStatus: isPremium
-      ? status === "TRIAL"
-        ? "trial"
-        : "premium"
-      : "free",
+    membershipStatus,
+    isActive,
+    cancelAtPeriodEnd,
     trialDaysLeft: subscription.trialDaysLeft ?? 0,
     trialDaysTotal: subscription.trialDaysTotal ?? 90,
     subscription: {
       planName: formatPlanName(subscription.plan),
       status: formatStatusLabel(subscription.status),
+      statusKey: status,
       startDate: formatDisplayDate(subscription.startDate),
       renewalDate: formatDisplayDate(subscription.renewalDate),
       amount:
@@ -134,6 +143,11 @@ export function toProfilePageUser(user) {
       billingCycle: subscription.billingCycle || null,
       nextPayment: formatDisplayDate(subscription.nextPayment),
       paymentMethod: subscription.paymentMethod || null,
+      accessEndsAt: formatDisplayDate(
+        subscription.accessEndsAt || subscription.renewalDate,
+      ),
+      cancelAtPeriodEnd,
+      isActive,
     },
     raw: user,
   };

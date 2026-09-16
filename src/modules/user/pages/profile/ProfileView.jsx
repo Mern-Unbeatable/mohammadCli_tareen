@@ -39,8 +39,13 @@ const ProfileView = () => {
 
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const isPremium =
+    profileUser?.isActive ||
     profileUser?.membershipStatus === "premium" ||
-    profileUser?.membershipStatus === "trial";
+    profileUser?.membershipStatus === "trial" ||
+    profileUser?.membershipStatus === "cancelled";
+  const showSubscriptionCard =
+    Boolean(profileUser?.subscription) &&
+    ["premium", "trial", "cancelled"].includes(profileUser?.membershipStatus);
 
   const activity = useMemo(
     () => (posts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
@@ -94,7 +99,7 @@ const ProfileView = () => {
             onReport={setReportPost}
             isPremium={isPremium}
             subscriptionSlot={
-              isPremium ? (
+              showSubscriptionCard ? (
                 <SubscriptionDetailsCard
                   subscription={profileUser.subscription}
                 />
@@ -106,7 +111,7 @@ const ProfileView = () => {
             <MyReportsCard reports={myReports} loading={reportsLoading} />
           </div>
 
-          {!isPremium && (
+          {!profileUser.isActive && (
             <p className="mt-6 text-center text-[13px] text-[#64748B]">
               Want full access?{" "}
               <Link

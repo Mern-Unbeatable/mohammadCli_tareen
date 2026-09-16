@@ -13,11 +13,13 @@ export {
   fetchMySubscription,
   fetchPlans,
   subscribe,
+  confirmCheckout,
   cancelSubscription,
 } from "./subscriptionsThunks";
 export {
   toPlanModel,
   toSubscriptionModel,
   toPlansList,
+  unwrapSubscribePayload,
 } from "./subscriptionsMappers";
 export * as subscriptionsApi from "./subscriptionsApi";

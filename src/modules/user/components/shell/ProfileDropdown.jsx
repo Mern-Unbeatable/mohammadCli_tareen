@@ -47,6 +47,10 @@ const ProfileDropdown = () => {
   const displayName = profile?.name || 'Member';
   const subtitle = [profile?.title, profile?.company].filter(Boolean).join(' · ');
   const isTrial = profile?.membershipStatus === 'trial';
+  const showUpgrade =
+    !profile?.isActive ||
+    profile?.membershipStatus === 'expired' ||
+    profile?.membershipStatus === 'free';
 
   return (
     <div ref={rootRef} className="relative shrink-0">
@@ -86,6 +90,23 @@ const ProfileDropdown = () => {
               <div className="rounded-lg bg-[#FEF9E6] px-3.5 py-3">
                 <p className="text-[13px] font-semibold text-deep-blue">
                   Free trial · {profile.trialDaysLeft} days left
+                </p>
+                <Link
+                  to="/subscription"
+                  onClick={close}
+                  className="mt-1 inline-block text-[12px] font-semibold text-primary hover:underline"
+                >
+                  View membership plans
+                </Link>
+              </div>
+            </div>
+          ) : showUpgrade ? (
+            <div className="border-b border-[#E4E7EC] px-4 py-3">
+              <div className="rounded-lg bg-[#F9FAFB] px-3.5 py-3">
+                <p className="text-[13px] font-semibold text-deep-blue">
+                  {profile?.membershipStatus === 'expired'
+                    ? 'Membership expired'
+                    : 'Unlock full access'}
                 </p>
                 <Link
                   to="/subscription"

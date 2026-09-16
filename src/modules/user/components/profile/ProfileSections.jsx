@@ -29,15 +29,31 @@ export const SubscriptionDetailsCard = ({ subscription }) => {
   const dispatch = useDispatch();
   const { saving } = useSelector((state) => state.userSubscriptions);
   const details = { ...emptySubscription, ...(subscription || {}) };
+  const statusKey = String(
+    details.statusKey || details.status || '',
+  ).toUpperCase();
   const canCancel =
-    String(details.status || '').toUpperCase() === 'ACTIVE' ||
-    String(details.status || '').toLowerCase() === 'active';
+    (statusKey === 'ACTIVE' || statusKey === 'TRIAL') &&
+    !details.cancelAtPeriodEnd;
+
+  const statusClass =
+    statusKey === 'ACTIVE'
+      ? 'bg-green-secondary text-green-primary'
+      : statusKey === 'TRIAL'
+        ? 'bg-[#FEF9E6] text-[#B8860B]'
+        : statusKey === 'CANCELLED'
+          ? 'bg-[#FEF3E8] text-[#E67E22]'
+          : 'bg-[#FEE2E2] text-[#DC2626]';
 
   const handleCancel = async () => {
     if (!canCancel || saving) return;
     const result = await dispatch(cancelSubscription());
     if (cancelSubscription.fulfilled.match(result)) {
-      toast.success('Subscription cancelled');
+      toast.success(
+        statusKey === 'TRIAL'
+          ? 'Trial cancelled'
+          : 'Subscription cancelled — access continues until period end',
+      );
       dispatch(fetchUserProfile());
     } else if (cancelSubscription.rejected.match(result)) {
       toast.error(result.payload || 'Failed to cancel subscription');
@@ -56,17 +72,24 @@ export const SubscriptionDetailsCard = ({ subscription }) => {
           ['Plan Name', details.planName],
           ['Status', details.status, true],
           ['Start Date', details.startDate],
-          ['Renewal Date', details.renewalDate],
+          [
+            details.cancelAtPeriodEnd ? 'Access Until' : 'Renewal Date',
+            details.cancelAtPeriodEnd
+              ? details.accessEndsAt || details.renewalDate
+              : details.renewalDate,
+          ],
           ['Amount', details.amount],
           ['Billing Cycle', details.billingCycle],
-          ['Next Payment', details.nextPayment],
+          ['Next Payment', details.cancelAtPeriodEnd ? '—' : details.nextPayment],
           ['Payment Method', details.paymentMethod],
         ].map(([label, value, isStatus]) => (
           <div key={label} className="flex items-center justify-between gap-4 py-3.5">
             <dt className="text-[13px] text-[#64748B]">{label}</dt>
             <dd className="text-right text-[13px] font-semibold text-deep-blue">
               {isStatus ? (
-                <span className="inline-flex rounded-full bg-green-secondary px-2.5 py-0.5 text-[11px] font-semibold text-green-primary">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusClass}`}
+                >
                   {value}
                 </span>
               ) : (
@@ -85,7 +108,9 @@ export const SubscriptionDetailsCard = ({ subscription }) => {
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Cancel Subscription
+          {details.cancelAtPeriodEnd
+            ? 'Cancellation scheduled'
+            : 'Cancel Subscription'}
         </button>
       </div>
     </Card>
