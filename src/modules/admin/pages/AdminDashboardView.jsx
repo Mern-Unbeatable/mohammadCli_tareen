@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import StatCard from "@/components/data-display/StatCard/StatCard";
 import LineChartCard from "@/components/data-display/LineChartCard/LineChartCard";
+import {
+  CardSkeleton,
+  LineChartCardSkeleton,
+} from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
@@ -185,12 +189,11 @@ const AdminDashboardView = () => {
 
       {/* KPI cards */}
       {loading ? (
-        <div className="flex h-28 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">
-            Loading dashboard…
-          </span>
-        </div>
+        <CardSkeleton
+          variant="statCard"
+          count={6}
+          className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6"
+        />
       ) : statsError ? (
         <ErrorState message={statsError} onRetry={loadDashboard} />
       ) : !hasStats ? (
@@ -205,11 +208,9 @@ const AdminDashboardView = () => {
 
       {/* Charts */}
       {statisticsLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">
-            Loading charts…
-          </span>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <LineChartCardSkeleton />
+          <LineChartCardSkeleton />
         </div>
       ) : statisticsError ? (
         <ErrorState

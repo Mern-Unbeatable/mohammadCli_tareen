@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router";
-import { BadgeCheck, ChevronLeft, Loader2, MessageCircle } from "lucide-react";
+import { BadgeCheck, ChevronLeft, MessageCircle } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { ListingDetailSkeleton } from "@/components/common/Skeleton";
 import { formatPrice } from "@/modules/user/data/marketplace";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import NotFound from "@/shared/pages/NotFound";
@@ -51,10 +52,7 @@ const AdminListingDetailView = () => {
   if (selectedListingLoading) {
     return (
       <PanelPage>
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading listing…
-        </div>
+        <ListingDetailSkeleton />
       </PanelPage>
     );
   }

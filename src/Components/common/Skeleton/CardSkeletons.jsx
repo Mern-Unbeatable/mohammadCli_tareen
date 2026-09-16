@@ -499,6 +499,219 @@ export const GeneralPostDetailSkeleton = () => (
   </div>
 );
 
+/** Matches StatCard */
+export const StatCardSkeleton = () => (
+  <Card className="p-4 sm:p-5">
+    <Skeleton className="mb-3 h-10 w-10" rounded="lg" />
+    <Skeleton className="h-3.5 w-24" />
+    <Skeleton className="mt-2 h-6 w-16" />
+  </Card>
+);
+
+/** Matches LineChartCard */
+export const LineChartCardSkeleton = () => (
+  <Card className="overflow-hidden">
+    <div className="flex items-start justify-between gap-3 border-b border-[#E4E7EC] px-4 py-4 sm:px-5">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="h-9 w-[120px]" />
+    </div>
+    <div className="flex flex-wrap gap-x-5 gap-y-2 px-4 pt-4 sm:px-5">
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-3 w-24" />
+    </div>
+    <div className="p-4 sm:p-5">
+      <Skeleton className="h-[240px] w-full" rounded="lg" />
+    </div>
+  </Card>
+);
+
+/** Matches AdminSettings multi-card form layout */
+export const AdminSettingsSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    {Array.from({ length: 3 }, (_, i) => (
+      <Card key={i} className="overflow-hidden">
+        <div className="flex items-start gap-3 border-b border-[#E4E7EC] px-4 py-3.5 sm:px-5">
+          <Skeleton className="h-9 w-9 shrink-0" rounded="lg" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+        </div>
+        <div className="space-y-4 p-4 sm:p-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-24" rounded="full" />
+            <Skeleton className="h-8 w-28" rounded="full" />
+            <Skeleton className="h-8 w-20" rounded="full" />
+          </div>
+          <Skeleton className="ml-auto h-9 w-28" />
+        </div>
+      </Card>
+    ))}
+  </div>
+);
+
+/** Matches AdminAccountForm */
+export const AdminAccountFormSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    <div>
+      <Skeleton className="h-7 w-36" />
+      <Skeleton className="mt-2 h-3.5 w-64" />
+    </div>
+    <Card className="p-5 sm:p-6">
+      <div className="flex items-center gap-4 border-b border-[#E4E7EC] pb-4">
+        <Skeleton className="h-16 w-16" rounded="full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3.5 w-44" />
+        </div>
+      </div>
+      <div className="mt-5 space-y-4">
+        <Skeleton className="h-4 w-40" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <Skeleton className="ml-auto h-9 w-32" />
+      </div>
+      <div className="mt-8 space-y-4 border-t border-[#E4E7EC] pt-5">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="ml-auto h-9 w-36" />
+      </div>
+    </Card>
+  </div>
+);
+
+/** Matches AdminAdvertisementDetailView */
+export const AdvertisementDetailSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    <Skeleton className="h-4 w-36" />
+    <Card className="overflow-hidden">
+      <div className="flex items-start justify-between gap-4 border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-11 w-11" rounded="lg" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+        </div>
+        <Skeleton className="h-5 w-16" rounded="full" />
+      </div>
+      <div className="space-y-4 px-5 py-5 sm:px-6">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-5/6" />
+        <Skeleton className="aspect-[16/9] w-full" rounded="xl" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="space-y-1.5">
+              <Skeleton className="h-3 w-14" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  </div>
+);
+
+/** Matches AdminReportDetailView */
+export const ReportDetailSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    <Skeleton className="h-4 w-32" />
+    <div className="rounded-xl border border-[#FED7AA] bg-[#FFF7ED] px-5 py-4">
+      <Skeleton className="h-3 w-40" />
+      <Skeleton className="mt-3 h-3.5 w-full" />
+      <Skeleton className="mt-2 h-3.5 w-4/5" />
+    </div>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {Array.from({ length: 2 }, (_, i) => (
+        <Card key={i} className="p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12" rounded="full" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-3/4" />
+          </div>
+        </Card>
+      ))}
+    </div>
+    <Card className="p-5">
+      <Skeleton className="h-4 w-28" />
+      <div className="mt-4 space-y-3">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-2/3" />
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-9 w-28" />
+        <Skeleton className="h-9 w-24" />
+      </div>
+    </Card>
+  </div>
+);
+
+/** Matches Messenger two-panel shell */
+export const MessengerSkeleton = () => (
+  <div
+    className="flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-[#E4E7EC] bg-white xl:grid xl:grid-cols-[340px_minmax(0,1fr)]"
+    style={{ height: '620px' }}
+    aria-busy="true"
+    aria-live="polite"
+  >
+    <aside className="flex min-h-0 flex-col border-[#E4E7EC] xl:border-r">
+      <div className="space-y-3 border-b border-[#E4E7EC] p-4">
+        <Skeleton className="h-9 w-full" />
+        <div className="flex gap-2">
+          <Skeleton className="h-8 flex-1" rounded="full" />
+          <Skeleton className="h-8 flex-1" rounded="full" />
+        </div>
+      </div>
+      <ul className="divide-y divide-[#E4E7EC]">
+        {Array.from({ length: 6 }, (_, i) => (
+          <li key={i} className="flex items-center gap-3 px-4 py-3">
+            <Skeleton className="h-10 w-10 shrink-0" rounded="full" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </aside>
+    <div className="hidden flex-col xl:flex">
+      <div className="flex items-center gap-3 border-b border-[#E4E7EC] px-5 py-4">
+        <Skeleton className="h-10 w-10" rounded="full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      </div>
+      <div className="flex-1 space-y-3 p-5">
+        <Skeleton className="ml-auto h-10 w-2/5" rounded="lg" />
+        <Skeleton className="h-10 w-1/2" rounded="lg" />
+        <Skeleton className="ml-auto h-10 w-1/3" rounded="lg" />
+        <Skeleton className="h-10 w-2/5" rounded="lg" />
+      </div>
+      <div className="border-t border-[#E4E7EC] p-4">
+        <Skeleton className="h-11 w-full" />
+      </div>
+    </div>
+  </div>
+);
+
 const CARD_SKELETONS = {
   contact: ContactCardSkeleton,
   listing: ListingCardSkeleton,
@@ -521,6 +734,13 @@ const CARD_SKELETONS = {
   listingDetail: ListingDetailSkeleton,
   jobDetail: JobDetailSkeleton,
   generalPostDetail: GeneralPostDetailSkeleton,
+  statCard: StatCardSkeleton,
+  lineChart: LineChartCardSkeleton,
+  adminSettings: AdminSettingsSkeleton,
+  adminAccount: AdminAccountFormSkeleton,
+  advertisementDetail: AdvertisementDetailSkeleton,
+  reportDetail: ReportDetailSkeleton,
+  messenger: MessengerSkeleton,
 };
 
 /**

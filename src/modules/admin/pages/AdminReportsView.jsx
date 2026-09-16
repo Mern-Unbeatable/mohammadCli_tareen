@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, Shield } from "lucide-react";
 import DataTable from "@/components/data-display/DataTable/DataTable";
 import StatusBadge from "@/components/data-display/DataTable/StatusBadge";
 import StatCard from "@/components/data-display/StatCard/StatCard";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
@@ -59,9 +60,8 @@ const AdminReportsView = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { reports, reportsMeta, stats, reportsLoading, error } = useSelector(
-    (state) => state.adminReports,
-  );
+  const { reports, reportsMeta, stats, reportsLoading, statsLoading, error } =
+    useSelector((state) => state.adminReports);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -181,11 +181,19 @@ const AdminReportsView = () => {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <StatCard key={stat.id} icon={REPORT_ICONS[stat.id]} {...stat} />
-        ))}
-      </div>
+      {statsLoading && !statCards.length ? (
+        <CardSkeleton
+          variant="statCard"
+          count={4}
+          className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
+        />
+      ) : (
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          {statCards.map((stat) => (
+            <StatCard key={stat.id} icon={REPORT_ICONS[stat.id]} {...stat} />
+          ))}
+        </div>
+      )}
 
       <DataTable
         showSearch

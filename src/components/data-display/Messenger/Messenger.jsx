@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import { MessengerSkeleton } from '@/components/common/Skeleton';
 
 const ConversationItem = ({ chat, active, onClick, showOnline = false }) => (
   <button
@@ -129,11 +130,16 @@ const Messenger = ({
   const isMobileChat = mobilePanel === 'chat';
 
   if (!displayChat) {
+    if (loading) {
+      return (
+        <MessengerSkeleton />
+      );
+    }
     return (
       <div
         className={`flex items-center justify-center rounded-2xl border border-[#E4E7EC] bg-white p-8 text-[13px] text-[#64748B] ${heightClass} ${className}`}
       >
-        {loading ? 'Loading conversations…' : 'No conversations yet.'}
+        No conversations yet.
       </div>
     );
   }

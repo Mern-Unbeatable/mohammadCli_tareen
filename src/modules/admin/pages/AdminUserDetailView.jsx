@@ -1,13 +1,14 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import ProfilePageContent from "@/components/data-display/ProfilePageContent/ProfilePageContent";
 import ProfileHero, {
   ContactInfoCard,
   ProfessionalInfoCard,
 } from "@/components/data-display/ProfileHero/ProfileHero";
 import ActivitySection from "@/components/data-display/ActivitySection/ActivitySection";
+import { ProfilePageSkeleton } from "@/components/common/Skeleton";
 import { SubscriptionDetailsCard } from "@/modules/user/components/profile/ProfileSections";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import {
@@ -99,17 +100,12 @@ const AdminUserDetailView = () => {
       <PanelPage>
         <Link
           to="/admin/users"
-          className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#64748B] transition-colors hover:text-primary mb-4"
+          className="mb-4 inline-flex items-center gap-2 text-[13px] font-semibold text-[#64748B] transition-colors hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           Back
         </Link>
-        <div className="flex h-64 items-center justify-center rounded-xl bg-white p-6 shadow-sm">
-          <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
-          <span className="text-[15px] font-medium text-[#64748B]">
-            Loading user profile...
-          </span>
-        </div>
+        <ProfilePageSkeleton showSubscription />
       </PanelPage>
     );
   }

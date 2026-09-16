@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import JobDetailCard from "@/components/data-display/JobDetailCard/JobDetailCard";
+import { JobDetailSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import NotFound from "@/shared/pages/NotFound";
 import {
@@ -33,10 +34,7 @@ const AdminJobDetailView = () => {
   if (selectedJobLoading) {
     return (
       <PanelPage>
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading job…
-        </div>
+        <JobDetailSkeleton />
       </PanelPage>
     );
   }

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Calculator, Check, Loader2, Trash2, Wallet } from "lucide-react";
+import { Calculator, Check, Trash2, Wallet } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
+import { AdminSettingsSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
@@ -162,10 +163,7 @@ const AdminSettingsView = () => {
           title="Settings"
           subtitle="Manage your subscription and Sponsored Price"
         />
-        <div className="flex h-48 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] text-[#64748B]">Loading settings…</span>
-        </div>
+        <AdminSettingsSkeleton />
       </PanelPage>
     );
   }

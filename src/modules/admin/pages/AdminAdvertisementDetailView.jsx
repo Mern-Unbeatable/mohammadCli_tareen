@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, Navigate, useParams } from "react-router";
-import { Calendar, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { Calendar, ChevronLeft, RefreshCw } from "lucide-react";
 import Card from "@/components/ui/Card";
+import { AdvertisementDetailSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import {
   fetchAdDetails,
@@ -32,10 +33,7 @@ const AdminAdvertisementDetailView = () => {
   if (selectedAdLoading) {
     return (
       <PanelPage>
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading advertisement…
-        </div>
+        <AdvertisementDetailSkeleton />
       </PanelPage>
     );
   }

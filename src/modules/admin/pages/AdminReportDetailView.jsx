@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   History,
-  Loader2,
   Shield,
   Trash2,
   User,
@@ -17,6 +16,7 @@ import {
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import StatusBadge from "@/components/data-display/DataTable/StatusBadge";
+import { ReportDetailSkeleton } from "@/components/common/Skeleton";
 import ModerationHistoryModal from "@/modules/admin/components/ModerationHistoryModal";
 import ReasonModal from "@/modules/admin/components/ReasonModal";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
@@ -182,10 +182,7 @@ const AdminReportDetailView = () => {
   if (selectedReportLoading) {
     return (
       <PanelPage>
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#64748B]">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading report…
-        </div>
+        <ReportDetailSkeleton />
       </PanelPage>
     );
   }
