@@ -1,29 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { useDispatch, useSelector } from 'react-redux';
-import { ChevronLeft, Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import Container from '@/components/ui/Container';
-import ContactProfilePageContent from '@/components/data-display/ContactProfilePageContent/ContactProfilePageContent';
-import ReportPostModal from '@/modules/user/components/feed/ReportPostModal';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
+import Container from "@/components/ui/Container";
+import ContactProfilePageContent from "@/components/data-display/ContactProfilePageContent/ContactProfilePageContent";
+import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
 import {
   fetchContactDetails,
   requestContactConnection,
   clearContactsError,
   clearSelectedContact,
   toContactProfileModel,
-} from '@/features/user/contacts';
-import NotFound from '@/shared/pages/NotFound';
+} from "@/features/user/contacts";
+import NotFound from "@/shared/pages/NotFound";
 
 const ContactProfileView = () => {
   const { contactId } = useParams();
   const dispatch = useDispatch();
-  const {
-    selectedContact,
-    selectedContactLoading,
-    connectingId,
-    error,
-  } = useSelector((state) => state.userContacts);
+  const { selectedContact, selectedContactLoading, connectingId, error } =
+    useSelector((state) => state.userContacts);
 
   const [reportPost, setReportPost] = useState(null);
   const [notFoundId, setNotFoundId] = useState(null);
@@ -50,7 +46,7 @@ const ContactProfileView = () => {
   if (selectedContactLoading || (!selectedContact && !error)) {
     return (
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-[760px]">
+        <Container className="max-w-6xl">
           <div className="flex h-64 items-center justify-center rounded-xl bg-white shadow-sm">
             <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
             <span className="text-[14px] text-[#64748B]">Loading profile…</span>
@@ -69,14 +65,14 @@ const ContactProfileView = () => {
     }
     const result = await dispatch(requestContactConnection(contact.id));
     if (requestContactConnection.fulfilled.match(result)) {
-      toast.success('Connection request sent');
+      toast.success("Connection request sent");
     }
   };
 
   const handleReport = (post) => {
     setReportPost({
       ...post,
-      targetType: 'USER',
+      targetType: "USER",
       userId: contact.id,
       author: {
         ...(post?.author || {}),
@@ -90,7 +86,7 @@ const ContactProfileView = () => {
   return (
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-[760px]">
+        <Container className="max-w-6xl">
           <Link
             to="/contacts"
             className="mb-4 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"

@@ -1,10 +1,10 @@
-import { Link } from 'react-router';
-import { useSelector } from 'react-redux';
-import { Briefcase, Package, Users } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
-import { quickLinks } from '@/modules/user/data/dashboard';
-import { toProfilePageUser } from '@/features/user/profile';
+import { Link } from "react-router";
+import { useSelector } from "react-redux";
+import { Briefcase, Package, Users } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Avatar from "@/components/ui/Avatar";
+import { quickLinks } from "@/modules/user/data/dashboard";
+import { toProfilePageUser } from "@/features/user/profile";
 
 const iconMap = {
   package: Package,
@@ -46,7 +46,7 @@ const ProfileCard = ({ user }) => {
           </h2>
           <p className="mt-0.5 text-[13px] text-[#64748B]">{user.title}</p>
           <p className="text-[12px] text-[#98A2B3]">
-            {[user.company, user.location].filter(Boolean).join(' · ')}
+            {[user.company, user.location].filter(Boolean).join(" · ")}
           </p>
         </div>
       </Link>
@@ -59,7 +59,7 @@ const ProfileCard = ({ user }) => {
 };
 
 const TrialCard = ({ user }) => {
-  if (!user || user.membershipStatus !== 'trial') return null;
+  if (!user || user.membershipStatus !== "trial") return null;
 
   const total = user.trialDaysTotal || 90;
   const left = user.trialDaysLeft ?? 0;
@@ -112,7 +112,7 @@ const LeftSidebar = () => {
   const profileUser = toProfilePageUser(user);
 
   return (
-    <div className="hidden w-60 shrink-0 lg:block">
+    <div className="hidden w-[320px] shrink-0 lg:block">
       <div className="sticky top-[70px] space-y-3">
         <ProfileCard user={profileUser} />
         <TrialCard user={profileUser} />

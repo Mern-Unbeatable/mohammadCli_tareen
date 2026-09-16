@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
-import { Check } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
-import Badge from '@/components/ui/Badge';
-import { suggestedPeople, marketplaceItems, jobItems } from '@/modules/user/data/dashboard';
+import { useState } from "react";
+import { Link } from "react-router";
+import { Check } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import {
+  suggestedPeople,
+  marketplaceItems,
+  jobItems,
+} from "@/modules/user/data/dashboard";
 
 const SectionTitle = ({ children }) => (
   <h3 className="px-4 pt-4 text-[14px] font-bold text-deep-blue">{children}</h3>
@@ -51,10 +55,10 @@ const PeopleYouMayKnow = ({ people }) => {
                 disabled={isConnected || isPending}
                 className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors ${
                   isConnected
-                    ? 'border-green-primary bg-green-secondary text-green-primary'
+                    ? "border-green-primary bg-green-secondary text-green-primary"
                     : isPending
-                      ? 'border-[#D0D5DD] text-[#98A2B3]'
-                      : 'border-primary text-primary hover:bg-secondary'
+                      ? "border-[#D0D5DD] text-[#98A2B3]"
+                      : "border-primary text-primary hover:bg-secondary"
                 }`}
               >
                 {isConnected ? (
@@ -63,9 +67,9 @@ const PeopleYouMayKnow = ({ people }) => {
                     Connected
                   </>
                 ) : isPending ? (
-                  'Pending…'
+                  "Pending…"
                 ) : (
-                  'Connect'
+                  "Connect"
                 )}
               </button>
             </li>
@@ -125,7 +129,7 @@ const JobsList = ({ items }) => (
 );
 
 const RightSidebar = () => (
-  <div className="hidden w-[280px] shrink-0 xl:block">
+  <div className="hidden w-[320px] shrink-0 xl:block">
     <div className="sticky top-[70px] space-y-3">
       <PeopleYouMayKnow people={suggestedPeople} />
       <MarketplaceList items={marketplaceItems} />

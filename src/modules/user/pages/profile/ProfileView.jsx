@@ -15,10 +15,7 @@ import {
   clearProfileError,
   toProfilePageUser,
 } from "@/features/user/profile";
-import {
-  fetchFeed,
-  toFeedPostModel,
-} from "@/features/user/feed";
+import { fetchFeed, toFeedPostModel } from "@/features/user/feed";
 import {
   fetchMyReports,
   clearReportsError,
@@ -27,13 +24,17 @@ import {
 
 const ProfileView = () => {
   const dispatch = useDispatch();
-  const { user, loading, error: profileError } = useSelector(
-    (state) => state.userProfile,
-  );
+  const {
+    user,
+    loading,
+    error: profileError,
+  } = useSelector((state) => state.userProfile);
   const { posts } = useSelector((state) => state.userFeed);
-  const { reports, reportsLoading, error: reportsError } = useSelector(
-    (state) => state.userReports,
-  );
+  const {
+    reports,
+    reportsLoading,
+    error: reportsError,
+  } = useSelector((state) => state.userReports);
   const [reportPost, setReportPost] = useState(null);
 
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
@@ -86,7 +87,7 @@ const ProfileView = () => {
   return (
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-[760px]">
+        <Container className="max-w-6xl">
           <ProfilePageContent
             user={profileUser}
             posts={activity}
@@ -94,7 +95,9 @@ const ProfileView = () => {
             isPremium={isPremium}
             subscriptionSlot={
               isPremium ? (
-                <SubscriptionDetailsCard subscription={profileUser.subscription} />
+                <SubscriptionDetailsCard
+                  subscription={profileUser.subscription}
+                />
               ) : null
             }
           />

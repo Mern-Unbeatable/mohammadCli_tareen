@@ -105,7 +105,7 @@ const FeedView = () => {
         <Container className="flex gap-6">
           <LeftSidebar />
 
-          <section className="mx-auto min-w-0 w-full max-w-[620px] flex-1 space-y-4">
+          <section className="mx-auto min-w-0 w-full max-w-[720px] flex-1 space-y-4">
             <div className="hidden sm:block">
               <FeedComposer
                 user={profileUser}
@@ -124,7 +124,8 @@ const FeedView = () => {
               </div>
             ) : mappedPosts.length === 0 ? (
               <p className="rounded-xl border border-[#E4E7EC] bg-white px-4 py-10 text-center text-[14px] text-[#64748B]">
-                No posts yet. Be the first to share something with the community.
+                No posts yet. Be the first to share something with the
+                community.
               </p>
             ) : (
               <div className="space-y-4">
