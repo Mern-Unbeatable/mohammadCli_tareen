@@ -172,16 +172,36 @@ const feedSlice = createSlice({
       .addCase(reactToPost.fulfilled, (state, action) => {
         state.reactingId = null;
         const { postId, data } = action.payload;
+        const myReaction =
+          data?.myReaction !== undefined
+            ? data.myReaction
+            : data?.reacted
+              ? data?.type ?? null
+              : data?.reacted === false
+                ? null
+                : undefined;
+        const reactionCount =
+          data?.reactionCount ?? data?.stats?.reactions ?? undefined;
+
         const applyReaction = (post) => {
           if (!post || post.id !== postId) return post;
+
+          const nextMyReaction =
+            myReaction !== undefined ? myReaction : post.myReaction;
+          const nextCount =
+            reactionCount !== undefined
+              ? reactionCount
+              : (post.stats?.reactions ?? post.reactionCount ?? 0);
+
           return {
             ...post,
-            ...(data && typeof data === "object" ? data : {}),
-            myReaction: data?.myReaction ?? data?.type ?? post.myReaction,
-            reactionCount:
-              data?.reactionCount ??
-              data?.stats?.reactions ??
-              post.reactionCount,
+            myReaction: nextMyReaction,
+            reactionCount: nextCount,
+            reactionCounts: data?.reactionCounts ?? post.reactionCounts,
+            stats: {
+              ...(post.stats || {}),
+              reactions: nextCount,
+            },
           };
         };
         state.posts = state.posts.map(applyReaction);

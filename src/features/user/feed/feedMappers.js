@@ -123,7 +123,12 @@ export function toFeedPostModel(post) {
       shares: shareCount,
     },
     comments,
-    myReaction: post.myReaction || post.reaction || null,
+    myReaction: post.myReaction
+      ? String(post.myReaction).toLowerCase()
+      : post.reaction
+        ? String(post.reaction).toLowerCase()
+        : null,
+    reactionCounts: post.reactionCounts || null,
     raw: post,
   };
 }

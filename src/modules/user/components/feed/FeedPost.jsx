@@ -19,12 +19,17 @@ const badgeByType = {
 };
 
 const REACTION_API = {
-  like: 'LIKE',
-  love: 'LOVE',
-  celebrate: 'CELEBRATE',
-  support: 'SUPPORT',
-  insightful: 'INSIGHTFUL',
-  curious: 'CURIOUS',
+  like: "like",
+  love: "love",
+  haha: "haha",
+  wow: "wow",
+  sad: "sad",
+  angry: "angry",
+  // Legacy LinkedIn-style ids from older clients/UI
+  celebrate: "haha",
+  support: "wow",
+  insightful: "sad",
+  curious: "angry",
 };
 
 const PostHeader = ({ post, onReport }) => {
@@ -96,11 +101,15 @@ const FeedPost = ({ post, onReport }) => {
   );
   const [shared, setShared] = useState(false);
   const [stats, setStats] = useState(post.stats);
+  const [reactionCounts, setReactionCounts] = useState(
+    post.reactionCounts || null,
+  );
   const [comments, setComments] = useState(post.comments ?? []);
 
   useEffect(() => {
     setStats(post.stats);
     setComments(post.comments ?? []);
+    setReactionCounts(post.reactionCounts || null);
     setReactionId(
       post.myReaction ? String(post.myReaction).toLowerCase() : null,
     );
@@ -109,6 +118,7 @@ const FeedPost = ({ post, onReport }) => {
   const handleReact = async (id) => {
     const next = reactionId === id ? null : id;
     const prevId = reactionId;
+    const prevStats = stats;
     setReactionId(next);
     setStats((prev) => ({
       ...prev,
@@ -120,14 +130,37 @@ const FeedPost = ({ post, onReport }) => {
             : prev.reactions,
     }));
 
-    const apiType = REACTION_API[next || prevId] || 'LIKE';
+    const apiType = REACTION_API[next || prevId] || "like";
     const result = await dispatch(
       reactToPost({ postId: post.id, type: apiType }),
     );
     if (reactToPost.rejected.match(result)) {
       setReactionId(prevId);
-      setStats(post.stats);
+      setStats(prevStats);
       toast.error(result.payload || 'Failed to update reaction');
+      return;
+    }
+
+    const data = result.payload?.data;
+    if (data) {
+      const serverReaction =
+        data.myReaction !== undefined
+          ? data.myReaction
+          : data.reacted
+            ? data.type
+            : null;
+      setReactionId(
+        serverReaction ? String(serverReaction).toLowerCase() : null,
+      );
+      if (data.reactionCount != null || data.stats?.reactions != null) {
+        setStats((prev) => ({
+          ...prev,
+          reactions: data.reactionCount ?? data.stats.reactions,
+        }));
+      }
+      if (data.reactionCounts) {
+        setReactionCounts(data.reactionCounts);
+      }
     }
   };
 
@@ -234,7 +267,11 @@ const FeedPost = ({ post, onReport }) => {
           )}
         </div>
 
-        <PostStats stats={stats} reactionId={reactionId} />
+        <PostStats
+          stats={stats}
+          reactionId={reactionId}
+          reactionCounts={reactionCounts}
+        />
         <PostActions
           reactionId={reactionId}
           onReact={handleReact}
