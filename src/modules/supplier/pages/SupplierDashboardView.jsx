@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, Pencil, RefreshCw } from "lucide-react";
+import { Pencil, RefreshCw } from "lucide-react";
 import BarChartCard from "@/components/data-display/BarChartCard/BarChartCard";
 import DataTable from "@/components/data-display/DataTable/DataTable";
 import StatusBadge from "@/components/data-display/DataTable/StatusBadge";
 import CategoryPill from "@/components/data-display/CategoryPill/CategoryPill";
 import StatCard from "@/components/data-display/StatCard/StatCard";
+import {
+  BarChartCardSkeleton,
+  NotificationRowSkeleton,
+  StatCardSkeleton,
+} from "@/components/common/Skeleton";
 import Card from "@/components/ui/Card";
 import CreateAdModal from "@/modules/supplier/components/CreateAdModal";
 import {
@@ -134,9 +139,10 @@ const SupplierDashboardView = () => {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
 
       {loading && !stats.length ? (
-        <div className="flex h-40 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] text-[#64748B]">Loading overview…</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <StatCardSkeleton key={i} showHint />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -157,19 +163,23 @@ const SupplierDashboardView = () => {
         </div>
       )}
 
-      <BarChartCard
-        title={chart.title}
-        series={chart.series}
-        labels={chart.labels}
-        yTicks={chart.yTicks}
-        yMax={chart.yMax}
-        yearValue={chartYear}
-        yearOptions={YEAR_OPTIONS}
-        onYearChange={setChartYear}
-        chartHeight={180}
-        legendPosition="bottom"
-        fullWidth
-      />
+      {loading && !stats.length ? (
+        <BarChartCardSkeleton />
+      ) : (
+        <BarChartCard
+          title={chart.title}
+          series={chart.series}
+          labels={chart.labels}
+          yTicks={chart.yTicks}
+          yMax={chart.yMax}
+          yearValue={chartYear}
+          yearOptions={YEAR_OPTIONS}
+          onYearChange={setChartYear}
+          chartHeight={180}
+          legendPosition="bottom"
+          fullWidth
+        />
+      )}
 
       <Card className="overflow-hidden p-4 sm:p-5">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -187,7 +197,17 @@ const SupplierDashboardView = () => {
           </Link>
         </div>
 
-        {recentAds.length ? (
+        {loading && !recentAds.length ? (
+          <DataTable
+            showCard={false}
+            columns={columns}
+            data={[]}
+            loading
+            showActions
+            getActions={rowActions}
+            tableMinWidth="900px"
+          />
+        ) : recentAds.length ? (
           <DataTable
             showCard={false}
             columns={columns}
@@ -217,7 +237,13 @@ const SupplierDashboardView = () => {
           </Link>
         </div>
 
-        {notifications.length ? (
+        {loading && !notifications.length ? (
+          <ul className="divide-y divide-[#E4E7EC]">
+            {Array.from({ length: 3 }, (_, i) => (
+              <NotificationRowSkeleton key={i} />
+            ))}
+          </ul>
+        ) : notifications.length ? (
           <ul className="divide-y divide-[#E4E7EC]">
             {notifications.map((item) => {
               const Icon = item.icon;

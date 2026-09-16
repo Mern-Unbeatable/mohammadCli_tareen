@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
+import { BlogDetailSkeleton } from "@/components/common/Skeleton";
 import NotFound from "@/shared/pages/NotFound";
 import {
   fetchSupplierBlogBySlug,
@@ -64,9 +64,12 @@ const SupplierBlogDetailView = () => {
 
   if (selectedBlogLoading || (!detail && !error)) {
     return (
-      <div className="-m-4 flex h-64 items-center justify-center sm:-m-5 lg:-m-6">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-        <span className="text-[14px] text-[#64748B]">Loading article…</span>
+      <div className="-m-4 sm:-m-5 lg:-m-6">
+        <div className="py-5 sm:py-8">
+          <Container className="max-w-[960px]">
+            <BlogDetailSkeleton />
+          </Container>
+        </div>
       </div>
     );
   }

@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import ProfileSetupForm from "@/components/forms/ProfileSetupForm/ProfileSetupForm";
+import { ProfileSetupFormSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import { profileCountries } from "@/modules/user/data/subscription";
 import {
@@ -56,12 +56,7 @@ const SupplierProfileView = () => {
   if (loading) {
     return (
       <PanelPage width="narrow">
-        <div className="flex h-64 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
-          <span className="text-[14px] font-medium text-[#64748B]">
-            Loading profile…
-          </span>
-        </div>
+        <ProfileSetupFormSkeleton />
       </PanelPage>
     );
   }

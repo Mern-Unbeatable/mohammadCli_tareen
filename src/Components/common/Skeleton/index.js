@@ -28,9 +28,12 @@ export {
   GeneralPostDetailSkeleton,
   StatCardSkeleton,
   LineChartCardSkeleton,
+  BarChartCardSkeleton,
   AdminSettingsSkeleton,
   AdminAccountFormSkeleton,
   AdvertisementDetailSkeleton,
   ReportDetailSkeleton,
   MessengerSkeleton,
+  ProfileSetupFormSkeleton,
+  BlogDetailSkeleton,
 } from './CardSkeletons';

@@ -499,17 +499,22 @@ export const GeneralPostDetailSkeleton = () => (
   </div>
 );
 
-/** Matches StatCard */
-export const StatCardSkeleton = () => (
-  <Card className="p-4 sm:p-5">
+/** Matches StatCard (+ optional hint line used on supplier dashboard) */
+export const StatCardSkeleton = ({ showHint = false }) => (
+  <Card className="flex h-full flex-col p-4 sm:p-5">
     <Skeleton className="mb-3 h-10 w-10" rounded="lg" />
     <Skeleton className="h-3.5 w-24" />
     <Skeleton className="mt-2 h-6 w-16" />
+    {showHint ? (
+      <div className="mt-auto pt-3">
+        <Skeleton className="h-3 w-28" />
+      </div>
+    ) : null}
   </Card>
 );
 
-/** Matches LineChartCard */
-export const LineChartCardSkeleton = () => (
+/** Matches LineChartCard / BarChartCard */
+export const LineChartCardSkeleton = ({ chartHeightClass = 'h-[240px]' }) => (
   <Card className="overflow-hidden">
     <div className="flex items-start justify-between gap-3 border-b border-[#E4E7EC] px-4 py-4 sm:px-5">
       <Skeleton className="h-4 w-28" />
@@ -520,9 +525,114 @@ export const LineChartCardSkeleton = () => (
       <Skeleton className="h-3 w-24" />
     </div>
     <div className="p-4 sm:p-5">
-      <Skeleton className="h-[240px] w-full" rounded="lg" />
+      <Skeleton className={`w-full ${chartHeightClass}`} rounded="lg" />
     </div>
   </Card>
+);
+
+/** Alias — same shell as LineChartCardSkeleton */
+export const BarChartCardSkeleton = ({
+  chartHeightClass = 'h-[180px]',
+  ...props
+}) => <LineChartCardSkeleton chartHeightClass={chartHeightClass} {...props} />;
+
+/** Matches ProfileSetupForm */
+export const ProfileSetupFormSkeleton = () => (
+  <Card aria-busy="true" aria-live="polite">
+    <div className="border-b border-[#E4E7EC] px-5 py-5 sm:px-8 sm:py-6">
+      <Skeleton className="h-7 w-40 sm:h-8 sm:w-48" />
+      <Skeleton className="mt-3 h-3.5 w-full max-w-md" />
+    </div>
+    <div className="space-y-5 px-5 py-6 sm:px-8 sm:py-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-3.5 w-32" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-36" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-16" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-14" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-3.5 w-40" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Skeleton className="h-32 w-full" rounded="lg" />
+        <Skeleton className="h-32 w-full" rounded="lg" />
+      </div>
+      <Skeleton className="h-10 w-32" />
+    </div>
+  </Card>
+);
+
+/** Matches BlogDetailView / SupplierBlogDetailView */
+export const BlogDetailSkeleton = () => (
+  <div
+    className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-10"
+    aria-busy="true"
+    aria-live="polite"
+  >
+    <article className="min-w-0 space-y-4">
+      <Skeleton className="h-3.5 w-28" />
+      <Skeleton className="h-8 w-4/5 sm:h-9" />
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <Skeleton className="aspect-[16/9] w-full" rounded="xl" />
+      <div className="space-y-3 pt-2">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-5/6" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-3/4" />
+      </div>
+    </article>
+    <aside className="min-w-0">
+      <Skeleton className="mb-4 h-3 w-28" />
+      <ul className="divide-y divide-[#E4E7EC] rounded-xl border border-[#E4E7EC] bg-white">
+        {Array.from({ length: 4 }, (_, i) => (
+          <li key={i} className="flex gap-3 p-4">
+            <Skeleton className="h-16 w-16 shrink-0" rounded="lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  </div>
 );
 
 /** Matches AdminSettings multi-card form layout */
@@ -736,11 +846,14 @@ const CARD_SKELETONS = {
   generalPostDetail: GeneralPostDetailSkeleton,
   statCard: StatCardSkeleton,
   lineChart: LineChartCardSkeleton,
+  barChart: BarChartCardSkeleton,
   adminSettings: AdminSettingsSkeleton,
   adminAccount: AdminAccountFormSkeleton,
   advertisementDetail: AdvertisementDetailSkeleton,
   reportDetail: ReportDetailSkeleton,
   messenger: MessengerSkeleton,
+  profileSetupForm: ProfileSetupFormSkeleton,
+  blogDetail: BlogDetailSkeleton,
 };
 
 /**
