@@ -5,7 +5,6 @@ import {
   BadgeCheck,
   ChevronLeft,
   Heart,
-  Loader2,
   MessageCircle,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -13,6 +12,7 @@ import Container from '@/components/ui/Container';
 import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { ListingDetailSkeleton } from '@/components/common/Skeleton';
 import {
   fetchListingDetails,
   toggleSaveListing,
@@ -103,9 +103,10 @@ const ListingDetailView = () => {
 
   if (selectedListingLoading && !selectedListing) {
     return (
-      <main className="flex min-h-[40vh] items-center justify-center pt-6 pb-8">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-        <span className="text-[14px] text-[#64748B]">Loading listing…</span>
+      <main className="pt-6 pb-8 sm:pt-8">
+        <Container>
+          <ListingDetailSkeleton />
+        </Container>
       </main>
     );
   }

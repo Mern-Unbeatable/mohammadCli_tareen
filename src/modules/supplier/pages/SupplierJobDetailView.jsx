@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import JobDetailCard from "@/components/data-display/JobDetailCard/JobDetailCard";
+import { JobDetailSkeleton } from "@/components/common/Skeleton";
 import {
   fetchSupplierJobDetails,
   clearSelectedJob,
@@ -43,10 +44,7 @@ const SupplierJobDetailView = () => {
   if (selectedJobLoading || (!selectedJob && !error)) {
     return (
       <PanelPage>
-        <div className="flex h-48 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-          <span className="text-[14px] text-[#64748B]">Loading job…</span>
-        </div>
+        <JobDetailSkeleton />
       </PanelPage>
     );
   }

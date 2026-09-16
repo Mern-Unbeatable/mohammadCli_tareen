@@ -5,6 +5,7 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
 import Card from '@/components/ui/Card';
+import { JobDetailSkeleton } from '@/components/common/Skeleton';
 import JobDetailCard from '@/components/data-display/JobDetailCard/JobDetailCard';
 import {
   fetchJobDetails,
@@ -87,10 +88,7 @@ const JobDetailView = () => {
     return (
       <main className="pt-6 pb-8 sm:pt-8">
         <Container className="max-w-[760px]">
-          <div className="flex h-48 items-center justify-center rounded-xl bg-white shadow-sm">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-            <span className="text-[14px] text-[#64748B]">Loading job…</span>
-          </div>
+          <JobDetailSkeleton />
         </Container>
       </main>
     );

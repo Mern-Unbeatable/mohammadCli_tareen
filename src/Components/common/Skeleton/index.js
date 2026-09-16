@@ -23,4 +23,7 @@ export {
   MyReportsCardSkeleton,
   ProfilePageSkeleton,
   ContactProfilePageSkeleton,
+  ListingDetailSkeleton,
+  JobDetailSkeleton,
+  GeneralPostDetailSkeleton,
 } from './CardSkeletons';
