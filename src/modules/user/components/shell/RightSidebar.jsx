@@ -1,31 +1,28 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-import { useDispatch } from 'react-redux';
-import { Check, Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
-import Badge from '@/components/ui/Badge';
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { useDispatch } from "react-redux";
+import { Check, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
+import Card from "@/components/ui/Card";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
 import {
   contactsApi,
   requestContactConnection,
   toContactCardModel,
-} from '@/features/user/contacts';
+} from "@/features/user/contacts";
 import {
   marketplaceApi,
   toListingCardModel,
-} from '@/features/user/marketplace';
-import {
-  recruitmentApi,
-  toJobCardModel,
-} from '@/features/user/recruitment';
+} from "@/features/user/marketplace";
+import { recruitmentApi, toJobCardModel } from "@/features/user/recruitment";
 
 const SIDEBAR_LIMIT = 3;
 
 const formatPrice = (price) => {
   const num = Number(price);
-  if (Number.isNaN(num)) return '—';
-  return `€${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (Number.isNaN(num)) return "—";
+  return `€${num.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 };
 
 const SectionTitle = ({ children }) => (
@@ -52,8 +49,7 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
       <ul className="divide-y divide-[#E4E7EC]">
         {people.map((person) => {
           const isConnected = person.connected;
-          const isPending =
-            person.pending || connectingId === person.id;
+          const isPending = person.pending || connectingId === person.id;
 
           return (
             <li key={person.id} className="flex items-center gap-3 px-4 py-3">
@@ -80,12 +76,10 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
                 type="button"
                 onClick={() => onConnect(person)}
                 disabled={isConnected || isPending}
-                className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors ${
-                  isConnected
-                    ? 'border-green-primary bg-green-secondary text-green-primary'
-                    : isPending
-                      ? 'border-[#D0D5DD] text-[#98A2B3]'
-                      : 'border-primary text-primary hover:bg-secondary'
+                className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
+                  isConnected || isPending
+                    ? "bg-green-secondary text-green-primary"
+                    : "bg-primary text-white hover:opacity-90"
                 }`}
               >
                 {isConnected ? (
@@ -94,9 +88,9 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
                     Connected
                   </>
                 ) : isPending ? (
-                  'Pending…'
+                  "Pending"
                 ) : (
-                  'Connect'
+                  "Connect"
                 )}
               </button>
             </li>
@@ -154,7 +148,7 @@ const JobsList = ({ items, loading }) => (
                 {title}
               </p>
               <p className="mt-0.5 text-[12px] text-[#64748B]">
-                {[company, location].filter(Boolean).join(' · ')}
+                {[company, location].filter(Boolean).join(" · ")}
               </p>
               {type ? (
                 <Badge variant="fulltime" className="mt-2 normal-case">
@@ -190,7 +184,7 @@ const RightSidebar = () => {
         const result = await contactsApi.getContactsList({
           page: 1,
           pageSize: 12,
-          sort: 'desc',
+          sort: "desc",
         });
         if (cancelled) return;
         const mapped = (result.data || [])
@@ -205,7 +199,7 @@ const RightSidebar = () => {
       } catch (err) {
         if (!cancelled) {
           toast.error(
-            contactsApi.getApiErrorMessage(err, 'Failed to load suggestions'),
+            contactsApi.getApiErrorMessage(err, "Failed to load suggestions"),
           );
         }
       } finally {
@@ -219,7 +213,7 @@ const RightSidebar = () => {
         const result = await marketplaceApi.getListingsList({
           page: 1,
           pageSize: SIDEBAR_LIMIT,
-          sort: 'desc',
+          sort: "desc",
         });
         if (cancelled) return;
         const mapped = (result.data || [])
@@ -228,7 +222,7 @@ const RightSidebar = () => {
           .map((item) => ({
             id: item.id,
             title: item.title,
-            meta: [item.condition, item.location].filter(Boolean).join(' · '),
+            meta: [item.condition, item.location].filter(Boolean).join(" · "),
             price: formatPrice(item.price),
             to: `/marketplace/${item.id}`,
           }));
@@ -238,7 +232,7 @@ const RightSidebar = () => {
           toast.error(
             marketplaceApi.getApiErrorMessage(
               err,
-              'Failed to load marketplace',
+              "Failed to load marketplace",
             ),
           );
         }
@@ -253,7 +247,7 @@ const RightSidebar = () => {
         const result = await recruitmentApi.getJobsList({
           page: 1,
           pageSize: SIDEBAR_LIMIT,
-          sort: 'desc',
+          sort: "desc",
         });
         if (cancelled) return;
         const mapped = (result.data || [])
@@ -262,8 +256,8 @@ const RightSidebar = () => {
           .map((job) => ({
             id: job.id,
             title: job.title,
-            company: job.company || '—',
-            location: job.location || '—',
+            company: job.company || "—",
+            location: job.location || "—",
             type: job.employmentType || null,
             to: `/recruitment/${job.id}`,
           }));
@@ -271,7 +265,7 @@ const RightSidebar = () => {
       } catch (err) {
         if (!cancelled) {
           toast.error(
-            recruitmentApi.getApiErrorMessage(err, 'Failed to load jobs'),
+            recruitmentApi.getApiErrorMessage(err, "Failed to load jobs"),
           );
         }
       } finally {
@@ -297,7 +291,7 @@ const RightSidebar = () => {
     setConnectingId(null);
 
     if (requestContactConnection.fulfilled.match(result)) {
-      toast.success('Connection request sent');
+      toast.success("Connection request sent");
       setPeople((prev) =>
         prev.map((row) =>
           row.id === person.id ? { ...row, pending: true } : row,
@@ -305,7 +299,7 @@ const RightSidebar = () => {
       );
       return;
     }
-    toast.error(result.payload || 'Failed to send connection request');
+    toast.error(result.payload || "Failed to send connection request");
   };
 
   return (
