@@ -5,6 +5,7 @@ import Avatar from '@/components/ui/Avatar';
 const LINE = 'bg-[#D0D5DD]';
 const SPINE_X = 18;
 const BRANCH_W = 30;
+const VISIBLE_REPLIES = 3;
 
 const mentionFromName = (name = '') => {
   const first = String(name).trim().split(/\s+/)[0];
@@ -88,75 +89,58 @@ const CommentBody = ({
   onLike,
   onReply,
   liking,
-  showReplyCount,
-  expanded,
-  onToggleReplies,
   showInlineReply,
   currentUser,
   replyInitialValue,
   replySubmitting,
   onSubmitReply,
   onCancelReply,
-}) => {
-  const replyCount = comment.replyCount ?? comment.replies?.length ?? 0;
-
-  return (
-    <div className="min-w-0 flex-1">
-      <div className="rounded-lg bg-[#F3F4F6] px-3 py-2.5">
-        <p className="text-[13px] font-semibold text-deep-blue">
-          {comment.author?.name}
-        </p>
-        <p className="text-[11px] text-[#64748B]">{comment.author?.subtitle}</p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-[#475467]">
-          {comment.content}
-        </p>
-      </div>
-      <div className="mt-1 flex flex-wrap items-center gap-3 px-1 text-[12px] font-semibold text-[#64748B]">
-        <button
-          type="button"
-          onClick={() => onLike(comment.id)}
-          disabled={liking}
-          className={`inline-flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
-            comment.liked ? 'text-primary' : ''
-          }`}
-        >
-          {comment.liked ? 'Liked' : 'Like'}
-          {comment.likeCount > 0 ? (
-            <span className="tabular-nums font-normal">({comment.likeCount})</span>
-          ) : null}
-        </button>
-        <button
-          type="button"
-          onClick={() => onReply(comment)}
-          className="hover:text-primary"
-        >
-          Reply
-        </button>
-        {showReplyCount && replyCount > 0 ? (
-          <button
-            type="button"
-            onClick={() => onToggleReplies(comment.id)}
-            className="hover:text-primary"
-          >
-            {expanded ? 'Hide' : 'View'} {replyCount}{' '}
-            {replyCount === 1 ? 'reply' : 'replies'}
-          </button>
-        ) : null}
-        <span className="font-normal text-[#98A2B3]">{comment.time}</span>
-      </div>
-
-      {showInlineReply ? (
-        <InlineReplyBox
-          currentUser={currentUser}
-          initialValue={replyInitialValue}
-          submitting={replySubmitting}
-          onSubmit={onSubmitReply}
-          onCancel={onCancelReply}
-        />
-      ) : null}
+}) => (
+  <div className="min-w-0 flex-1">
+    <div className="rounded-lg bg-[#F3F4F6] px-3 py-2.5">
+      <p className="text-[13px] font-semibold text-deep-blue">
+        {comment.author?.name}
+      </p>
+      <p className="text-[11px] text-[#64748B]">{comment.author?.subtitle}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-[#475467]">
+        {comment.content}
+      </p>
     </div>
-  );
-};
+    <div className="mt-1 flex flex-wrap items-center gap-3 px-1 text-[12px] font-semibold text-[#64748B]">
+      <button
+        type="button"
+        onClick={() => onLike(comment.id)}
+        disabled={liking}
+        className={`inline-flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
+          comment.liked ? 'text-primary' : ''
+        }`}
+      >
+        {comment.liked ? 'Liked' : 'Like'}
+        {comment.likeCount > 0 ? (
+          <span className="tabular-nums font-normal">({comment.likeCount})</span>
+        ) : null}
+      </button>
+      <button
+        type="button"
+        onClick={() => onReply(comment)}
+        className="hover:text-primary"
+      >
+        Reply
+      </button>
+      <span className="font-normal text-[#98A2B3]">{comment.time}</span>
+    </div>
+
+    {showInlineReply ? (
+      <InlineReplyBox
+        currentUser={currentUser}
+        initialValue={replyInitialValue}
+        submitting={replySubmitting}
+        onSubmit={onSubmitReply}
+        onCancel={onCancelReply}
+      />
+    ) : null}
+  </div>
+);
 
 const CommentItem = ({
   comment,
@@ -164,8 +148,8 @@ const CommentItem = ({
   onLike,
   onReply,
   likingCommentId,
-  expandedIds,
-  onToggleReplies,
+  showAllReplies,
+  onToggleMoreReplies,
   replyTargetId,
   replyInitialValue,
   replySubmitting,
@@ -173,9 +157,14 @@ const CommentItem = ({
   onCancelReply,
 }) => {
   const nested = Array.isArray(comment.replies) ? comment.replies : [];
-  const expanded = expandedIds.has(comment.id);
-  const showThread = expanded && nested.length > 0;
+  const hasMore = nested.length > VISIBLE_REPLIES;
+  const visibleReplies = showAllReplies
+    ? nested
+    : nested.slice(0, VISIBLE_REPLIES);
+  const hiddenCount = Math.max(0, nested.length - VISIBLE_REPLIES);
+  const showThread = nested.length > 0;
   const replyOpenOnRoot = replyTargetId === comment.id;
+  const replyOpenInThread = nested.some((r) => r.id === replyTargetId);
 
   return (
     <div className="relative">
@@ -205,9 +194,6 @@ const CommentItem = ({
           onLike={onLike}
           onReply={onReply}
           liking={likingCommentId === comment.id}
-          showReplyCount
-          expanded={expanded}
-          onToggleReplies={onToggleReplies}
           showInlineReply={replyOpenOnRoot}
           currentUser={currentUser}
           replyInitialValue={replyInitialValue}
@@ -219,9 +205,15 @@ const CommentItem = ({
 
       {showThread ? (
         <div className="relative space-y-3 pt-3">
-          {nested.map((reply, index) => {
-            const isLast = index === nested.length - 1;
+          {visibleReplies.map((reply, index) => {
+            const isLastVisible = index === visibleReplies.length - 1;
             const replyOpen = replyTargetId === reply.id;
+            const endOfThread =
+              isLastVisible &&
+              !replyOpen &&
+              !(hasMore && !showAllReplies) &&
+              !(hasMore && showAllReplies && replyOpenInThread);
+
             return (
               <div key={reply.id} className="relative">
                 <span
@@ -229,7 +221,7 @@ const CommentItem = ({
                   style={{ left: SPINE_X, top: SPINE_X, width: BRANCH_W }}
                   aria-hidden
                 />
-                {isLast && !replyOpen ? (
+                {endOfThread ? (
                   <span
                     className="pointer-events-none absolute z-[1] w-px -translate-x-1/2 bg-white"
                     style={{ left: SPINE_X, top: SPINE_X, bottom: 0 }}
@@ -250,7 +242,6 @@ const CommentItem = ({
                     onLike={onLike}
                     onReply={onReply}
                     liking={likingCommentId === reply.id}
-                    showReplyCount={false}
                     showInlineReply={replyOpen}
                     currentUser={currentUser}
                     replyInitialValue={replyInitialValue}
@@ -262,6 +253,22 @@ const CommentItem = ({
               </div>
             );
           })}
+
+          {hasMore ? (
+            <div className="relative" style={{ paddingLeft: BRANCH_W + 36 + 12 }}>
+              <button
+                type="button"
+                onClick={() => onToggleMoreReplies(comment.id)}
+                className="text-[12px] font-semibold text-primary hover:underline"
+              >
+                {showAllReplies
+                  ? 'Hide replies'
+                  : `View ${hiddenCount} more ${
+                      hiddenCount === 1 ? 'reply' : 'replies'
+                    }`}
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -300,7 +307,7 @@ const PostComments = ({
   const [replyRootId, setReplyRootId] = useState(null);
   const [replyInitialValue, setReplyInitialValue] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
-  const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const [showAllByRoot, setShowAllByRoot] = useState(() => new Set());
 
   const handleTopSubmit = async () => {
     const text = draft.trim();
@@ -324,13 +331,22 @@ const PostComments = ({
 
     const rootId = findRootId(comments, comment.id);
     const isLevel1 = rootId !== comment.id;
+    const root = comments.find((c) => c.id === rootId);
+    const replyCount = root?.replies?.length ?? 0;
 
     setReplyTargetId(comment.id);
     setReplyRootId(rootId);
     setReplyInitialValue(
       isLevel1 ? `${mentionFromName(comment?.author?.name)} ` : '',
     );
-    setExpandedIds((prev) => new Set(prev).add(rootId));
+
+    // Ensure target reply is visible if it's beyond the first 3
+    if (isLevel1 && replyCount > VISIBLE_REPLIES) {
+      const index = root.replies.findIndex((r) => r.id === comment.id);
+      if (index >= VISIBLE_REPLIES) {
+        setShowAllByRoot((prev) => new Set(prev).add(rootId));
+      }
+    }
   };
 
   const handleCancelReply = () => {
@@ -345,7 +361,11 @@ const PostComments = ({
     try {
       const ok = await onAddComment(text, replyRootId);
       if (ok !== false) {
-        setExpandedIds((prev) => new Set(prev).add(replyRootId));
+        const root = comments.find((c) => c.id === replyRootId);
+        const nextCount = (root?.replies?.length ?? 0) + 1;
+        if (nextCount > VISIBLE_REPLIES) {
+          setShowAllByRoot((prev) => new Set(prev).add(replyRootId));
+        }
         handleCancelReply();
       }
       return ok;
@@ -354,8 +374,8 @@ const PostComments = ({
     }
   };
 
-  const handleToggleReplies = (commentId) => {
-    setExpandedIds((prev) => {
+  const handleToggleMoreReplies = (commentId) => {
+    setShowAllByRoot((prev) => {
       const next = new Set(prev);
       if (next.has(commentId)) next.delete(commentId);
       else next.add(commentId);
@@ -409,8 +429,8 @@ const PostComments = ({
             onLike={onLikeComment}
             onReply={handleReply}
             likingCommentId={likingCommentId}
-            expandedIds={expandedIds}
-            onToggleReplies={handleToggleReplies}
+            showAllReplies={showAllByRoot.has(comment.id)}
+            onToggleMoreReplies={handleToggleMoreReplies}
             replyTargetId={replyTargetId}
             replyInitialValue={replyInitialValue}
             replySubmitting={replySubmitting}
