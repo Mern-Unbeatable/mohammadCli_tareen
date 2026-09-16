@@ -1,34 +1,64 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useDispatch, useSelector } from 'react-redux';
 import { ChevronLeft } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
 import Card from '@/components/ui/Card';
-import { employmentTypes, levels } from '@/modules/user/data/recruitment';
+import {
+  createJob,
+  formToCreatePayload,
+  EMPLOYMENT_TYPE_OPTIONS,
+  RECRUITMENT_LEVEL_OPTIONS,
+} from '@/features/user/recruitment';
 
 const fieldClass =
   'w-full rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10';
 
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-deep-blue';
 
+const LEVEL_OPTIONS = RECRUITMENT_LEVEL_OPTIONS.filter((item) => item !== 'All');
+
 const PostJobView = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { saving } = useSelector((state) => state.userRecruitment);
+
   const [form, setForm] = useState({
     title: '',
     company: '',
     applyLink: '',
     location: '',
     salary: '',
-    employmentType: employmentTypes[0],
-    level: levels[1],
+    employmentType: EMPLOYMENT_TYPE_OPTIONS[0],
+    level: LEVEL_OPTIONS[1] || LEVEL_OPTIONS[0],
     description: '',
     requirements: '',
   });
 
   const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/recruitment/my-jobs');
+    if (saving) return;
+
+    const payload = formToCreatePayload(form);
+    if (!payload.title || !payload.company || !payload.location || !payload.about) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    if (!payload.requirements.length) {
+      toast.error('Add at least one requirement');
+      return;
+    }
+
+    const result = await dispatch(createJob(payload));
+    if (createJob.fulfilled.match(result)) {
+      toast.success('Job published');
+      navigate('/recruitment/my-jobs');
+      return;
+    }
+    toast.error(result.payload || 'Failed to publish job');
   };
 
   return (
@@ -88,7 +118,6 @@ const PostJobView = () => {
                   onChange={update('applyLink')}
                   placeholder="https://www.applyhere.com"
                   className={fieldClass}
-                  required
                 />
               </div>
             </div>
@@ -119,7 +148,6 @@ const PostJobView = () => {
                   onChange={update('salary')}
                   placeholder="e.g. €35,000 – €45,000"
                   className={fieldClass}
-                  required
                 />
               </div>
             </div>
@@ -135,7 +163,7 @@ const PostJobView = () => {
                   onChange={update('employmentType')}
                   className={fieldClass}
                 >
-                  {employmentTypes.map((item) => (
+                  {EMPLOYMENT_TYPE_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
@@ -147,7 +175,7 @@ const PostJobView = () => {
                   Level
                 </label>
                 <select id="level" value={form.level} onChange={update('level')} className={fieldClass}>
-                  {levels.slice(1).map((item) => (
+                  {LEVEL_OPTIONS.map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
@@ -188,9 +216,10 @@ const PostJobView = () => {
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
+              disabled={saving}
+              className="w-full rounded-lg bg-primary py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0] disabled:opacity-60"
             >
-              Publish Job
+              {saving ? 'Publishing…' : 'Publish Job'}
             </button>
           </form>
         </Card>

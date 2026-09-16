@@ -2,11 +2,13 @@ import {
   ArrowLeft,
   Image as ImageIcon,
   Info,
+  LogOut,
   Paperclip,
   Phone,
   Plus,
   Search,
   Send,
+  Trash2,
 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 
@@ -45,14 +47,25 @@ const ConversationItem = ({ chat, active, onClick, showOnline = false }) => (
   </button>
 );
 
-const MessageBubble = ({ message, showAvatar, chat }) => {
+const MessageBubble = ({ message, showAvatar, chat, onDeleteMessage }) => {
   const isMe = message.from === 'me';
+  const text = message.text || message.body || '';
 
   if (isMe) {
     return (
-      <div className="flex flex-col items-end">
-        <div className="max-w-[min(85%,420px)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13px] leading-relaxed text-white sm:max-w-[min(100%,420px)]">
-          {message.text}
+      <div className="group flex flex-col items-end">
+        <div className="relative max-w-[min(85%,420px)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13px] leading-relaxed text-white sm:max-w-[min(100%,420px)]">
+          {text}
+          {onDeleteMessage ? (
+            <button
+              type="button"
+              onClick={() => onDeleteMessage(message.id)}
+              aria-label="Delete message"
+              className="absolute -left-8 top-1/2 hidden -translate-y-1/2 rounded-md p-1 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#CC1016] group-hover:block"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
         </div>
         <span className="mt-1 px-1 text-[10px] text-[#98A2B3]">{message.time}</span>
       </div>
@@ -75,7 +88,7 @@ const MessageBubble = ({ message, showAvatar, chat }) => {
           <p className="mb-1 text-[11px] font-medium text-[#64748B]">{message.sender}</p>
         ) : null}
         <div className="rounded-2xl rounded-bl-sm bg-[#E8ECF0] px-4 py-2.5 text-[13px] leading-relaxed text-[#334155]">
-          {message.text}
+          {text}
         </div>
         <span className="mt-1 block px-1 text-[10px] text-[#98A2B3]">{message.time}</span>
       </div>
@@ -104,6 +117,9 @@ const Messenger = ({
   onNewMessage,
   showCreateGroupButton = false,
   onCreateGroup,
+  onLeave,
+  onDeleteMessage,
+  loading = false,
   mobilePanel = 'list',
   onMobileBack,
   className = '',
@@ -117,7 +133,7 @@ const Messenger = ({
       <div
         className={`flex items-center justify-center rounded-2xl border border-[#E4E7EC] bg-white p-8 text-[13px] text-[#64748B] ${heightClass} ${className}`}
       >
-        No conversations yet.
+        {loading ? 'Loading conversations…' : 'No conversations yet.'}
       </div>
     );
   }
@@ -245,6 +261,17 @@ const Messenger = ({
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5">
+            {onLeave ? (
+              <button
+                type="button"
+                onClick={onLeave}
+                aria-label="Leave conversation"
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-[#64748B] transition-colors hover:bg-[#F9FAFB] hover:text-[#CC1016]"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Leave
+              </button>
+            ) : null}
             <button
               type="button"
               aria-label="Call"
@@ -263,7 +290,7 @@ const Messenger = ({
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-white px-3 py-4 scrollbar-hide sm:px-6 sm:py-5">
-          {displayChat.messages.map((message, index) => {
+          {(displayChat.messages || []).map((message, index) => {
             const prev = displayChat.messages[index - 1];
             const showAvatar =
               message.from === 'them' &&
@@ -274,6 +301,7 @@ const Messenger = ({
                 message={message}
                 showAvatar={showAvatar}
                 chat={displayChat}
+                onDeleteMessage={onDeleteMessage}
               />
             );
           })}

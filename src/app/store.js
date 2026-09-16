@@ -19,6 +19,16 @@ import { supplierGeneralReducer } from "../features/supplier/general";
 import { supplierBlogsReducer } from "../features/supplier/blogs";
 import { supplierNotificationsReducer } from "../features/supplier/notifications";
 import { supplierProfileReducer } from "../features/supplier/profile";
+import { userProfileReducer } from "../features/user/profile";
+import { userContactsReducer } from "../features/user/contacts";
+import { userMarketplaceReducer } from "../features/user/marketplace";
+import { userRecruitmentReducer } from "../features/user/recruitment";
+import { userMessagesReducer } from "../features/user/messages";
+import { userReportsReducer } from "../features/user/reports";
+import { userSearchReducer } from "../features/user/search";
+import { userFeedReducer } from "../features/user/feed";
+import { userNotificationsReducer } from "../features/user/notifications";
+import { userSubscriptionsReducer } from "../features/user/subscriptions";
 
 export const store = configureStore({
   reducer: {
@@ -42,6 +52,16 @@ export const store = configureStore({
     supplierBlogs: supplierBlogsReducer,
     supplierNotifications: supplierNotificationsReducer,
     supplierProfile: supplierProfileReducer,
+    userProfile: userProfileReducer,
+    userContacts: userContactsReducer,
+    userMarketplace: userMarketplaceReducer,
+    userRecruitment: userRecruitmentReducer,
+    userMessages: userMessagesReducer,
+    userReports: userReportsReducer,
+    userSearch: userSearchReducer,
+    userFeed: userFeedReducer,
+    userNotifications: userNotificationsReducer,
+    userSubscriptions: userSubscriptionsReducer,
   },
 
   middleware: (getDefaultMiddleware) =>

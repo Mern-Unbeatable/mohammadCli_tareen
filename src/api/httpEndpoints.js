@@ -180,6 +180,7 @@ export const API_ENDPOINTS = {
       ME: "/users/me",
       UPDATE: "/users/me",
       CHANGE_PASSWORD: "/users/me/password",
+      DETAILS: (userId) => `/users/${userId}`,
     },
 
     FEED: {
@@ -204,14 +205,23 @@ export const API_ENDPOINTS = {
 
     MARKETPLACE: {
       LIST: "/marketplace",
+      CREATE: "/marketplace",
       DETAILS: (listingId) => `/marketplace/${listingId}`,
+      UPDATE: (listingId) => `/marketplace/${listingId}`,
+      DELETE: (listingId) => `/marketplace/${listingId}`,
       SAVE: (listingId) => `/marketplace/${listingId}/save`,
+      ENQUIRE: (listingId) => `/marketplace/${listingId}/enquire`,
     },
 
     RECRUITMENT: {
       LIST: "/recruitment",
+      CREATE: "/recruitment",
       DETAILS: (jobId) => `/recruitment/${jobId}`,
+      UPDATE: (jobId) => `/recruitment/${jobId}`,
+      DELETE: (jobId) => `/recruitment/${jobId}`,
       APPLY: (jobId) => `/recruitment/${jobId}/apply`,
+      APPLICATIONS: (jobId) => `/recruitment/${jobId}/applications`,
+      MY_APPLICATIONS: "/recruitment/applications/me",
     },
 
     GENERAL: {
@@ -227,6 +237,10 @@ export const API_ENDPOINTS = {
       DIRECT: "/messages/direct",
       GROUP: "/messages/group",
       THREAD: (conversationId) => `/messages/${conversationId}/messages`,
+      SEND: (conversationId) => `/messages/${conversationId}/messages`,
+      DELETE_MESSAGE: (conversationId, messageId) =>
+        `/messages/${conversationId}/messages/${messageId}`,
+      LEAVE: (conversationId) => `/messages/${conversationId}/leave`,
     },
 
     NOTIFICATIONS: {
@@ -243,7 +257,10 @@ export const API_ENDPOINTS = {
 
     REPORTS: {
       CREATE: "/reports",
+      MINE: "/reports/me",
     },
+
+    SEARCH: "/search",
 
     SUBSCRIPTIONS: {
       ME: "/subscriptions/me",

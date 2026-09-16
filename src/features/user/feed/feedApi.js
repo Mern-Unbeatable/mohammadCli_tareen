@@ -1,0 +1,123 @@
+import {
+  crudService,
+  API_ENDPOINTS,
+  unwrapApiData,
+  getApiErrorMessage,
+} from "@/api";
+
+/**
+ * User feed HTTP helpers — no Redux. Used by feedThunks.
+ */
+
+const parseListResponse = (response, params = {}) => {
+  const outer = response;
+  const inner = unwrapApiData(response);
+
+  let postsData = [];
+  let metaData = {
+    page: params.page || 1,
+    pageSize: params.pageSize || 10,
+    total: 0,
+    totalPages: 1,
+  };
+
+  if (Array.isArray(inner)) {
+    postsData = inner;
+    metaData = outer?.meta || metaData;
+  } else if (Array.isArray(inner?.data)) {
+    postsData = inner.data;
+    metaData = inner.meta || outer?.meta || metaData;
+  } else if (Array.isArray(outer?.data)) {
+    postsData = outer.data;
+    metaData = outer.meta || metaData;
+  }
+
+  if (!metaData.total && postsData.length) {
+    metaData = {
+      ...metaData,
+      total: postsData.length,
+      totalPages: Math.max(
+        1,
+        Math.ceil(postsData.length / (metaData.pageSize || 10)),
+      ),
+    };
+  }
+
+  return { data: postsData, meta: metaData };
+};
+
+export async function getFeed(params = {}) {
+  const query = {
+    page: 1,
+    pageSize: 10,
+    sort: "desc",
+    ...params,
+  };
+  if (!query.type) delete query.type;
+  if (!query.search) delete query.search;
+  if (query.mine === undefined || query.mine === null) delete query.mine;
+
+  const response = await crudService.get(API_ENDPOINTS.USER.FEED.LIST, query);
+  return parseListResponse(response, query);
+}
+
+export async function getPostById(postId) {
+  const response = await crudService.get(
+    API_ENDPOINTS.USER.FEED.DETAILS(postId),
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function createPost(payload) {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.CREATE,
+    payload,
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function updatePost(postId, payload) {
+  const response = await crudService.patch(
+    API_ENDPOINTS.USER.FEED.UPDATE(postId),
+    payload,
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function deletePost(postId) {
+  const response = await crudService.del(
+    API_ENDPOINTS.USER.FEED.DELETE(postId),
+  );
+  return { postId, data: unwrapApiData(response) ?? response };
+}
+
+export async function addComment(postId, payload) {
+  const body =
+    typeof payload === "string" ? { body: payload } : payload;
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.COMMENTS(postId),
+    body,
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function deleteComment(postId, commentId) {
+  const response = await crudService.del(
+    API_ENDPOINTS.USER.FEED.COMMENT(postId, commentId),
+  );
+  return {
+    postId,
+    commentId,
+    data: unwrapApiData(response) ?? response,
+  };
+}
+
+export async function reactToPost(postId, type) {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.REACTIONS(postId),
+    { type },
+  );
+  return unwrapApiData(response) || response;
+}
+
+export { getApiErrorMessage };

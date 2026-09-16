@@ -1,21 +1,104 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
 import JobCard from '@/components/data-display/JobCard/JobCard';
 import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
-import { filterJobs, getMyJobs } from '@/modules/user/data/recruitment';
+import {
+  fetchJobs,
+  removeJob,
+  fetchMyApplications,
+  clearRecruitmentError,
+  levelToApi,
+  toJobCardModel,
+  formatPostedAgo,
+} from '@/features/user/recruitment';
+
+const JOB_BASE = '/recruitment';
+
+const buildMyJobsQuery = ({ query, level }) => {
+  const params = {
+    page: 1,
+    pageSize: 50,
+    sort: 'desc',
+    mine: true,
+  };
+  const q = query?.trim();
+  if (q) params.search = q;
+  const levelApi = levelToApi(level);
+  if (levelApi) params.level = levelApi;
+  return params;
+};
 
 const MyJobsView = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const {
+    jobs,
+    jobsLoading,
+    deleting,
+    applications,
+    applicationsLoading,
+    error,
+  } = useSelector((state) => state.userRecruitment);
+
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [level, setLevel] = useState('All');
-  const [myJobs, setMyJobs] = useState(getMyJobs);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    dispatch(clearRecruitmentError());
+    dispatch(
+      fetchJobs(buildMyJobsQuery({ query: debouncedQuery, level })),
+    );
+  }, [dispatch, debouncedQuery, level]);
+
+  useEffect(() => {
+    dispatch(fetchMyApplications({ page: 1, pageSize: 20, sort: 'desc' }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   const filtered = useMemo(
-    () => filterJobs(myJobs, query, level),
-    [myJobs, query, level]
+    () => (jobs || []).map(toJobCardModel).filter(Boolean),
+    [jobs],
   );
 
-  const handleDelete = (id) => {
-    setMyJobs((prev) => prev.filter((job) => job.id !== id));
+  const myApplications = useMemo(
+    () =>
+      (applications || []).map((app) => {
+        const job = app.job ? toJobCardModel(app.job) : null;
+        return {
+          id: app.id,
+          status: app.status || 'PENDING',
+          appliedAt: formatPostedAgo(app.appliedAt || app.createdAt).replace(
+            /^Posted /,
+            'Applied ',
+          ),
+          coverLetter: app.coverLetter || '',
+          job,
+          jobId: job?.id || app.jobId,
+        };
+      }),
+    [applications],
+  );
+
+  const handleDelete = async (id) => {
+    const result = await dispatch(removeJob(id));
+    if (removeJob.fulfilled.match(result)) {
+      toast.success('Job deleted');
+      return;
+    }
+    toast.error(result.payload || 'Failed to delete job');
   };
 
   return (
@@ -27,17 +110,25 @@ const MyJobsView = () => {
           level={level}
           onLevelChange={setLevel}
           activeView="mine"
+          basePath={JOB_BASE}
         />
 
         <div className="mt-6 space-y-4">
-          {filtered.length > 0 ? (
+          {jobsLoading && !filtered.length ? (
+            <div className="flex h-40 items-center justify-center rounded-xl bg-white shadow-sm">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+              <span className="text-[14px] text-[#64748B]">Loading your jobs…</span>
+            </div>
+          ) : filtered.length > 0 ? (
             filtered.map((job, index) => (
               <JobCard
                 key={job.id}
                 job={job}
                 variant="mine"
                 highlighted={index === 0}
-                onDelete={handleDelete}
+                detailHref={`${JOB_BASE}/${job.id}`}
+                onDelete={deleting ? undefined : handleDelete}
+                onEdit={() => navigate(`${JOB_BASE}/${job.id}`)}
               />
             ))
           ) : (
@@ -49,6 +140,65 @@ const MyJobsView = () => {
             </div>
           )}
         </div>
+
+        <section className="mt-10">
+          <div className="mb-4">
+            <h2 className="text-[20px] font-bold text-deep-blue">My Applications</h2>
+            <p className="mt-1 text-[14px] text-[#64748B]">
+              Roles you have applied to across the network.
+            </p>
+          </div>
+
+          {applicationsLoading && !myApplications.length ? (
+            <div className="flex h-32 items-center justify-center rounded-xl bg-white shadow-sm">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+              <span className="text-[14px] text-[#64748B]">Loading applications…</span>
+            </div>
+          ) : myApplications.length ? (
+            <div className="space-y-3">
+              {myApplications.map((app) => (
+                <div
+                  key={app.id}
+                  className="rounded-xl border border-[#E4E7EC] bg-white px-5 py-4"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      {app.jobId ? (
+                        <Link
+                          to={`${JOB_BASE}/${app.jobId}`}
+                          className="text-[15px] font-semibold text-primary hover:underline"
+                        >
+                          {app.job?.title || 'Job posting'}
+                        </Link>
+                      ) : (
+                        <p className="text-[15px] font-semibold text-deep-blue">
+                          {app.job?.title || 'Job posting'}
+                        </p>
+                      )}
+                      <p className="mt-0.5 text-[13px] text-[#64748B]">
+                        {[app.job?.company, app.job?.location]
+                          .filter(Boolean)
+                          .join(' · ') || '—'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+                      <span className="inline-flex rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                        {app.status}
+                      </span>
+                      <span className="text-[11px] text-[#98A2B3]">{app.appliedAt}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[#D0D5DD] bg-white px-6 py-10 text-center">
+              <p className="text-[14px] text-[#64748B]">
+                You have not applied to any jobs yet.
+              </p>
+            </div>
+          )}
+        </section>
       </Container>
     </main>
   );

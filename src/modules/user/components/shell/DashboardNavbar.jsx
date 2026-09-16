@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   BookOpen,
@@ -14,12 +14,21 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
 import Container from '@/components/ui/Container';
 import { useAuth } from '@/shared/auth/useAuth';
 import ProfileDropdown from './ProfileDropdown';
-import { currentUser, navItems } from '@/modules/user/data/dashboard';
+import { navItems } from '@/modules/user/data/dashboard';
+import {
+  fetchGlobalSearch,
+  clearSearchResults,
+  clearSearchError,
+  toSearchResultsModel,
+} from '@/features/user/search';
+import { toProfilePageUser } from '@/features/user/profile';
 
 const iconMap = {
   home: Home,
@@ -32,11 +41,81 @@ const iconMap = {
   notifications: Bell,
 };
 
+const resultLabel = (item, type) => {
+  if (type === 'users') {
+    return (
+      item.name ||
+      [item.firstName, item.lastName].filter(Boolean).join(' ') ||
+      item.email ||
+      'User'
+    );
+  }
+  if (type === 'posts') return item.content || item.title || 'Post';
+  if (type === 'blogs') return item.title || item.slug || 'Blog';
+  return item.title || item.name || 'Result';
+};
+
+const resultHref = (item, type) => {
+  if (type === 'users') return `/contacts/${item.id}`;
+  if (type === 'jobs') return `/recruitment/${item.id}`;
+  if (type === 'listings') return `/marketplace/${item.id}`;
+  if (type === 'posts') return '/feed';
+  if (type === 'blogs') return `/blogs/${item.slug || item.id}`;
+  return '#';
+};
+
+const SearchDropdown = ({ open, loading, groups, onSelect }) => {
+  if (!open) return null;
+
+  return (
+    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] max-h-[70vh] overflow-y-auto rounded-xl border border-[#E4E7EC] bg-white py-2 shadow-lg">
+      {loading && !groups.length ? (
+        <p className="px-4 py-3 text-[13px] text-[#64748B]">Searching…</p>
+      ) : groups.length ? (
+        groups.map((group) => (
+          <div key={group.type} className="py-1">
+            <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+              {group.label}
+            </p>
+            {group.items.map((item) => {
+              const href = resultHref(item, group.type);
+              const label = resultLabel(item, group.type);
+              return (
+                <button
+                  key={`${group.type}-${item.id || item.slug || label}`}
+                  type="button"
+                  onClick={() => onSelect(href)}
+                  className="flex w-full items-start gap-2 px-4 py-2 text-left hover:bg-[#F9FAFB]"
+                >
+                  <span className="line-clamp-2 text-[13px] font-medium text-deep-blue">
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))
+      ) : (
+        <p className="px-4 py-3 text-[13px] text-[#64748B]">No results found</p>
+      )}
+    </div>
+  );
+};
+
 const DashboardNavbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const mobileSearchRef = useRef(null);
+  const desktopSearchRef = useRef(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { logout } = useAuth();
+  const { results, loading, error } = useSelector((state) => state.userSearch);
+  const { user } = useSelector((state) => state.userProfile);
+  const profileUser = useMemo(() => toProfilePageUser(user), [user]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -65,6 +144,67 @@ const DashboardNavbar = () => {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (!debouncedQuery) {
+      dispatch(clearSearchResults());
+      return;
+    }
+    dispatch(clearSearchError());
+    dispatch(fetchGlobalSearch({ q: debouncedQuery, limit: 5 }));
+  }, [dispatch, debouncedQuery]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      const inMobile = mobileSearchRef.current?.contains(event.target);
+      const inDesktop = desktopSearchRef.current?.contains(event.target);
+      if (!inMobile && !inDesktop) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, []);
+
+  const model = useMemo(() => toSearchResultsModel(results), [results]);
+
+  const groups = useMemo(() => {
+    const entries = [
+      ['users', 'People', model.users],
+      ['jobs', 'Jobs', model.jobs],
+      ['listings', 'Listings', model.listings],
+      ['posts', 'Posts', model.posts],
+      ['blogs', 'Blogs', model.blogs],
+    ];
+    return entries
+      .map(([type, label, items]) => ({
+        type,
+        label,
+        items: (items || []).slice(0, 5),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [model]);
+
+  const showDropdown = searchOpen && Boolean(debouncedQuery);
+
+  const handleSelect = (href) => {
+    setSearchOpen(false);
+    setQuery('');
+    dispatch(clearSearchResults());
+    if (href && href !== '#') navigate(href);
+  };
+
+  const onQueryChange = (value) => {
+    setQuery(value);
+    setSearchOpen(true);
+  };
+
   return (
     <>
       <header className="sticky top-0 z-[70] border-b border-[#E4E7EC] bg-white">
@@ -79,13 +219,25 @@ const DashboardNavbar = () => {
 
           <div className="hidden flex-1 sm:block" aria-hidden="true" />
 
-          <div className="relative min-w-0 flex-1 sm:w-[200px] sm:flex-none md:w-[240px] lg:w-[280px]">
+          <div
+            ref={mobileSearchRef}
+            className="relative min-w-0 flex-1 sm:w-[200px] sm:flex-none md:w-[240px] lg:w-[280px]"
+          >
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
               type="search"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
               placeholder="Search..."
               aria-label="Search professionals, products, jobs"
               className="w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] py-2 pl-9 pr-3 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:py-2.5 sm:pl-10 sm:text-[14px]"
+            />
+            <SearchDropdown
+              open={showDropdown}
+              loading={loading}
+              groups={groups}
+              onSelect={handleSelect}
             />
           </div>
 
@@ -115,12 +267,22 @@ const DashboardNavbar = () => {
             <span className="text-[17px] font-bold text-deep-blue">Lab Unity</span>
           </Link>
 
-          <div className="relative mx-auto max-w-[420px] flex-1">
+          <div ref={desktopSearchRef} className="relative mx-auto max-w-[420px] flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
               type="search"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
               placeholder="Search professionals, products, jobs..."
+              aria-label="Search professionals, products, jobs"
               className="w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] py-2 pl-10 pr-4 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+            />
+            <SearchDropdown
+              open={showDropdown}
+              loading={loading}
+              groups={groups}
+              onSelect={handleSelect}
             />
           </div>
 
@@ -164,16 +326,20 @@ const DashboardNavbar = () => {
             <Container className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] pt-4 sm:pb-4">
               <div className="mb-4 flex items-center gap-3 border-b border-[#E4E7EC] pb-4">
                 <Avatar
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  initials={currentUser.initials}
+                  src={profileUser?.avatar}
+                  alt={profileUser?.name || 'Member'}
+                  initials={profileUser?.initials || 'MB'}
                   size="md"
                   className="bg-[#FEF3C7] text-[#B45309]"
                 />
                 <div>
-                  <p className="text-[14px] font-semibold text-deep-blue">{currentUser.name}</p>
+                  <p className="text-[14px] font-semibold text-deep-blue">
+                    {profileUser?.name || 'Member'}
+                  </p>
                   <p className="text-[12px] text-[#64748B]">
-                    {currentUser.title} · {currentUser.company}
+                    {[profileUser?.title, profileUser?.company]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 </div>
               </div>

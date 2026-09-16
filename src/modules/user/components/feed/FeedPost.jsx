@@ -1,12 +1,15 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { MoreHorizontal, Tag } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
-import { currentUser } from '@/modules/user/data/dashboard';
+import { addComment, reactToPost } from '@/features/user/feed';
+import { toProfilePageUser } from '@/features/user/profile';
 
 const badgeByType = {
   question: { variant: 'question', label: 'Question' },
@@ -15,12 +18,25 @@ const badgeByType = {
   promo: { variant: 'sponsored', label: '• Sponsored' },
 };
 
+const REACTION_API = {
+  like: 'LIKE',
+  love: 'LOVE',
+  celebrate: 'CELEBRATE',
+  support: 'SUPPORT',
+  insightful: 'INSIGHTFUL',
+  curious: 'CURIOUS',
+};
+
 const PostHeader = ({ post, onReport }) => {
   const badge = badgeByType[post.type];
 
   return (
     <div className="flex items-start gap-3 p-4 pb-0">
-      <Avatar initials={post.author.initials} size="md" />
+      <Avatar
+        src={post.author.avatar}
+        initials={post.author.initials}
+        size="md"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[14px] font-bold text-deep-blue">{post.author.name}</h3>
@@ -38,8 +54,8 @@ const PostHeader = ({ post, onReport }) => {
       <button
         type="button"
         onClick={() => onReport(post)}
-        className="rounded-md p-1 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-deep-blue"
-        aria-label="Post options"
+        className="rounded-full p-1.5 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#64748B]"
+        aria-label="Report post"
       >
         <MoreHorizontal className="h-5 w-5" />
       </button>
@@ -57,7 +73,7 @@ const PromoPricing = ({ post }) => (
     </div>
     <div className="text-right">
       {post.discount && (
-        <span className="inline-block rounded-md bg-[#FEF3E8] px-2 py-0.5 text-[11px] font-semibold text-[#E67E22]">
+        <span className="inline-flex rounded-md bg-[#FEF3E8] px-2 py-0.5 text-[11px] font-semibold text-[#E67E22]">
           {post.discount}
         </span>
       )}
@@ -69,46 +85,89 @@ const PromoPricing = ({ post }) => (
 );
 
 const FeedPost = ({ post, onReport }) => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.userProfile);
+  const profileUser = useMemo(() => toProfilePageUser(user), [user]);
+
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [reactionId, setReactionId] = useState(null);
+  const [reactionId, setReactionId] = useState(
+    post.myReaction ? String(post.myReaction).toLowerCase() : null,
+  );
   const [shared, setShared] = useState(false);
   const [stats, setStats] = useState(post.stats);
   const [comments, setComments] = useState(post.comments ?? []);
 
-  const handleReact = (id) => {
-    setReactionId(id);
+  useEffect(() => {
+    setStats(post.stats);
+    setComments(post.comments ?? []);
+    setReactionId(
+      post.myReaction ? String(post.myReaction).toLowerCase() : null,
+    );
+  }, [post]);
+
+  const handleReact = async (id) => {
+    const next = reactionId === id ? null : id;
+    const prevId = reactionId;
+    setReactionId(next);
     setStats((prev) => ({
       ...prev,
-      reactions: id && !reactionId ? prev.reactions + 1 : !id && reactionId ? prev.reactions - 1 : prev.reactions,
+      reactions:
+        next && !prevId
+          ? prev.reactions + 1
+          : !next && prevId
+            ? Math.max(0, prev.reactions - 1)
+            : prev.reactions,
     }));
+
+    const apiType = REACTION_API[next || prevId] || 'LIKE';
+    const result = await dispatch(
+      reactToPost({ postId: post.id, type: apiType }),
+    );
+    if (reactToPost.rejected.match(result)) {
+      setReactionId(prevId);
+      setStats(post.stats);
+      toast.error(result.payload || 'Failed to update reaction');
+    }
   };
 
-  const handleAddComment = (text) => {
-    setComments((prev) => [
-      {
-        id: `c-${Date.now()}`,
-        author: {
-          initials: currentUser.initials,
-          name: currentUser.name,
-          subtitle: `${currentUser.title} · ${currentUser.company}`,
-          avatar: currentUser.avatar,
-        },
-        content: text,
-        time: 'Just now',
-        replies: 0,
-        liked: false,
-      },
-      ...prev,
-    ]);
-    setStats((prev) => ({ ...prev, comments: prev.comments + 1 }));
+  const handleAddComment = async (text) => {
+    const result = await dispatch(
+      addComment({ postId: post.id, body: text }),
+    );
+    if (addComment.fulfilled.match(result)) {
+      const comment = result.payload?.comment;
+      if (comment) {
+        setComments((prev) => [
+          {
+            id: comment.id,
+            author: {
+              initials: profileUser?.initials || 'MB',
+              name: profileUser?.name || 'You',
+              subtitle: [profileUser?.title, profileUser?.company]
+                .filter(Boolean)
+                .join(' · '),
+              avatar: profileUser?.avatar,
+            },
+            content: comment.body || comment.content || text,
+            time: 'Just now',
+            replies: 0,
+            liked: false,
+          },
+          ...prev,
+        ]);
+        setStats((prev) => ({ ...prev, comments: prev.comments + 1 }));
+      }
+    } else {
+      toast.error(result.payload || 'Failed to add comment');
+    }
   };
 
   const handleLikeComment = (commentId) => {
     setComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, liked: !c.liked } : c
-      )
+        c.id === commentId ? { ...c, liked: !c.liked } : c,
+      ),
     );
   };
 
@@ -188,6 +247,7 @@ const FeedPost = ({ post, onReport }) => {
         {commentsOpen && (
           <PostComments
             comments={comments}
+            currentUser={profileUser}
             onAddComment={handleAddComment}
             onLikeComment={handleLikeComment}
           />
