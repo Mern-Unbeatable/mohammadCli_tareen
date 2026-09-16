@@ -1,6 +1,8 @@
 import axios from "axios";
 import { tokenService } from "./cookies";
 import { API_ENDPOINTS } from "./httpEndpoints";
+import { unwrapApiData } from "./unwrapApiData";
+import { notifyTokenRefreshed, notifyUnauthorized } from "./sessionBridge";
 
 /** Must match Postman `baseUrl` (includes `/api/v1`). */
 const BASE_URL =
@@ -52,31 +54,45 @@ const clearSessionAndRedirect = () => {
   if (handlingUnauthorized) return;
   handlingUnauthorized = true;
 
-  tokenService.clearAuth();
+  try {
+    tokenService.clearAuth();
+    notifyUnauthorized();
 
-  Promise.all([
-    import("../app/store"),
-    import("../features/auth"),
-    import("../app/router/index.jsx"),
-  ])
-    .then(([{ store }, { resetAuth }, { router }]) => {
-      store.dispatch(resetAuth());
-      const path = window.location.pathname;
-      if (!path.startsWith("/login")) {
-        router.navigate("/login", {
-          replace: true,
-          state: { from: path },
-        });
-      }
-    })
-    .catch(() => {
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.assign("/login");
-      }
-    })
-    .finally(() => {
-      handlingUnauthorized = false;
-    });
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.assign("/login");
+    }
+  } finally {
+    handlingUnauthorized = false;
+  }
+};
+
+/** Refresh tokens without importing authApi (breaks circular import with axios). */
+const refreshAccessToken = async () => {
+  const refreshToken = tokenService.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
+  const { data: envelope } = await bareAuthClient.post(
+    API_ENDPOINTS.AUTH.REFRESH,
+    { refreshToken },
+  );
+  const data = unwrapApiData(envelope) || envelope;
+  const remember = tokenService.getRemember();
+  const session = tokenService.persistSession({
+    accessToken: data?.accessToken,
+    refreshToken: data?.refreshToken,
+    user: tokenService.getUser(),
+    remember,
+  });
+
+  const accessToken = session?.accessToken || data?.accessToken;
+  if (!accessToken) {
+    throw new Error("Refresh did not return an access token");
+  }
+
+  notifyTokenRefreshed(accessToken);
+  return accessToken;
 };
 
 /**
@@ -96,21 +112,7 @@ const refreshAndRetry = async (originalRequest) => {
   originalRequest._retry = true;
 
   try {
-    const { refresh } = await import("../features/auth/authApi");
-    const session = await refresh();
-    const accessToken = session?.accessToken;
-
-    if (!accessToken) {
-      throw new Error("Refresh did not return an access token");
-    }
-
-    import("../app/store")
-      .then(async ({ store }) => {
-        const { tokenRefreshed } = await import("../features/auth");
-        store.dispatch(tokenRefreshed(accessToken));
-      })
-      .catch(() => {});
-
+    const accessToken = await refreshAccessToken();
     flushRefreshQueue(null, accessToken);
     originalRequest.headers.Authorization = `Bearer ${accessToken}`;
     return axiosInstance(originalRequest);
@@ -123,9 +125,6 @@ const refreshAndRetry = async (originalRequest) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-// Request Interceptor
-// ═══════════════════════════════════════════════════════════════════════
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = tokenService.getToken();
@@ -137,9 +136,6 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// ═══════════════════════════════════════════════════════════════════════
-// Response Interceptor
-// ═══════════════════════════════════════════════════════════════════════
 axiosInstance.interceptors.response.use(
   (response) => response.data,
   async (error) => {
@@ -153,7 +149,6 @@ axiosInstance.interceptors.response.use(
       !isAuthCredentialRequest(url) &&
       tokenService.getRefreshToken()
     ) {
-      // /auth/me with a dead access token: try refresh once before giving up
       if (isMeRequest(url) || !isAuthCredentialRequest(url)) {
         try {
           return await refreshAndRetry(originalRequest);
