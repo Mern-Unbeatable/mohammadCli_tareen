@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Send } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 
-const CommentItem = ({ comment, onLike }) => (
+const CommentItem = ({ comment, onLike, liking }) => (
   <div className="flex gap-3">
     <Avatar
       src={comment.author.avatar}
@@ -21,9 +21,15 @@ const CommentItem = ({ comment, onLike }) => (
         <button
           type="button"
           onClick={() => onLike(comment.id)}
-          className={`hover:text-primary ${comment.liked ? 'text-primary' : ''}`}
+          disabled={liking}
+          className={`inline-flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
+            comment.liked ? 'text-primary' : ''
+          }`}
         >
           {comment.liked ? 'Liked' : 'Like'}
+          {comment.likeCount > 0 ? (
+            <span className="tabular-nums font-normal">({comment.likeCount})</span>
+          ) : null}
         </button>
         <button type="button" className="hover:text-primary">
           Reply
@@ -39,7 +45,13 @@ const CommentItem = ({ comment, onLike }) => (
   </div>
 );
 
-const PostComments = ({ comments, currentUser, onAddComment, onLikeComment }) => {
+const PostComments = ({
+  comments,
+  currentUser,
+  onAddComment,
+  onLikeComment,
+  likingCommentId,
+}) => {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -98,6 +110,7 @@ const PostComments = ({ comments, currentUser, onAddComment, onLikeComment }) =>
             key={comment.id}
             comment={comment}
             onLike={onLikeComment}
+            liking={likingCommentId === comment.id}
           />
         ))}
       </div>

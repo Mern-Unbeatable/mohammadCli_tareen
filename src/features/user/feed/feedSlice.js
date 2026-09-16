@@ -8,6 +8,7 @@ import {
   addComment,
   removeComment,
   reactToPost,
+  likeComment,
 } from "./feedThunks";
 
 const initialState = {
@@ -20,6 +21,7 @@ const initialState = {
   deleting: false,
   commenting: false,
   reactingId: null,
+  likingCommentId: null,
   error: null,
 };
 
@@ -229,6 +231,48 @@ const feedSlice = createSlice({
       })
       .addCase(reactToPost.rejected, (state, action) => {
         state.reactingId = null;
+        state.error = action.payload;
+      })
+      .addCase(likeComment.pending, (state, action) => {
+        state.likingCommentId = action.meta.arg?.commentId || null;
+        state.error = null;
+      })
+      .addCase(likeComment.fulfilled, (state, action) => {
+        state.likingCommentId = null;
+        const { postId, commentId, data } = action.payload;
+        const liked = Boolean(data?.liked ?? data?.isLiked);
+        const likeCount =
+          data?.likeCount ??
+          (typeof data?.likesCount === "number" ? data.likesCount : undefined);
+
+        const applyLike = (post) => {
+          if (!post || post.id !== postId) return post;
+          const comments = Array.isArray(post.comments) ? post.comments : [];
+          return {
+            ...post,
+            comments: comments.map((comment) => {
+              if (comment.id !== commentId) return comment;
+              return {
+                ...comment,
+                liked,
+                isLiked: liked,
+                likeCount:
+                  likeCount !== undefined
+                    ? likeCount
+                    : Math.max(
+                        0,
+                        (comment.likeCount ?? 0) +
+                          (liked ? 1 : -1),
+                      ),
+              };
+            }),
+          };
+        };
+        state.posts = state.posts.map(applyLike);
+        state.selectedPost = applyLike(state.selectedPost);
+      })
+      .addCase(likeComment.rejected, (state, action) => {
+        state.likingCommentId = null;
         state.error = action.payload;
       });
   },

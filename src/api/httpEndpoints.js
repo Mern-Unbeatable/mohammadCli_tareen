@@ -191,6 +191,8 @@ export const API_ENDPOINTS = {
       DELETE: (postId) => `/feed/${postId}`,
       COMMENTS: (postId) => `/feed/${postId}/comments`,
       COMMENT: (postId, commentId) => `/feed/${postId}/comments/${commentId}`,
+      COMMENT_LIKE: (postId, commentId) =>
+        `/feed/${postId}/comments/${commentId}/like`,
       REACTIONS: (postId) => `/feed/${postId}/reactions`,
     },
 

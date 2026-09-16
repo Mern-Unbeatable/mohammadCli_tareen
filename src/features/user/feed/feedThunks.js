@@ -110,3 +110,17 @@ export const reactToPost = createAsyncThunk(
     }
   },
 );
+
+export const likeComment = createAsyncThunk(
+  "userFeed/likeComment",
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      const data = await feedApi.likeComment(postId, commentId);
+      return { postId, commentId, data };
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to like comment"),
+      );
+    }
+  },
+);

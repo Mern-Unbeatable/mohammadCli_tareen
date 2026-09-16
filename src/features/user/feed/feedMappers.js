@@ -57,13 +57,17 @@ function toAuthorModel(author = {}) {
 
 function toCommentModel(comment) {
   if (!comment) return null;
+  const liked = Boolean(
+    comment.liked ?? comment.isLiked ?? comment.myLike ?? false,
+  );
   return {
     id: comment.id,
     author: toAuthorModel(comment.author || comment.user || {}),
     content: comment.content || comment.body || "",
     time: formatRelativeTime(comment.createdAt || comment.time),
     replies: comment.replies ?? 0,
-    liked: Boolean(comment.liked),
+    liked,
+    likeCount: comment.likeCount ?? comment.likesCount ?? 0,
     raw: comment,
   };
 }

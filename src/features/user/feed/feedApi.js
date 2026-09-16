@@ -143,4 +143,11 @@ export async function reactToPost(postId, type) {
   return unwrapApiData(response) || response;
 }
 
+export async function likeComment(postId, commentId) {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.COMMENT_LIKE(postId, commentId),
+  );
+  return unwrapApiData(response) || response;
+}
+
 export { getApiErrorMessage };

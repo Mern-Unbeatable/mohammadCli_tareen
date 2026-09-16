@@ -18,6 +18,7 @@ export {
   addComment,
   removeComment,
   reactToPost,
+  likeComment,
 } from "./feedThunks";
 export {
   toFeedPostModel,

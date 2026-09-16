@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge';
 import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
-import { addComment, reactToPost } from '@/features/user/feed';
+import { addComment, likeComment, reactToPost } from '@/features/user/feed';
 import { toProfilePageUser } from '@/features/user/profile';
 
 const badgeByType = {
@@ -92,6 +92,9 @@ const PromoPricing = ({ post }) => (
 const FeedPost = ({ post, onReport }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.userProfile);
+  const likingCommentId = useSelector(
+    (state) => state.userFeed.likingCommentId,
+  );
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
 
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -176,12 +179,51 @@ const FeedPost = ({ post, onReport }) => {
     return false;
   };
 
-  const handleLikeComment = (commentId) => {
+  const handleLikeComment = async (commentId) => {
+    const previous = comments.find((c) => c.id === commentId);
+    if (!previous) return;
+
+    const nextLiked = !previous.liked;
     setComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, liked: !c.liked } : c,
+        c.id === commentId
+          ? {
+              ...c,
+              liked: nextLiked,
+              likeCount: Math.max(0, (c.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+            }
+          : c,
       ),
     );
+
+    const result = await dispatch(
+      likeComment({ postId: post.id, commentId }),
+    );
+    if (likeComment.rejected.match(result)) {
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? previous : c)),
+      );
+      toast.error(result.payload || 'Failed to like comment');
+      return;
+    }
+
+    const data = result.payload?.data;
+    if (data) {
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                liked: Boolean(data.liked ?? data.isLiked),
+                likeCount:
+                  data.likeCount ??
+                  c.likeCount ??
+                  0,
+              }
+            : c,
+        ),
+      );
+    }
   };
 
   const handleShare = () => {
@@ -268,6 +310,7 @@ const FeedPost = ({ post, onReport }) => {
             currentUser={profileUser}
             onAddComment={handleAddComment}
             onLikeComment={handleLikeComment}
+            likingCommentId={likingCommentId}
           />
         )}
       </Card>
