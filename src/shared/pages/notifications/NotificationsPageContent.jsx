@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import {
   fetchUserNotifications,
   markUserNotificationRead,
@@ -131,9 +131,12 @@ const NotificationsPageContent = ({
       </div>
 
       {isLoading && items.length === 0 ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
-        </div>
+        <CardSkeleton
+          variant="notification"
+          count={6}
+          as="ul"
+          className="divide-y divide-[#E4E7EC]"
+        />
       ) : items.length === 0 ? (
         <p className="px-5 py-10 text-center text-[14px] text-[#64748B]">
           No notifications yet.

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
+import { ProfilePageSkeleton } from "@/components/common/Skeleton";
 import ProfilePageContent from "@/components/data-display/ProfilePageContent/ProfilePageContent";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
 import {
@@ -29,7 +29,7 @@ const ProfileView = () => {
     loading,
     error: profileError,
   } = useSelector((state) => state.userProfile);
-  const { posts } = useSelector((state) => state.userFeed);
+  const { posts, postsLoading } = useSelector((state) => state.userFeed);
   const {
     reports,
     reportsLoading,
@@ -75,8 +75,10 @@ const ProfileView = () => {
 
   if (loading && !profileUser) {
     return (
-      <main className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
+        <Container className="max-w-6xl">
+          <ProfilePageSkeleton showSubscription />
+        </Container>
       </main>
     );
   }
@@ -96,6 +98,7 @@ const ProfileView = () => {
           <ProfilePageContent
             user={profileUser}
             posts={activity}
+            postsLoading={postsLoading && activity.length === 0}
             onReport={setReportPost}
             isPremium={isPremium}
             subscriptionSlot={

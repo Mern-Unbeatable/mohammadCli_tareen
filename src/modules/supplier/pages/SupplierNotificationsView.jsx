@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import {
   fetchSupplierNotifications,
@@ -116,12 +116,12 @@ const SupplierNotificationsView = () => {
         </div>
 
         {loading && !items.length ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-            <span className="text-[14px] text-[#64748B]">
-              Loading notifications…
-            </span>
-          </div>
+          <CardSkeleton
+            variant="notification"
+            count={6}
+            as="ul"
+            className="divide-y divide-[#E4E7EC]"
+          />
         ) : items.length ? (
           <ul className="divide-y divide-[#E4E7EC]">
             {items.map((item) => (

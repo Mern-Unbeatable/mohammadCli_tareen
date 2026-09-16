@@ -182,6 +182,20 @@ export const ApplicationRowSkeleton = () => (
   </div>
 );
 
+/** Matches notification list row (NotificationsPageContent) */
+export const NotificationRowSkeleton = () => (
+  <li className="flex w-full items-start gap-4 px-5 py-4 sm:px-6">
+    <Skeleton className="h-10 w-10 shrink-0" rounded="lg" />
+    <div className="min-w-0 flex-1 space-y-2">
+      <Skeleton className="h-4 w-2/3 max-w-xs" />
+      <Skeleton className="h-3.5 w-full" />
+      <Skeleton className="h-3.5 w-4/5" />
+      <Skeleton className="mt-1 h-3 w-20" />
+    </div>
+    <Skeleton className="mt-2 h-2.5 w-2.5 shrink-0" rounded="full" />
+  </li>
+);
+
 /** Matches Profile MyReports list rows */
 export const ReportRowSkeleton = () => (
   <li className="px-5 py-3.5 sm:px-6">
@@ -194,6 +208,163 @@ export const ReportRowSkeleton = () => (
       <Skeleton className="h-5 w-14 shrink-0" rounded="full" />
     </div>
   </li>
+);
+
+/** Matches ProfileHero card */
+export const ProfileHeroSkeleton = () => (
+  <Card>
+    <Skeleton className="h-32 w-full sm:h-36" rounded="none" />
+    <div className="relative px-4 pb-5 pt-3 sm:px-6 sm:pb-6 sm:pt-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+          <Skeleton
+            className="-mt-[4.25rem] h-24 w-24 shrink-0 border-[3px] border-white sm:-mt-[4.75rem] sm:h-28 sm:w-28"
+            rounded="full"
+          />
+          <div className="min-w-0 flex-1 space-y-2 sm:pb-0.5">
+            <Skeleton className="h-7 w-48 sm:h-8 sm:w-56" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3.5 w-36" />
+            <Skeleton className="h-3 w-44" />
+            <Skeleton className="mt-1 h-5 w-28" rounded="full" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-28 shrink-0" />
+      </div>
+    </div>
+  </Card>
+);
+
+/** Matches SubscriptionDetailsCard */
+export const SubscriptionDetailsCardSkeleton = () => (
+  <Card className="h-full">
+    <div className="flex items-center gap-2 border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
+      <Skeleton className="h-4 w-4" />
+      <Skeleton className="h-4 w-40" />
+    </div>
+    <div className="divide-y divide-[#E4E7EC] px-5 sm:px-6">
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className="flex items-center justify-between gap-4 py-3.5">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton
+            className={`h-3.5 ${i === 1 ? 'w-16' : 'w-28'}`}
+            rounded={i === 1 ? 'full' : 'md'}
+          />
+        </div>
+      ))}
+    </div>
+    <div className="border-t border-[#E4E7EC] px-5 py-4 sm:px-6">
+      <Skeleton className="h-10 w-full" />
+    </div>
+  </Card>
+);
+
+/** Matches ContactInfoCard (+ optional professional block) */
+export const ContactInfoCardSkeleton = ({ showProfessional = false }) => (
+  <Card className="h-full">
+    <div className="border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
+      <Skeleton className="h-4 w-40" />
+    </div>
+    <div className="p-4 sm:p-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-[#E4E7EC] bg-white p-4"
+          >
+            <Skeleton className="mb-3 h-9 w-9" rounded="lg" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="mt-2 h-4 w-32" />
+          </div>
+        ))}
+      </div>
+      {showProfessional ? (
+        <div className="mt-5 border-t border-[#E4E7EC] pt-5">
+          <Skeleton className="mb-3 h-4 w-44" />
+          <div className="space-y-2">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-4/5" />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  </Card>
+);
+
+/** Matches ProfessionalInfoCard */
+export const ProfessionalInfoCardSkeleton = () => (
+  <Card>
+    <div className="border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
+      <Skeleton className="h-4 w-48" />
+    </div>
+    <div className="space-y-2 px-5 py-5 sm:px-6">
+      <Skeleton className="h-3.5 w-full" />
+      <Skeleton className="h-3.5 w-full" />
+      <Skeleton className="h-3.5 w-5/6" />
+      <Skeleton className="h-3.5 w-4/5" />
+    </div>
+  </Card>
+);
+
+/** Matches MyReportsCard shell + rows */
+export const MyReportsCardSkeleton = () => (
+  <Card>
+    <div className="border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="mt-2 h-3 w-56" />
+    </div>
+    <ul className="divide-y divide-[#E4E7EC]">
+      {Array.from({ length: 3 }, (_, i) => (
+        <ReportRowSkeleton key={i} />
+      ))}
+    </ul>
+  </Card>
+);
+
+/**
+ * Full own-profile page skeleton — mirrors ProfilePageContent premium layout.
+ */
+export const ProfilePageSkeleton = ({ showSubscription = true }) => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    <ProfileHeroSkeleton />
+    {showSubscription ? (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+        <SubscriptionDetailsCardSkeleton />
+        <ContactInfoCardSkeleton showProfessional />
+      </div>
+    ) : (
+      <>
+        <ProfessionalInfoCardSkeleton />
+        <ContactInfoCardSkeleton />
+      </>
+    )}
+    <section>
+      <Skeleton className="mb-4 h-5 w-24" />
+      <div className="space-y-4">
+        <FeedPostCardSkeleton />
+        <FeedPostCardSkeleton />
+      </div>
+    </section>
+    <MyReportsCardSkeleton />
+  </div>
+);
+
+/**
+ * Contact profile page skeleton (hero + professional + contact + activity).
+ */
+export const ContactProfilePageSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" aria-live="polite">
+    <ProfileHeroSkeleton />
+    <ProfessionalInfoCardSkeleton />
+    <ContactInfoCardSkeleton />
+    <section>
+      <Skeleton className="mb-4 h-5 w-24" />
+      <div className="space-y-4">
+        <FeedPostCardSkeleton />
+      </div>
+    </section>
+  </div>
 );
 
 const CARD_SKELETONS = {
@@ -209,6 +380,12 @@ const CARD_SKELETONS = {
   sidebarJob: SidebarJobRowSkeleton,
   application: ApplicationRowSkeleton,
   reportRow: ReportRowSkeleton,
+  notification: NotificationRowSkeleton,
+  profileHero: ProfileHeroSkeleton,
+  subscriptionDetails: SubscriptionDetailsCardSkeleton,
+  contactInfo: ContactInfoCardSkeleton,
+  professionalInfo: ProfessionalInfoCardSkeleton,
+  myReports: MyReportsCardSkeleton,
 };
 
 /**
