@@ -117,9 +117,17 @@ export async function addComment(postId, payload) {
     typeof payload === "string"
       ? payload
       : payload?.content ?? payload?.body ?? "";
+  const parentCommentId =
+    typeof payload === "object" && payload
+      ? payload.parentCommentId || undefined
+      : undefined;
+  const body = {
+    content: String(text).trim(),
+    ...(parentCommentId ? { parentCommentId } : {}),
+  };
   const response = await crudService.post(
     API_ENDPOINTS.USER.FEED.COMMENTS(postId),
-    { content: String(text).trim() },
+    body,
   );
   return unwrapApiData(response) || response;
 }

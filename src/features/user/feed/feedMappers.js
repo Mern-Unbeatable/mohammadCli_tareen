@@ -60,12 +60,21 @@ function toCommentModel(comment) {
   const liked = Boolean(
     comment.liked ?? comment.isLiked ?? comment.myLike ?? false,
   );
+  const nestedReplies = Array.isArray(comment.replies)
+    ? comment.replies.map(toCommentModel).filter(Boolean)
+    : [];
+  const replyCount =
+    comment.replyCount ??
+    (typeof comment.replies === "number" ? comment.replies : nestedReplies.length);
+
   return {
     id: comment.id,
     author: toAuthorModel(comment.author || comment.user || {}),
     content: comment.content || comment.body || "",
     time: formatRelativeTime(comment.createdAt || comment.time),
-    replies: comment.replies ?? 0,
+    parentCommentId: comment.parentCommentId ?? null,
+    replyCount,
+    replies: nestedReplies,
     liked,
     likeCount: comment.likeCount ?? comment.likesCount ?? 0,
     raw: comment,

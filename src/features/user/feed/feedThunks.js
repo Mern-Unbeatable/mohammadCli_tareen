@@ -72,10 +72,13 @@ export const removePost = createAsyncThunk(
 
 export const addComment = createAsyncThunk(
   "userFeed/addComment",
-  async ({ postId, body }, { rejectWithValue }) => {
+  async ({ postId, body, parentCommentId }, { rejectWithValue }) => {
     try {
-      const comment = await feedApi.addComment(postId, body);
-      return { postId, comment };
+      const comment = await feedApi.addComment(postId, {
+        content: body,
+        parentCommentId,
+      });
+      return { postId, comment, parentCommentId: comment?.parentCommentId ?? parentCommentId ?? null };
     } catch (err) {
       return rejectWithValue(
         feedApi.getApiErrorMessage(err, "Failed to add comment"),

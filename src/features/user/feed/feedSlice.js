@@ -126,19 +126,50 @@ const feedSlice = createSlice({
       .addCase(addComment.fulfilled, (state, action) => {
         state.commenting = false;
         const { postId, comment } = action.payload;
+        const parentId = comment?.parentCommentId ?? action.payload.parentCommentId ?? null;
+
         const insertComment = (post) => {
-          if (!post || post.id !== postId) return post;
+          if (!post || post.id !== postId || !comment?.id) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
-          if (comment?.id && comments.some((row) => row.id === comment.id)) {
-            return post;
-          }
-          const nextComments = comment ? [comment, ...comments] : comments;
+
+          const alreadyExists = (list) =>
+            list.some(
+              (row) =>
+                row.id === comment.id ||
+                (Array.isArray(row.replies) &&
+                  row.replies.some((reply) => reply.id === comment.id)),
+            );
+          if (alreadyExists(comments)) return post;
+
           const nextCount =
-            (post.stats?.comments ?? post.commentCount ?? comments.length) +
-            (comment ? 1 : 0);
+            (post.stats?.comments ?? post.commentCount ?? 0) + 1;
+
+          if (parentId) {
+            return {
+              ...post,
+              comments: comments.map((row) => {
+                if (row.id !== parentId) return row;
+                const replies = Array.isArray(row.replies) ? row.replies : [];
+                return {
+                  ...row,
+                  replyCount: (row.replyCount ?? replies.length) + 1,
+                  replies: [comment, ...replies],
+                };
+              }),
+              commentCount: nextCount,
+              stats: {
+                ...(post.stats || {}),
+                comments: nextCount,
+              },
+            };
+          }
+
           return {
             ...post,
-            comments: nextComments,
+            comments: [
+              { ...comment, replies: comment.replies ?? [], replyCount: comment.replyCount ?? 0 },
+              ...comments,
+            ],
             commentCount: nextCount,
             stats: {
               ...(post.stats || {}),
@@ -162,17 +193,34 @@ const feedSlice = createSlice({
         const { postId, commentId } = action.payload;
         const stripComment = (post) => {
           if (!post || post.id !== postId) return post;
-          const comments = (post.comments || []).filter(
-            (c) => c.id !== commentId,
-          );
+          const comments = Array.isArray(post.comments) ? post.comments : [];
+          let removed = 0;
+
+          const nextComments = comments
+            .map((row) => {
+              if (row.id === commentId) {
+                removed = 1 + (row.replyCount ?? row.replies?.length ?? 0);
+                return null;
+              }
+              const replies = Array.isArray(row.replies) ? row.replies : [];
+              if (!replies.some((reply) => reply.id === commentId)) return row;
+              removed = 1;
+              const nextReplies = replies.filter((reply) => reply.id !== commentId);
+              return {
+                ...row,
+                replies: nextReplies,
+                replyCount: Math.max(0, (row.replyCount ?? replies.length) - 1),
+              };
+            })
+            .filter(Boolean);
+
           const nextCount = Math.max(
             0,
-            (post.stats?.comments ?? post.commentCount ?? comments.length + 1) -
-              1,
+            (post.stats?.comments ?? post.commentCount ?? 0) - removed,
           );
           return {
             ...post,
-            comments,
+            comments: nextComments,
             commentCount: nextCount,
             stats: {
               ...(post.stats || {}),
@@ -248,22 +296,31 @@ const feedSlice = createSlice({
         const applyLike = (post) => {
           if (!post || post.id !== postId) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
+
+          const patch = (comment) => {
+            if (comment.id !== commentId) return comment;
+            return {
+              ...comment,
+              liked,
+              isLiked: liked,
+              likeCount:
+                likeCount !== undefined
+                  ? likeCount
+                  : Math.max(
+                      0,
+                      (comment.likeCount ?? 0) + (liked ? 1 : -1),
+                    ),
+            };
+          };
+
           return {
             ...post,
             comments: comments.map((comment) => {
-              if (comment.id !== commentId) return comment;
+              const next = patch(comment);
+              if (!Array.isArray(comment.replies)) return next;
               return {
-                ...comment,
-                liked,
-                isLiked: liked,
-                likeCount:
-                  likeCount !== undefined
-                    ? likeCount
-                    : Math.max(
-                        0,
-                        (comment.likeCount ?? 0) +
-                          (liked ? 1 : -1),
-                      ),
+                ...next,
+                replies: comment.replies.map(patch),
               };
             }),
           };

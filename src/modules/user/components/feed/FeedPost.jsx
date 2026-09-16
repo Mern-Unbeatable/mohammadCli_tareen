@@ -167,9 +167,13 @@ const FeedPost = ({ post, onReport }) => {
     }
   };
 
-  const handleAddComment = async (text) => {
+  const handleAddComment = async (text, parentCommentId) => {
     const result = await dispatch(
-      addComment({ postId: post.id, body: text }),
+      addComment({
+        postId: post.id,
+        body: text,
+        parentCommentId: parentCommentId || undefined,
+      }),
     );
     if (addComment.fulfilled.match(result)) {
       return true;
@@ -179,30 +183,47 @@ const FeedPost = ({ post, onReport }) => {
     return false;
   };
 
+  const findComment = (list, commentId) => {
+    for (const item of list) {
+      if (item.id === commentId) return item;
+      if (Array.isArray(item.replies)) {
+        const nested = item.replies.find((reply) => reply.id === commentId);
+        if (nested) return nested;
+      }
+    }
+    return null;
+  };
+
+  const mapComments = (list, commentId, updater) =>
+    list.map((item) => {
+      if (item.id === commentId) return updater(item);
+      if (!Array.isArray(item.replies)) return item;
+      return {
+        ...item,
+        replies: item.replies.map((reply) =>
+          reply.id === commentId ? updater(reply) : reply,
+        ),
+      };
+    });
+
   const handleLikeComment = async (commentId) => {
-    const previous = comments.find((c) => c.id === commentId);
+    const previous = findComment(comments, commentId);
     if (!previous) return;
 
     const nextLiked = !previous.liked;
     setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId
-          ? {
-              ...c,
-              liked: nextLiked,
-              likeCount: Math.max(0, (c.likeCount ?? 0) + (nextLiked ? 1 : -1)),
-            }
-          : c,
-      ),
+      mapComments(prev, commentId, (c) => ({
+        ...c,
+        liked: nextLiked,
+        likeCount: Math.max(0, (c.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+      })),
     );
 
     const result = await dispatch(
       likeComment({ postId: post.id, commentId }),
     );
     if (likeComment.rejected.match(result)) {
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? previous : c)),
-      );
+      setComments((prev) => mapComments(prev, commentId, () => previous));
       toast.error(result.payload || 'Failed to like comment');
       return;
     }
@@ -210,18 +231,11 @@ const FeedPost = ({ post, onReport }) => {
     const data = result.payload?.data;
     if (data) {
       setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? {
-                ...c,
-                liked: Boolean(data.liked ?? data.isLiked),
-                likeCount:
-                  data.likeCount ??
-                  c.likeCount ??
-                  0,
-              }
-            : c,
-        ),
+        mapComments(prev, commentId, (c) => ({
+          ...c,
+          liked: Boolean(data.liked ?? data.isLiked),
+          likeCount: data.likeCount ?? c.likeCount ?? 0,
+        })),
       );
     }
   };
