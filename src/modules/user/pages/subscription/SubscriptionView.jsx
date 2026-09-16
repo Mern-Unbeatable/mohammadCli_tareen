@@ -19,6 +19,7 @@ import {
   fetchUserProfile,
   toProfilePageUser,
 } from '@/features/user/profile';
+import CancelSubscriptionModal from '@/modules/user/components/subscription/CancelSubscriptionModal';
 
 const PLAN_API = {
   monthly: 'MONTHLY',
@@ -97,6 +98,7 @@ const SubscriptionView = () => {
   }, [subscription, profileUser]);
 
   const [cycle, setCycle] = useState('monthly');
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   useEffect(() => {
     dispatch(clearSubscriptionsError());
@@ -194,6 +196,7 @@ const SubscriptionView = () => {
     if (!canCancel || saving) return;
     const result = await dispatch(cancelSubscription());
     if (cancelSubscription.fulfilled.match(result)) {
+      setConfirmCancelOpen(false);
       toast.success(
         currentSub?.status === 'TRIAL'
           ? 'Trial cancelled'
@@ -318,7 +321,7 @@ const SubscriptionView = () => {
                   !currentSub?.cancelAtPeriodEnd ? (
                     <button
                       type="button"
-                      onClick={handleCancel}
+                      onClick={() => setConfirmCancelOpen(true)}
                       disabled={saving}
                       className="mt-3 w-full rounded-lg border border-[#E4E7EC] px-4 py-2.5 text-[13px] font-semibold text-[#475467] transition-colors hover:bg-[#F9FAFB] disabled:opacity-60"
                     >
@@ -370,6 +373,16 @@ const SubscriptionView = () => {
           </>
         )}
       </Container>
+
+      <CancelSubscriptionModal
+        open={confirmCancelOpen}
+        isTrial={currentSub?.status === 'TRIAL'}
+        saving={saving}
+        onClose={() => {
+          if (!saving) setConfirmCancelOpen(false);
+        }}
+        onConfirm={handleCancel}
+      />
     </main>
   );
 };

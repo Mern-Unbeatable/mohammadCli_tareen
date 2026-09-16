@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { Loader2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import {
   cancelSubscription,
 } from '@/features/user/subscriptions';
 import { fetchUserProfile } from '@/features/user/profile';
+import CancelSubscriptionModal from '@/modules/user/components/subscription/CancelSubscriptionModal';
 
 export {
   InfoTile,
@@ -28,6 +29,7 @@ const emptySubscription = {
 export const SubscriptionDetailsCard = ({ subscription }) => {
   const dispatch = useDispatch();
   const { saving } = useSelector((state) => state.userSubscriptions);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const details = { ...emptySubscription, ...(subscription || {}) };
   const statusKey = String(
     details.statusKey || details.status || '',
@@ -49,6 +51,7 @@ export const SubscriptionDetailsCard = ({ subscription }) => {
     if (!canCancel || saving) return;
     const result = await dispatch(cancelSubscription());
     if (cancelSubscription.fulfilled.match(result)) {
+      setConfirmOpen(false);
       toast.success(
         statusKey === 'TRIAL'
           ? 'Trial cancelled'
@@ -103,16 +106,25 @@ export const SubscriptionDetailsCard = ({ subscription }) => {
       <div className="border-t border-[#E4E7EC] px-5 py-4 sm:px-6">
         <button
           type="button"
-          onClick={handleCancel}
+          onClick={() => setConfirmOpen(true)}
           disabled={!canCancel || saving}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {details.cancelAtPeriodEnd
             ? 'Cancellation scheduled'
             : 'Cancel Subscription'}
         </button>
       </div>
+
+      <CancelSubscriptionModal
+        open={confirmOpen}
+        isTrial={statusKey === 'TRIAL'}
+        saving={saving}
+        onClose={() => {
+          if (!saving) setConfirmOpen(false);
+        }}
+        onConfirm={handleCancel}
+      />
     </Card>
   );
 };
