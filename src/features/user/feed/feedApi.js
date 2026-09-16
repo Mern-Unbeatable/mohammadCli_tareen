@@ -76,6 +76,27 @@ export async function createPost(payload) {
   return unwrapApiData(response) || response;
 }
 
+/**
+ * Upload a single file via existing /uploads endpoint.
+ * Field name must be `file` (matches multer upload.single("file")).
+ */
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.USER.UPLOADS.SINGLE,
+    formData,
+    null,
+    { timeout: 60000 },
+  );
+  const data = unwrapApiData(response) || response;
+  if (!data?.url) {
+    throw new Error("Upload did not return a file URL");
+  }
+  return data;
+}
+
 export async function updatePost(postId, payload) {
   const response = await crudService.patch(
     API_ENDPOINTS.USER.FEED.UPDATE(postId),

@@ -62,11 +62,12 @@ export const crudService = {
    * @param {object} [config={}] - Additional Axios Request Config
    */
   upload: async (url, formData, onUploadProgress = null, config = {}) => {
+    // Instance defaults to application/json; FormData needs multipart + boundary.
     return await axiosInstance.post(url, formData, {
       ...config,
       headers: {
-        'Content-Type': 'multipart/form-data',
         ...(config.headers || {}),
+        "Content-Type": false,
       },
       onUploadProgress,
     });

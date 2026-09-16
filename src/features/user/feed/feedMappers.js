@@ -103,7 +103,20 @@ export function toFeedPostModel(post) {
         postedAgo,
     },
     content: post.content || post.body || post.text || "",
-    attachment: post.attachment || null,
+    image: post.image || post.imageUrl || null,
+    attachment: post.attachment
+      ? post.attachment
+      : post.documentUrl
+        ? {
+            name:
+              post.documentName ||
+              decodeURIComponent(
+                String(post.documentUrl).split("/").pop() || "Document",
+              ),
+            meta: post.documentMeta || "Document",
+            url: post.documentUrl,
+          }
+        : null,
     stats: {
       reactions: reactionCount,
       comments: commentCount,

@@ -24,3 +24,4 @@ export {
   formatRelativeTime,
 } from "./feedMappers";
 export * as feedApi from "./feedApi";
+export { getApiErrorMessage } from "@/api";

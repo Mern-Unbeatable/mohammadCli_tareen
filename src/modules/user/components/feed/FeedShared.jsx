@@ -12,12 +12,24 @@ export const AttachmentCard = ({ attachment }) => (
       <p className="truncate text-[13px] font-semibold text-deep-blue">{attachment.name}</p>
       <p className="text-[12px] text-[#64748B]">{attachment.meta}</p>
     </div>
-    <button
-      type="button"
-      className="shrink-0 rounded-md border border-[#D0D5DD] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#475467] hover:bg-[#F9FAFB]"
-    >
-      Download
-    </button>
+    {attachment.url ? (
+      <a
+        href={attachment.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={attachment.name}
+        className="shrink-0 rounded-md border border-[#D0D5DD] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#475467] hover:bg-[#F9FAFB]"
+      >
+        Download
+      </a>
+    ) : (
+      <button
+        type="button"
+        className="shrink-0 rounded-md border border-[#D0D5DD] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#475467] hover:bg-[#F9FAFB]"
+      >
+        Download
+      </button>
+    )}
   </div>
 );
 
