@@ -184,25 +184,21 @@ const FeedPost = ({ post, onReport }) => {
   };
 
   const findComment = (list, commentId) => {
-    for (const item of list) {
+    for (const item of list || []) {
       if (item.id === commentId) return item;
-      if (Array.isArray(item.replies)) {
-        const nested = item.replies.find((reply) => reply.id === commentId);
-        if (nested) return nested;
-      }
+      const nested = findComment(item.replies, commentId);
+      if (nested) return nested;
     }
     return null;
   };
 
   const mapComments = (list, commentId, updater) =>
-    list.map((item) => {
+    (list || []).map((item) => {
       if (item.id === commentId) return updater(item);
-      if (!Array.isArray(item.replies)) return item;
+      if (!Array.isArray(item.replies) || item.replies.length === 0) return item;
       return {
         ...item,
-        replies: item.replies.map((reply) =>
-          reply.id === commentId ? updater(reply) : reply,
-        ),
+        replies: mapComments(item.replies, commentId, updater),
       };
     });
 

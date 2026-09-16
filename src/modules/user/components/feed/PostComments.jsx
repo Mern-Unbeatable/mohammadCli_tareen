@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Send } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 
+const LINE = 'bg-[#D0D5DD]';
+/** Avatar sm is 36px; spine sits on avatar center (18px). */
+const SPINE_X = 18;
+/** Horizontal stub from spine to nested avatar center. */
+const BRANCH_W = 30;
+
 const ReplyComposer = ({ currentUser, onSubmit, onCancel, submitting }) => {
   const [draft, setDraft] = useState('');
 
@@ -63,25 +69,41 @@ const CommentItem = ({
   likingCommentId,
   replyTargetId,
   replySubmitting,
-  depth = 0,
-  expanded,
+  expandedIds,
   onToggleReplies,
 }) => {
   const replyCount = comment.replyCount ?? comment.replies?.length ?? 0;
-  const isReplying = replyTargetId === comment.id;
   const nested = Array.isArray(comment.replies) ? comment.replies : [];
+  const isReplying = replyTargetId === comment.id;
   const liking = likingCommentId === comment.id;
+  const expanded = expandedIds.has(comment.id);
+  const showThread = expanded && nested.length > 0;
 
   return (
-    <div className={depth > 0 ? 'ml-8 sm:ml-10' : ''}>
-      <div className="flex gap-3">
-        <Avatar
-          src={comment.author?.avatar}
-          alt={comment.author?.name}
-          initials={comment.author?.initials}
-          size="sm"
-          className="mt-1"
+    <div className="relative">
+      {/* One continuous spine: under parent avatar → through replies */}
+      {showThread ? (
+        <span
+          className={`pointer-events-none absolute z-0 w-px -translate-x-1/2 ${LINE}`}
+          style={{
+            left: SPINE_X,
+            top: 36,
+            bottom: SPINE_X,
+          }}
+          aria-hidden
         />
+      ) : null}
+
+      <div className="relative z-[1] flex gap-3">
+        <div className="relative w-9 shrink-0">
+          <Avatar
+            src={comment.author?.avatar}
+            alt={comment.author?.name}
+            initials={comment.author?.initials}
+            size="sm"
+          />
+        </div>
+
         <div className="min-w-0 flex-1">
           <div className="rounded-lg bg-[#F3F4F6] px-3 py-2.5">
             <p className="text-[13px] font-semibold text-deep-blue">
@@ -115,7 +137,7 @@ const CommentItem = ({
             >
               Reply
             </button>
-            {depth === 0 && replyCount > 0 ? (
+            {replyCount > 0 ? (
               <button
                 type="button"
                 onClick={() => onToggleReplies(comment.id)}
@@ -139,26 +161,69 @@ const CommentItem = ({
         </div>
       </div>
 
-      {depth === 0 && expanded && nested.length > 0 ? (
-        <div className="mt-3 space-y-3 border-l border-[#E4E7EC] pl-3 sm:pl-4">
-          {nested.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              currentUser={currentUser}
-              onLike={onLike}
-              onReply={onReply}
-              onSubmitReply={onSubmitReply}
-              likingCommentId={likingCommentId}
-              replyTargetId={replyTargetId}
-              replySubmitting={replySubmitting}
-              depth={1}
-            />
-          ))}
+      {showThread ? (
+        <div className="relative space-y-3 pt-3">
+          {nested.map((reply, index) => {
+            const isLast = index === nested.length - 1;
+            return (
+              <div key={reply.id} className="relative">
+                <span
+                  className={`pointer-events-none absolute z-[1] h-px ${LINE}`}
+                  style={{
+                    left: SPINE_X,
+                    top: SPINE_X,
+                    width: BRANCH_W,
+                  }}
+                  aria-hidden
+                />
+                {isLast ? (
+                  <span
+                    className="pointer-events-none absolute z-[1] w-px -translate-x-1/2 bg-white"
+                    style={{
+                      left: SPINE_X,
+                      top: SPINE_X,
+                      bottom: 0,
+                    }}
+                    aria-hidden
+                  />
+                ) : null}
+
+                <div style={{ paddingLeft: BRANCH_W }}>
+                  <CommentItem
+                    comment={reply}
+                    currentUser={currentUser}
+                    onLike={onLike}
+                    onReply={onReply}
+                    onSubmitReply={onSubmitReply}
+                    likingCommentId={likingCommentId}
+                    replyTargetId={replyTargetId}
+                    replySubmitting={replySubmitting}
+                    expandedIds={expandedIds}
+                    onToggleReplies={onToggleReplies}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>
   );
+};
+
+const countComments = (list = []) =>
+  list.reduce((sum, item) => sum + 1 + countComments(item.replies), 0);
+
+const collectAncestorIds = (list = [], targetId, path = []) => {
+  for (const item of list) {
+    if (item.id === targetId) return path;
+    const found = collectAncestorIds(item.replies, targetId, [
+      ...path,
+      item.id,
+    ]);
+    if (found) return found;
+  }
+  return null;
 };
 
 const PostComments = ({
@@ -206,14 +271,14 @@ const PostComments = ({
       const ok = await onAddComment(text, parentCommentId);
       if (ok !== false) {
         setReplyTargetId(null);
-        const root = comments.find(
-          (c) =>
-            c.id === parentCommentId ||
-            (Array.isArray(c.replies) &&
-              c.replies.some((r) => r.id === parentCommentId)),
-        );
-        const expandId = root?.id ?? parentCommentId;
-        setExpandedIds((prev) => new Set(prev).add(expandId));
+        setExpandedIds((prev) => {
+          const next = new Set(prev);
+          next.add(parentCommentId);
+          (collectAncestorIds(comments, parentCommentId) || []).forEach((id) =>
+            next.add(id),
+          );
+          return next;
+        });
       }
       return ok;
     } finally {
@@ -221,15 +286,10 @@ const PostComments = ({
     }
   };
 
-  const totalCount = comments.reduce(
-    (sum, c) => sum + 1 + (c.replyCount ?? c.replies?.length ?? 0),
-    0,
-  );
-
   return (
     <div className="border-t border-[#E4E7EC] px-4 py-4">
       <p className="mb-4 text-[14px] font-bold text-deep-blue">
-        Comments ({totalCount})
+        Comments ({countComments(comments)})
       </p>
 
       <div className="mb-4 flex gap-3">
@@ -275,8 +335,7 @@ const PostComments = ({
             likingCommentId={likingCommentId}
             replyTargetId={replyTargetId}
             replySubmitting={replySubmitting}
-            depth={0}
-            expanded={expandedIds.has(comment.id)}
+            expandedIds={expandedIds}
             onToggleReplies={handleToggleReplies}
           />
         ))}

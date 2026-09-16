@@ -126,20 +126,36 @@ const feedSlice = createSlice({
       .addCase(addComment.fulfilled, (state, action) => {
         state.commenting = false;
         const { postId, comment } = action.payload;
-        const parentId = comment?.parentCommentId ?? action.payload.parentCommentId ?? null;
+        const parentId =
+          comment?.parentCommentId ?? action.payload.parentCommentId ?? null;
+
+        const commentExists = (list = []) =>
+          list.some(
+            (row) =>
+              row.id === comment.id ||
+              commentExists(row.replies),
+          );
+
+        const insertIntoTree = (list = []) =>
+          list.map((row) => {
+            if (row.id === parentId) {
+              const replies = Array.isArray(row.replies) ? row.replies : [];
+              return {
+                ...row,
+                replyCount: (row.replyCount ?? replies.length) + 1,
+                replies: [comment, ...replies],
+              };
+            }
+            if (!Array.isArray(row.replies) || row.replies.length === 0) {
+              return row;
+            }
+            return { ...row, replies: insertIntoTree(row.replies) };
+          });
 
         const insertComment = (post) => {
           if (!post || post.id !== postId || !comment?.id) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
-
-          const alreadyExists = (list) =>
-            list.some(
-              (row) =>
-                row.id === comment.id ||
-                (Array.isArray(row.replies) &&
-                  row.replies.some((reply) => reply.id === comment.id)),
-            );
-          if (alreadyExists(comments)) return post;
+          if (commentExists(comments)) return post;
 
           const nextCount =
             (post.stats?.comments ?? post.commentCount ?? 0) + 1;
@@ -147,15 +163,7 @@ const feedSlice = createSlice({
           if (parentId) {
             return {
               ...post,
-              comments: comments.map((row) => {
-                if (row.id !== parentId) return row;
-                const replies = Array.isArray(row.replies) ? row.replies : [];
-                return {
-                  ...row,
-                  replyCount: (row.replyCount ?? replies.length) + 1,
-                  replies: [comment, ...replies],
-                };
-              }),
+              comments: insertIntoTree(comments),
               commentCount: nextCount,
               stats: {
                 ...(post.stats || {}),
@@ -167,7 +175,11 @@ const feedSlice = createSlice({
           return {
             ...post,
             comments: [
-              { ...comment, replies: comment.replies ?? [], replyCount: comment.replyCount ?? 0 },
+              {
+                ...comment,
+                replies: comment.replies ?? [],
+                replyCount: comment.replyCount ?? 0,
+              },
               ...comments,
             ],
             commentCount: nextCount,
@@ -193,27 +205,35 @@ const feedSlice = createSlice({
         const { postId, commentId } = action.payload;
         const stripComment = (post) => {
           if (!post || post.id !== postId) return post;
-          const comments = Array.isArray(post.comments) ? post.comments : [];
           let removed = 0;
 
-          const nextComments = comments
-            .map((row) => {
-              if (row.id === commentId) {
-                removed = 1 + (row.replyCount ?? row.replies?.length ?? 0);
-                return null;
-              }
-              const replies = Array.isArray(row.replies) ? row.replies : [];
-              if (!replies.some((reply) => reply.id === commentId)) return row;
-              removed = 1;
-              const nextReplies = replies.filter((reply) => reply.id !== commentId);
-              return {
-                ...row,
-                replies: nextReplies,
-                replyCount: Math.max(0, (row.replyCount ?? replies.length) - 1),
-              };
-            })
-            .filter(Boolean);
+          const countTree = (node) =>
+            1 +
+            (Array.isArray(node.replies)
+              ? node.replies.reduce((sum, child) => sum + countTree(child), 0)
+              : 0);
 
+          const stripTree = (list = []) =>
+            list
+              .map((row) => {
+                if (row.id === commentId) {
+                  removed = countTree(row);
+                  return null;
+                }
+                if (!Array.isArray(row.replies) || row.replies.length === 0) {
+                  return row;
+                }
+                const nextReplies = stripTree(row.replies);
+                if (nextReplies.length === row.replies.length) return row;
+                return {
+                  ...row,
+                  replies: nextReplies,
+                  replyCount: nextReplies.length,
+                };
+              })
+              .filter(Boolean);
+
+          const nextComments = stripTree(post.comments);
           const nextCount = Math.max(
             0,
             (post.stats?.comments ?? post.commentCount ?? 0) - removed,
@@ -295,34 +315,33 @@ const feedSlice = createSlice({
 
         const applyLike = (post) => {
           if (!post || post.id !== postId) return post;
-          const comments = Array.isArray(post.comments) ? post.comments : [];
 
-          const patch = (comment) => {
-            if (comment.id !== commentId) return comment;
-            return {
-              ...comment,
-              liked,
-              isLiked: liked,
-              likeCount:
-                likeCount !== undefined
-                  ? likeCount
-                  : Math.max(
-                      0,
-                      (comment.likeCount ?? 0) + (liked ? 1 : -1),
-                    ),
-            };
-          };
+          const patchTree = (list = []) =>
+            list.map((comment) => {
+              const next =
+                comment.id === commentId
+                  ? {
+                      ...comment,
+                      liked,
+                      isLiked: liked,
+                      likeCount:
+                        likeCount !== undefined
+                          ? likeCount
+                          : Math.max(
+                              0,
+                              (comment.likeCount ?? 0) + (liked ? 1 : -1),
+                            ),
+                    }
+                  : comment;
+              if (!Array.isArray(comment.replies) || comment.replies.length === 0) {
+                return next;
+              }
+              return { ...next, replies: patchTree(comment.replies) };
+            });
 
           return {
             ...post,
-            comments: comments.map((comment) => {
-              const next = patch(comment);
-              if (!Array.isArray(comment.replies)) return next;
-              return {
-                ...next,
-                replies: comment.replies.map(patch),
-              };
-            }),
+            comments: patchTree(post.comments),
           };
         };
         state.posts = state.posts.map(applyLike);
