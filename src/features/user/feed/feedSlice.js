@@ -129,41 +129,38 @@ const feedSlice = createSlice({
         const parentId =
           comment?.parentCommentId ?? action.payload.parentCommentId ?? null;
 
-        const commentExists = (list = []) =>
-          list.some(
-            (row) =>
-              row.id === comment.id ||
-              commentExists(row.replies),
-          );
-
-        const insertIntoTree = (list = []) =>
-          list.map((row) => {
-            if (row.id === parentId) {
-              const replies = Array.isArray(row.replies) ? row.replies : [];
-              return {
-                ...row,
-                replyCount: (row.replyCount ?? replies.length) + 1,
-                replies: [comment, ...replies],
-              };
-            }
-            if (!Array.isArray(row.replies) || row.replies.length === 0) {
-              return row;
-            }
-            return { ...row, replies: insertIntoTree(row.replies) };
-          });
-
         const insertComment = (post) => {
           if (!post || post.id !== postId || !comment?.id) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
-          if (commentExists(comments)) return post;
+
+          const exists = comments.some(
+            (row) =>
+              row.id === comment.id ||
+              (Array.isArray(row.replies) &&
+                row.replies.some((r) => r.id === comment.id)),
+          );
+          if (exists) return post;
 
           const nextCount =
             (post.stats?.comments ?? post.commentCount ?? 0) + 1;
+          const nextComment = {
+            ...comment,
+            replies: [],
+            replyCount: 0,
+          };
 
           if (parentId) {
             return {
               ...post,
-              comments: insertIntoTree(comments),
+              comments: comments.map((row) => {
+                if (row.id !== parentId) return row;
+                const replies = Array.isArray(row.replies) ? row.replies : [];
+                return {
+                  ...row,
+                  replyCount: (row.replyCount ?? replies.length) + 1,
+                  replies: [nextComment, ...replies],
+                };
+              }),
               commentCount: nextCount,
               stats: {
                 ...(post.stats || {}),
@@ -174,14 +171,7 @@ const feedSlice = createSlice({
 
           return {
             ...post,
-            comments: [
-              {
-                ...comment,
-                replies: comment.replies ?? [],
-                replyCount: comment.replyCount ?? 0,
-              },
-              ...comments,
-            ],
+            comments: [nextComment, ...comments],
             commentCount: nextCount,
             stats: {
               ...(post.stats || {}),

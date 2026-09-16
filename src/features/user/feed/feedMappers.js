@@ -55,17 +55,27 @@ function toAuthorModel(author = {}) {
   };
 }
 
-function toCommentModel(comment) {
+function toCommentModel(comment, depth = 0) {
   if (!comment) return null;
   const liked = Boolean(
     comment.liked ?? comment.isLiked ?? comment.myLike ?? false,
   );
-  const nestedReplies = Array.isArray(comment.replies)
-    ? comment.replies.map(toCommentModel).filter(Boolean)
-    : [];
-  const replyCount =
-    comment.replyCount ??
-    (typeof comment.replies === "number" ? comment.replies : nestedReplies.length);
+
+  let replies = [];
+  if (depth === 0 && Array.isArray(comment.replies)) {
+    const flattenLevel1 = (items) => {
+      const out = [];
+      for (const item of items || []) {
+        const node = toCommentModel(item, 1);
+        if (node) out.push(node);
+        if (Array.isArray(item.replies) && item.replies.length) {
+          out.push(...flattenLevel1(item.replies));
+        }
+      }
+      return out;
+    };
+    replies = flattenLevel1(comment.replies);
+  }
 
   return {
     id: comment.id,
@@ -73,8 +83,8 @@ function toCommentModel(comment) {
     content: comment.content || comment.body || "",
     time: formatRelativeTime(comment.createdAt || comment.time),
     parentCommentId: comment.parentCommentId ?? null,
-    replyCount,
-    replies: nestedReplies,
+    replyCount: depth === 0 ? replies.length : 0,
+    replies: depth === 0 ? replies : [],
     liked,
     likeCount: comment.likeCount ?? comment.likesCount ?? 0,
     raw: comment,
