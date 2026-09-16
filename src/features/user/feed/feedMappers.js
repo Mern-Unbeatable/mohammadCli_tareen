@@ -74,7 +74,11 @@ function toCommentModel(comment, depth = 0) {
       }
       return out;
     };
-    replies = flattenLevel1(comment.replies);
+    replies = flattenLevel1(comment.replies).sort((a, b) => {
+      const aTime = new Date(a.raw?.createdAt || 0).getTime();
+      const bTime = new Date(b.raw?.createdAt || 0).getTime();
+      return aTime - bTime;
+    });
   }
 
   return {
@@ -96,9 +100,15 @@ export function toFeedPostModel(post) {
 
   const type = TYPE_LABEL[post.type] || String(post.type || "").toLowerCase();
   const author = toAuthorModel(post.author || post.user || {});
-  const comments = Array.isArray(post.comments)
-    ? post.comments.map(toCommentModel).filter(Boolean)
-    : [];
+  const comments = (
+    Array.isArray(post.comments)
+      ? post.comments.map((c) => toCommentModel(c)).filter(Boolean)
+      : []
+  ).sort((a, b) => {
+    const aTime = new Date(a.raw?.createdAt || 0).getTime();
+    const bTime = new Date(b.raw?.createdAt || 0).getTime();
+    return aTime - bTime;
+  });
 
   const reactionCount =
     post.stats?.reactions ??

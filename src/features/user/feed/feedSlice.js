@@ -158,7 +158,7 @@ const feedSlice = createSlice({
                 return {
                   ...row,
                   replyCount: (row.replyCount ?? replies.length) + 1,
-                  replies: [nextComment, ...replies],
+                  replies: [...replies, nextComment],
                 };
               }),
               commentCount: nextCount,
@@ -171,7 +171,7 @@ const feedSlice = createSlice({
 
           return {
             ...post,
-            comments: [nextComment, ...comments],
+            comments: [...comments, nextComment],
             commentCount: nextCount,
             stats: {
               ...(post.stats || {}),
