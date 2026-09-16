@@ -43,6 +43,7 @@ export const PostActions = ({
   onReact,
   commentsOpen,
   onToggleComments,
+  commentCount = 0,
   onShare,
   shared,
 }) => (
@@ -58,6 +59,9 @@ export const PostActions = ({
     >
       <MessageCircle className="h-4 w-4" />
       Comment
+      {commentCount > 0 ? (
+        <span className="tabular-nums">({commentCount})</span>
+      ) : null}
     </button>
 
     <button

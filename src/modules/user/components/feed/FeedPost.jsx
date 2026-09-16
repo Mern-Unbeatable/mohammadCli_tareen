@@ -169,31 +169,11 @@ const FeedPost = ({ post, onReport }) => {
       addComment({ postId: post.id, body: text }),
     );
     if (addComment.fulfilled.match(result)) {
-      const comment = result.payload?.comment;
-      if (comment) {
-        setComments((prev) => [
-          {
-            id: comment.id,
-            author: {
-              initials: profileUser?.initials || 'MB',
-              name: profileUser?.name || 'You',
-              subtitle: [profileUser?.title, profileUser?.company]
-                .filter(Boolean)
-                .join(' · '),
-              avatar: profileUser?.avatar,
-            },
-            content: comment.body || comment.content || text,
-            time: 'Just now',
-            replies: 0,
-            liked: false,
-          },
-          ...prev,
-        ]);
-        setStats((prev) => ({ ...prev, comments: prev.comments + 1 }));
-      }
-    } else {
-      toast.error(result.payload || 'Failed to add comment');
+      return true;
     }
+
+    toast.error(result.payload || "Failed to add comment");
+    return false;
   };
 
   const handleLikeComment = (commentId) => {
@@ -277,6 +257,7 @@ const FeedPost = ({ post, onReport }) => {
           onReact={handleReact}
           commentsOpen={commentsOpen}
           onToggleComments={toggleComments}
+          commentCount={stats?.comments ?? 0}
           onShare={handleShare}
           shared={shared}
         />

@@ -124,17 +124,28 @@ const feedSlice = createSlice({
       .addCase(addComment.fulfilled, (state, action) => {
         state.commenting = false;
         const { postId, comment } = action.payload;
-        const appendComment = (post) => {
+        const insertComment = (post) => {
           if (!post || post.id !== postId) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
+          if (comment?.id && comments.some((row) => row.id === comment.id)) {
+            return post;
+          }
+          const nextComments = comment ? [comment, ...comments] : comments;
+          const nextCount =
+            (post.stats?.comments ?? post.commentCount ?? comments.length) +
+            (comment ? 1 : 0);
           return {
             ...post,
-            comments: comment ? [...comments, comment] : comments,
-            commentCount: (post.commentCount || comments.length) + (comment ? 1 : 0),
+            comments: nextComments,
+            commentCount: nextCount,
+            stats: {
+              ...(post.stats || {}),
+              comments: nextCount,
+            },
           };
         };
-        state.posts = state.posts.map(appendComment);
-        state.selectedPost = appendComment(state.selectedPost);
+        state.posts = state.posts.map(insertComment);
+        state.selectedPost = insertComment(state.selectedPost);
       })
       .addCase(addComment.rejected, (state, action) => {
         state.commenting = false;
@@ -152,10 +163,19 @@ const feedSlice = createSlice({
           const comments = (post.comments || []).filter(
             (c) => c.id !== commentId,
           );
+          const nextCount = Math.max(
+            0,
+            (post.stats?.comments ?? post.commentCount ?? comments.length + 1) -
+              1,
+          );
           return {
             ...post,
             comments,
-            commentCount: Math.max(0, (post.commentCount || comments.length + 1) - 1),
+            commentCount: nextCount,
+            stats: {
+              ...(post.stats || {}),
+              comments: nextCount,
+            },
           };
         };
         state.posts = state.posts.map(stripComment);

@@ -113,11 +113,13 @@ export async function deletePost(postId) {
 }
 
 export async function addComment(postId, payload) {
-  const body =
-    typeof payload === "string" ? { body: payload } : payload;
+  const text =
+    typeof payload === "string"
+      ? payload
+      : payload?.content ?? payload?.body ?? "";
   const response = await crudService.post(
     API_ENDPOINTS.USER.FEED.COMMENTS(postId),
-    body,
+    { content: String(text).trim() },
   );
   return unwrapApiData(response) || response;
 }

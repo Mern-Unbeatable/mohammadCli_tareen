@@ -41,12 +41,18 @@ const CommentItem = ({ comment, onLike }) => (
 
 const PostComments = ({ comments, currentUser, onAddComment, onLikeComment }) => {
   const [draft, setDraft] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const text = draft.trim();
-    if (!text) return;
-    onAddComment(text);
-    setDraft('');
+    if (!text || submitting) return;
+    setSubmitting(true);
+    try {
+      const ok = await onAddComment(text);
+      if (ok !== false) setDraft('');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -69,17 +75,18 @@ const PostComments = ({ comments, currentUser, onAddComment, onLikeComment }) =>
             onChange={(e) => setDraft(e.target.value)}
             rows={3}
             placeholder="Add a professional comment..."
-            className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+            disabled={submitting}
+            className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
           />
           <div className="mt-2 flex justify-end">
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || submitting}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="h-3.5 w-3.5" />
-              Comment
+              {submitting ? 'Posting...' : 'Comment'}
             </button>
           </div>
         </div>
