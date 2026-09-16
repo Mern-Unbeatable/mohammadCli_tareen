@@ -11,6 +11,7 @@ import { currentUser } from '@/modules/user/data/dashboard';
 const ProfilePageContent = ({
   user = currentUser,
   posts = [],
+  postsLoading = false,
   onReport,
   isPremium = user.membershipStatus === 'premium',
   editHref = '/profile/edit',
@@ -40,7 +41,12 @@ const ProfilePageContent = ({
       </>
     )}
 
-    <ActivitySection posts={posts} onReport={onReport} emptyName={user.firstName || user.name} />
+    <ActivitySection
+      posts={posts}
+      loading={postsLoading}
+      onReport={onReport}
+      emptyName={user.firstName || user.name}
+    />
   </div>
 );
 

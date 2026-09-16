@@ -1,70 +1,105 @@
 import RequireRole from '@/shared/auth/RequireRole';
 import { USER_ROLES } from '@/shared/constants/roles';
+import { lazyPage } from '@/shared/routing/lazyPage';
 import SupplierLayout from '@/modules/supplier/layout/SupplierLayout';
-import SupplierDashboardView from '@/modules/supplier/pages/SupplierDashboardView';
-import SupplierAdsView from '@/modules/supplier/pages/SupplierAdsView';
-import SupplierAdDetailView from '@/modules/supplier/pages/SupplierAdDetailView';
-import SupplierGeneralView from '@/modules/supplier/pages/SupplierGeneralView';
-import SupplierMyGeneralPostsView from '@/modules/supplier/pages/SupplierMyGeneralPostsView';
-import SupplierGeneralPostDetailView from '@/modules/supplier/pages/SupplierGeneralPostDetailView';
-import SupplierMessagesView from '@/modules/supplier/pages/SupplierMessagesView';
-import SupplierContactsView from '@/modules/supplier/pages/SupplierContactsView';
-import SupplierContactProfileView from '@/modules/supplier/pages/SupplierContactProfileView';
-import SupplierRecruitmentView from '@/modules/supplier/pages/SupplierRecruitmentView';
-import SupplierMyJobsView from '@/modules/supplier/pages/SupplierMyJobsView';
-import SupplierJobDetailView from '@/modules/supplier/pages/SupplierJobDetailView';
-import SupplierPostJobView from '@/modules/supplier/pages/SupplierPostJobView';
-import SupplierBlogsView from '@/modules/supplier/pages/SupplierBlogsView';
-import SupplierBlogDetailView from '@/modules/supplier/pages/SupplierBlogDetailView';
-import SupplierNotificationsView from '@/modules/supplier/pages/SupplierNotificationsView';
-import ProfileSetupForm from '@/components/forms/ProfileSetupForm/ProfileSetupForm';
-import PanelPlaceholderView from '@/shared/pages/PanelPlaceholderView';
-import { useState } from 'react';
-import { DEMO_PROFILE_FORM } from '@/data/demoData';
-import { profileCountries } from '@/modules/user/data/subscription';
+import PanelNotFound from '@/shared/pages/PanelNotFound';
 
-const SupplierProfileView = () => {
-  const [form, setForm] = useState(DEMO_PROFILE_FORM);
-
-  return (
-    <ProfileSetupForm
-      values={form}
-      onChange={(key, value) => setForm((prev) => ({ ...prev, [key]: value }))}
-      onSubmit={(e) => e.preventDefault()}
-      countries={profileCountries}
-      title="My Profile"
-      subtitle="Update your supplier profile visible to laboratories and buyers."
-      submitLabel="Save Profile"
-    />
-  );
-};
-
-const placeholder = (title) => <PanelPlaceholderView title={title} />;
+const SupplierDashboardView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierDashboardView'),
+);
+const SupplierAdsView = lazyPage(() => import('@/modules/supplier/pages/SupplierAdsView'));
+const SupplierAdDetailView = lazyPage(() => import('@/modules/supplier/pages/SupplierAdDetailView'));
+const SupplierGeneralView = lazyPage(() => import('@/modules/supplier/pages/SupplierGeneralView'));
+const SupplierMyGeneralPostsView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierMyGeneralPostsView'),
+);
+const SupplierGeneralPostDetailView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierGeneralPostDetailView'),
+);
+const SupplierMessagesView = lazyPage(() => import('@/modules/supplier/pages/SupplierMessagesView'));
+const SupplierContactsView = lazyPage(() => import('@/modules/supplier/pages/SupplierContactsView'));
+const SupplierContactProfileView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierContactProfileView'),
+);
+const SupplierRecruitmentView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierRecruitmentView'),
+);
+const SupplierMyJobsView = lazyPage(() => import('@/modules/supplier/pages/SupplierMyJobsView'));
+const SupplierJobDetailView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierJobDetailView'),
+);
+const SupplierPostJobView = lazyPage(() => import('@/modules/supplier/pages/SupplierPostJobView'));
+const SupplierBlogsView = lazyPage(() => import('@/modules/supplier/pages/SupplierBlogsView'));
+const SupplierBlogDetailView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierBlogDetailView'),
+);
+const SupplierNotificationsView = lazyPage(
+  () => import('@/modules/supplier/pages/SupplierNotificationsView'),
+);
+const SupplierProfileView = lazyPage(() => import('@/modules/supplier/pages/SupplierProfileView'));
 
 export const supplierRoutes = {
   path: '/supplier',
   element: <RequireRole allowedRoles={[USER_ROLES.SUPPLIER]} />,
+  handle: { requiredRole: USER_ROLES.SUPPLIER, audience: 'supplier' },
   children: [
     {
       element: <SupplierLayout />,
       children: [
-        { index: true, element: <SupplierDashboardView /> },
-        { path: 'ads', element: <SupplierAdsView /> },
-        { path: 'ads/:adId', element: <SupplierAdDetailView /> },
-        { path: 'general', element: <SupplierGeneralView /> },
-        { path: 'general/my-posts', element: <SupplierMyGeneralPostsView /> },
-        { path: 'general/:postId', element: <SupplierGeneralPostDetailView /> },
-        { path: 'contacts', element: <SupplierContactsView /> },
-        { path: 'contacts/:contactId', element: <SupplierContactProfileView /> },
-        { path: 'recruitment', element: <SupplierRecruitmentView /> },
-        { path: 'recruitment/my-jobs', element: <SupplierMyJobsView /> },
-        { path: 'recruitment/create', element: <SupplierPostJobView /> },
-        { path: 'recruitment/:jobId', element: <SupplierJobDetailView /> },
-        { path: 'messages', element: <SupplierMessagesView /> },
-        { path: 'blogs', element: <SupplierBlogsView /> },
-        { path: 'blogs/:slug', element: <SupplierBlogDetailView /> },
-        { path: 'notifications', element: <SupplierNotificationsView /> },
-        { path: 'profile', element: <SupplierProfileView /> },
+        { index: true, element: <SupplierDashboardView />, handle: { title: 'Supplier dashboard' } },
+        { path: 'ads', element: <SupplierAdsView />, handle: { title: 'Ads' } },
+        { path: 'ads/:adId', element: <SupplierAdDetailView />, handle: { title: 'Ad detail' } },
+        { path: 'general', element: <SupplierGeneralView />, handle: { title: 'General' } },
+        {
+          path: 'general/my-posts',
+          element: <SupplierMyGeneralPostsView />,
+          handle: { title: 'My posts' },
+        },
+        {
+          path: 'general/:postId',
+          element: <SupplierGeneralPostDetailView />,
+          handle: { title: 'Post detail' },
+        },
+        { path: 'contacts', element: <SupplierContactsView />, handle: { title: 'Contacts' } },
+        {
+          path: 'contacts/:contactId',
+          element: <SupplierContactProfileView />,
+          handle: { title: 'Contact' },
+        },
+        {
+          path: 'recruitment',
+          element: <SupplierRecruitmentView />,
+          handle: { title: 'Recruitment' },
+        },
+        {
+          path: 'recruitment/my-jobs',
+          element: <SupplierMyJobsView />,
+          handle: { title: 'My jobs' },
+        },
+        {
+          path: 'recruitment/create',
+          element: <SupplierPostJobView />,
+          handle: { title: 'Post job' },
+        },
+        {
+          path: 'recruitment/:jobId',
+          element: <SupplierJobDetailView />,
+          handle: { title: 'Job detail' },
+        },
+        { path: 'messages', element: <SupplierMessagesView />, handle: { title: 'Messages' } },
+        { path: 'blogs', element: <SupplierBlogsView />, handle: { title: 'Blogs' } },
+        {
+          path: 'blogs/:slug',
+          element: <SupplierBlogDetailView />,
+          handle: { title: 'Blog' },
+        },
+        {
+          path: 'notifications',
+          element: <SupplierNotificationsView />,
+          handle: { title: 'Notifications' },
+        },
+        { path: 'profile', element: <SupplierProfileView />, handle: { title: 'Profile' } },
+        { path: '*', element: <PanelNotFound />, handle: { title: 'Not found' } },
       ],
     },
   ],

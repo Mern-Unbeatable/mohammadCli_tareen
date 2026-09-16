@@ -1,34 +1,65 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { ChevronLeft } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import { employmentTypes, levels } from '@/modules/user/data/recruitment';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { ChevronLeft } from "lucide-react";
+import { toast } from "react-toastify";
+import Card from "@/components/ui/Card";
+import {
+  createSupplierJob,
+  formToCreatePayload,
+  EMPLOYMENT_TYPE_OPTIONS,
+  RECRUITMENT_LEVEL_OPTIONS,
+} from "@/features/supplier/recruitment";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 
 const fieldClass =
-  'w-full rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10';
+  "w-full rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10";
 
-const labelClass = 'mb-1.5 block text-[13px] font-semibold text-deep-blue';
+const labelClass = "mb-1.5 block text-[13px] font-semibold text-deep-blue";
+
+const LEVEL_OPTIONS = RECRUITMENT_LEVEL_OPTIONS.filter((item) => item !== "All");
 
 const SupplierPostJobView = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { saving } = useSelector((state) => state.supplierRecruitment);
+
   const [form, setForm] = useState({
-    title: '',
-    company: '',
-    applyLink: '',
-    location: '',
-    salary: '',
-    employmentType: employmentTypes[0],
-    level: levels[1],
-    description: '',
-    requirements: '',
+    title: "",
+    company: "",
+    applyLink: "",
+    location: "",
+    salary: "",
+    employmentType: EMPLOYMENT_TYPE_OPTIONS[0],
+    level: LEVEL_OPTIONS[1] || LEVEL_OPTIONS[0],
+    description: "",
+    requirements: "",
   });
 
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const update = (key) => (e) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/supplier/recruitment/my-jobs');
+    if (saving) return;
+
+    const payload = formToCreatePayload(form);
+    if (!payload.title || !payload.company || !payload.location || !payload.about) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    if (!payload.requirements.length) {
+      toast.error("Add at least one requirement");
+      return;
+    }
+
+    const result = await dispatch(createSupplierJob(payload));
+    if (createSupplierJob.fulfilled.match(result)) {
+      toast.success("Job published");
+      navigate("/supplier/recruitment/my-jobs");
+      return;
+    }
+    toast.error(result.payload || "Failed to publish job");
   };
 
   return (
@@ -43,7 +74,9 @@ const SupplierPostJobView = () => {
 
       <Card>
         <div className="border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
-          <h1 className="text-[22px] font-bold text-deep-blue sm:text-[24px]">Post a Job</h1>
+          <h1 className="text-[22px] font-bold text-deep-blue sm:text-[24px]">
+            Post a Job
+          </h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-5 sm:p-6">
@@ -56,7 +89,7 @@ const SupplierPostJobView = () => {
                 id="title"
                 type="text"
                 value={form.title}
-                onChange={update('title')}
+                onChange={update("title")}
                 placeholder="e.g. Quality Control Analyst"
                 className={fieldClass}
                 required
@@ -70,7 +103,7 @@ const SupplierPostJobView = () => {
                 id="company"
                 type="text"
                 value={form.company}
-                onChange={update('company')}
+                onChange={update("company")}
                 placeholder="e.g. EuroLab Sciences"
                 className={fieldClass}
                 required
@@ -84,10 +117,9 @@ const SupplierPostJobView = () => {
                 id="applyLink"
                 type="url"
                 value={form.applyLink}
-                onChange={update('applyLink')}
+                onChange={update("applyLink")}
                 placeholder="https://www.applyhere.com"
                 className={fieldClass}
-                required
               />
             </div>
           </div>
@@ -101,7 +133,7 @@ const SupplierPostJobView = () => {
                 id="location"
                 type="text"
                 value={form.location}
-                onChange={update('location')}
+                onChange={update("location")}
                 placeholder="e.g. Brussels, Belgium"
                 className={fieldClass}
                 required
@@ -115,10 +147,9 @@ const SupplierPostJobView = () => {
                 id="salary"
                 type="text"
                 value={form.salary}
-                onChange={update('salary')}
+                onChange={update("salary")}
                 placeholder="e.g. €35,000 – €45,000"
                 className={fieldClass}
-                required
               />
             </div>
           </div>
@@ -131,10 +162,10 @@ const SupplierPostJobView = () => {
               <select
                 id="employmentType"
                 value={form.employmentType}
-                onChange={update('employmentType')}
+                onChange={update("employmentType")}
                 className={fieldClass}
               >
-                {employmentTypes.map((item) => (
+                {EMPLOYMENT_TYPE_OPTIONS.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
@@ -145,8 +176,13 @@ const SupplierPostJobView = () => {
               <label htmlFor="level" className={labelClass}>
                 Level
               </label>
-              <select id="level" value={form.level} onChange={update('level')} className={fieldClass}>
-                {levels.slice(1).map((item) => (
+              <select
+                id="level"
+                value={form.level}
+                onChange={update("level")}
+                className={fieldClass}
+              >
+                {LEVEL_OPTIONS.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
@@ -162,7 +198,7 @@ const SupplierPostJobView = () => {
             <textarea
               id="description"
               value={form.description}
-              onChange={update('description')}
+              onChange={update("description")}
               rows={4}
               placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
               className={`${fieldClass} resize-y`}
@@ -177,9 +213,9 @@ const SupplierPostJobView = () => {
             <textarea
               id="requirements"
               value={form.requirements}
-              onChange={update('requirements')}
+              onChange={update("requirements")}
               rows={4}
-              placeholder={'BSc in Chemistry\n3+ years QC experience\nHPLC proficiency'}
+              placeholder={"BSc in Chemistry\n3+ years QC experience\nHPLC proficiency"}
               className={`${fieldClass} resize-y`}
               required
             />
@@ -187,9 +223,10 @@ const SupplierPostJobView = () => {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
+            disabled={saving}
+            className="w-full rounded-lg bg-primary py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0] disabled:opacity-60"
           >
-            Publish Job
+            {saving ? "Publishing…" : "Publish Job"}
           </button>
         </form>
       </Card>

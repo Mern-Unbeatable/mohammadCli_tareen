@@ -1,41 +1,81 @@
-import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
-import { AlertTriangle, ChevronLeft } from 'lucide-react';
-import AdDetailCard from '@/modules/supplier/components/AdDetailCard';
-import PostComments from '@/modules/user/components/feed/PostComments';
+import { useEffect, useState } from "react";
+import { Link, Navigate, useParams } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { AlertTriangle, ChevronLeft } from "lucide-react";
+import { toast } from "react-toastify";
+import AdDetailCard from "@/modules/supplier/components/AdDetailCard";
+import { AdvertisementDetailSkeleton } from "@/components/common/Skeleton";
+import PostComments from "@/modules/user/components/feed/PostComments";
 import {
-  DEMO_AD_COMMENTS,
-  getSupplierAdById,
-  REJECTION_MESSAGE,
-} from '@/modules/supplier/data/advertisements';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
+  fetchSupplierAdDetails,
+  clearSelectedSupplierAd,
+  clearSupplierAdsError,
+  toAdDetailModel,
+} from "@/features/supplier/advertisements";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+
+const DEFAULT_REJECTION =
+  "The advertisement does not meet Lab Unity's advertising guidelines. Please review and resubmit.";
 
 const SupplierAdDetailView = () => {
   const { adId } = useParams();
-  const ad = getSupplierAdById(adId);
+  const dispatch = useDispatch();
+  const { selectedAd, selectedAdLoading, error } = useSelector(
+    (state) => state.supplierAds,
+  );
 
-  const [comments, setComments] = useState(DEMO_AD_COMMENTS);
+  const [comments, setComments] = useState([]);
   const [reactionId, setReactionId] = useState(null);
   const [commentsOpen, setCommentsOpen] = useState(true);
   const [shared, setShared] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
+  useEffect(() => {
+    if (!adId) return undefined;
+    dispatch(clearSupplierAdsError());
+    dispatch(fetchSupplierAdDetails(adId)).then((result) => {
+      if (fetchSupplierAdDetails.rejected.match(result)) {
+        setNotFound(true);
+      }
+    });
+    return () => {
+      dispatch(clearSelectedSupplierAd());
+    };
+  }, [dispatch, adId]);
+
+  useEffect(() => {
+    if (error && !selectedAdLoading) toast.error(error);
+  }, [error, selectedAdLoading]);
+
+  if (notFound) return <Navigate to="/supplier/ads" replace />;
+
+  if (selectedAdLoading || (!selectedAd && !error)) {
+    return (
+      <PanelPage>
+        <PanelPageHeader title="My Advertisement Details" />
+        <AdvertisementDetailSkeleton />
+      </PanelPage>
+    );
+  }
+
+  const ad = toAdDetailModel(selectedAd);
   if (!ad) return <Navigate to="/supplier/ads" replace />;
 
-  const isRejected = ad.status === 'Rejected';
+  const isRejected = ad.status === "Rejected";
 
   const handleAddComment = (text) => {
     setComments((prev) => [
       {
         id: `c-${Date.now()}`,
         author: {
-          name: 'Atik Adnan',
-          initials: 'AA',
-          subtitle: 'Admin · Lab Unity',
+          name: "You",
+          initials: "YO",
+          subtitle: "Supplier",
           avatar: null,
         },
         content: text,
-        time: 'now',
+        time: "now",
         liked: false,
         replies: 0,
       },
@@ -46,8 +86,10 @@ const SupplierAdDetailView = () => {
   const handleLikeComment = (commentId) => {
     setComments((prev) =>
       prev.map((comment) =>
-        comment.id === commentId ? { ...comment, liked: !comment.liked } : comment
-      )
+        comment.id === commentId
+          ? { ...comment, liked: !comment.liked }
+          : comment,
+      ),
     );
   };
 
@@ -67,7 +109,7 @@ const SupplierAdDetailView = () => {
         <div className="flex gap-3 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3.5 sm:px-5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#DC2626]" />
           <p className="text-[13px] leading-relaxed text-[#991B1B] sm:text-[14px]">
-            {ad.rejectionReason || REJECTION_MESSAGE}
+            {ad.rejectionReason || DEFAULT_REJECTION}
           </p>
         </div>
       ) : null}

@@ -1,6 +1,5 @@
 import { FileText } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
-import { currentUser } from '@/modules/user/data/dashboard';
 
 export { PostStats, PostActions } from './PostActionsBar';
 
@@ -22,13 +21,13 @@ export const AttachmentCard = ({ attachment }) => (
   </div>
 );
 
-export const FeedComposer = ({ onCreatePost }) => (
+export const FeedComposer = ({ onCreatePost, user }) => (
   <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
     <div className="flex gap-3">
       <Avatar
-        src={currentUser.avatar}
-        alt={currentUser.name}
-        initials={currentUser.initials}
+        src={user?.avatar}
+        alt={user?.name || 'Member'}
+        initials={user?.initials || 'MB'}
         size="md"
       />
       <button

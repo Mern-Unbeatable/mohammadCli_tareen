@@ -1,134 +1,78 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { crudService, API_ENDPOINTS, tokenService, getApiErrorMessage } from '../../api';
+import { createSlice } from "@reduxjs/toolkit";
+import { tokenService } from "@/api/cookies";
+import { unwrapUser } from "@/api/unwrapApiData";
+import {
+  loginUser,
+  registerUser,
+  fetchUserProfile,
+  refreshSession,
+  logoutUser,
+  changePassword,
+} from "./authThunks";
 
-// Initial Auth State
-const initialState = {
-  user: tokenService.getUser(),
-  token: tokenService.getToken(),
-  isAuthenticated: !!(tokenService.getToken() && tokenService.getUser()),
-  loading: false,
-  error: null,
+/** Heal cookies/state if an older bug stored the API envelope as `user`. */
+const coerceStoredUser = (raw) => {
+  if (!raw || typeof raw !== "object") return raw;
+  if (raw.role || raw.email || raw.id) return raw;
+  return unwrapUser(raw) || raw;
 };
 
+const initialUser = coerceStoredUser(tokenService.getUser());
 
-/**
- * Login Async Thunk
- */
-export const loginUser = createAsyncThunk(
-  'auth/loginUser',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      // Expects credentials format: { email, password, remember }
-      const response = await crudService.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
-      
-      const payloadData = response?.data || response;
-      const accessToken = payloadData?.accessToken || payloadData?.token;
-      const refreshToken = payloadData?.refreshToken;
-      const user = payloadData?.user;
+if (
+  initialUser &&
+  typeof initialUser === "object" &&
+  initialUser.role &&
+  tokenService.getUser() &&
+  !tokenService.getUser().role
+) {
+  tokenService.setUser(initialUser);
+}
 
-      // Save tokens in Cookies using tokenService
-      if (accessToken) {
-        tokenService.setToken(accessToken);
-      }
-      if (refreshToken) {
-        tokenService.setRefreshToken(refreshToken);
-      }
-      if (user) {
-        tokenService.setUser(user);
-      }
-      return payloadData;
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Invalid email or password'));
-    }
-  }
-);
+const initialState = {
+  user: initialUser,
+  token: tokenService.getToken(),
+  isAuthenticated: !!(tokenService.getToken() && initialUser),
+  loading: false,
+  error: null,
+  sessionReady: !tokenService.getToken(),
+};
 
-/**
- * Register Async Thunk
- */
-export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (formData, { rejectWithValue }) => {
-    try {
-      const response = await crudService.post(API_ENDPOINTS.AUTH.REGISTER, formData);
-
-      const payloadData = response?.data || response;
-      const accessToken = payloadData?.accessToken || payloadData?.token;
-      const refreshToken = payloadData?.refreshToken;
-      const user = payloadData?.user;
-
-      // Save tokens in Cookies using tokenService
-      if (accessToken) {
-        tokenService.setToken(accessToken);
-      }
-      if (refreshToken) {
-        tokenService.setRefreshToken(refreshToken);
-      }
-      if (user) {
-        tokenService.setUser(user);
-      }
-      return payloadData;
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Registration failed'));
-    }
-  }
-);
-
-/**
- * Fetch Profile Async Thunk
- */
-export const fetchUserProfile = createAsyncThunk(
-  'auth/fetchUserProfile',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await crudService.get(API_ENDPOINTS.AUTH.ME);
-      const userData = response?.data?.user || response?.user || response;
-      if (userData) {
-        tokenService.setUser(userData);
-      }
-      return userData;
-    } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch user profile'));
-    }
-  }
-);
-
-
-/**
- * Logout Async Thunk
- */
-export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
-  async (_, { dispatch }) => {
-    try {
-      await crudService.post(API_ENDPOINTS.AUTH.LOGOUT);
-    } catch {
-      // Ignore API logout error and clear local session anyway
-    } finally {
-      tokenService.clearAuth();
-      dispatch(authSlice.actions.resetAuth());
-    }
-  }
-);
+const applyReset = (state) => {
+  state.user = null;
+  state.token = null;
+  state.isAuthenticated = false;
+  state.loading = false;
+  state.error = null;
+  state.sessionReady = true;
+};
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     resetAuth: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
+      applyReset(state);
     },
     clearError: (state) => {
       state.error = null;
     },
+    setSessionReady: (state, action) => {
+      state.sessionReady = Boolean(action.payload);
+    },
+    tokenRefreshed: (state, action) => {
+      state.token = action.payload || tokenService.getToken();
+      state.isAuthenticated = !!(state.token && state.user);
+    },
+    setUser: (state, action) => {
+      const user = coerceStoredUser(action.payload) || null;
+      state.user = user;
+      if (user) tokenService.setUser(user);
+      state.isAuthenticated = !!(state.token && user);
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -137,13 +81,13 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
-        state.token = action.payload?.accessToken || action.payload?.token || null;
+        state.token = action.payload?.accessToken || null;
+        state.sessionReady = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -152,19 +96,69 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload?.user || null;
-        state.token = action.payload?.accessToken || action.payload?.token || null;
+        state.token = action.payload?.accessToken || null;
+        state.sessionReady = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-
-      // Fetch Profile
+      // Profile bootstrap
+      .addCase(fetchUserProfile.pending, (state) => {
+        state.sessionReady = false;
+      })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.user = action.payload;
+        state.token = tokenService.getToken();
+        state.isAuthenticated = !!(action.payload && state.token);
+        state.sessionReady = true;
+        state.error = null;
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.sessionReady = true;
+        state.error = action.payload;
+      })
+      // Refresh
+      .addCase(refreshSession.fulfilled, (state, action) => {
+        state.token = action.payload?.accessToken || tokenService.getToken();
+        state.isAuthenticated = !!(state.token && state.user);
+      })
+      .addCase(refreshSession.rejected, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.sessionReady = true;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        applyReset(state);
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        applyReset(state);
+      })
+      // Change password
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { resetAuth, clearError } = authSlice.actions;
+export const {
+  resetAuth,
+  clearError,
+  setSessionReady,
+  tokenRefreshed,
+  setUser,
+} = authSlice.actions;
 export default authSlice.reducer;

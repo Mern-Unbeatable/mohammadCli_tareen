@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
-import { currentUser } from '@/modules/user/data/dashboard';
 
 const CommentItem = ({ comment, onLike }) => (
   <div className="flex gap-3">
@@ -40,7 +39,7 @@ const CommentItem = ({ comment, onLike }) => (
   </div>
 );
 
-const PostComments = ({ comments, onAddComment, onLikeComment }) => {
+const PostComments = ({ comments, currentUser, onAddComment, onLikeComment }) => {
   const [draft, setDraft] = useState('');
 
   const handleSubmit = () => {
@@ -58,9 +57,9 @@ const PostComments = ({ comments, onAddComment, onLikeComment }) => {
 
       <div className="mb-4 flex gap-3">
         <Avatar
-          src={currentUser.avatar}
-          alt={currentUser.name}
-          initials={currentUser.initials}
+          src={currentUser?.avatar}
+          alt={currentUser?.name || 'Member'}
+          initials={currentUser?.initials || 'MB'}
           size="md"
           className="shrink-0"
         />
@@ -79,8 +78,8 @@ const PostComments = ({ comments, onAddComment, onLikeComment }) => {
               disabled={!draft.trim()}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Comment
               <Send className="h-3.5 w-3.5" />
+              Comment
             </button>
           </div>
         </div>
@@ -88,7 +87,11 @@ const PostComments = ({ comments, onAddComment, onLikeComment }) => {
 
       <div className="space-y-4">
         {comments.map((comment) => (
-          <CommentItem key={comment.id} comment={comment} onLike={onLikeComment} />
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            onLike={onLikeComment}
+          />
         ))}
       </div>
     </div>

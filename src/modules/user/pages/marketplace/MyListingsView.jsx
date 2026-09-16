@@ -1,21 +1,69 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import Container from '@/components/ui/Container';
+import { CardSkeleton } from '@/components/common/Skeleton';
 import ListingCard from '@/components/data-display/ListingCard/ListingCard';
 import MarketplaceToolbar from '@/modules/user/components/marketplace/MarketplaceToolbar';
-import { filterListings, getMyListings } from '@/modules/user/data/marketplace';
+import {
+  fetchListings,
+  removeListing,
+  clearMarketplaceError,
+  categoryToApi,
+  toListingCardModel,
+} from '@/features/user/marketplace';
+import { GRID_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+
+const buildMineQuery = ({ query, category }) => {
+  const params = {
+    page: 1,
+    pageSize: GRID_PAGE_SIZE * 3,
+    sort: 'desc',
+    mine: true,
+  };
+  const q = query?.trim();
+  if (q) params.search = q;
+  const categoryApi = categoryToApi(category);
+  if (categoryApi) params.category = categoryApi;
+  return params;
+};
 
 const MyListingsView = () => {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('All');
-  const [myListings, setMyListings] = useState(getMyListings);
-
-  const filtered = useMemo(
-    () => filterListings(myListings, query, category),
-    [myListings, query, category]
+  const dispatch = useDispatch();
+  const { listings, listingsLoading, deleting, error } = useSelector(
+    (state) => state.userMarketplace,
   );
 
-  const handleDelete = (id) => {
-    setMyListings((prev) => prev.filter((item) => item.id !== id));
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [category, setCategory] = useState('All');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    dispatch(clearMarketplaceError());
+    dispatch(fetchListings(buildMineQuery({ query: debouncedQuery, category })));
+  }, [dispatch, debouncedQuery, category]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const filtered = useMemo(
+    () => (listings || []).map(toListingCardModel).filter(Boolean),
+    [listings],
+  );
+
+  const handleDelete = async (id) => {
+    const result = await dispatch(removeListing(id));
+    if (removeListing.fulfilled.match(result)) {
+      toast.success('Listing removed');
+      return;
+    }
+    toast.error(result.payload || 'Failed to delete listing');
   };
 
   return (
@@ -31,14 +79,21 @@ const MyListingsView = () => {
 
         <section className="mt-6">
           <h2 className="mb-4 text-[16px] font-bold text-deep-blue">My listings</h2>
-          {filtered.length > 0 ? (
+
+          {listingsLoading && !filtered.length ? (
+            <CardSkeleton
+              variant="listing"
+              count={GRID_PAGE_SIZE}
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            />
+          ) : filtered.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((listing) => (
                 <ListingCard
                   key={listing.id}
                   listing={listing}
                   variant="mine"
-                  onDelete={handleDelete}
+                  onDelete={deleting ? undefined : handleDelete}
                 />
               ))}
             </div>

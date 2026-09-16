@@ -1,25 +1,79 @@
-import { useMemo, useState } from 'react';
-import JobCard from '@/components/data-display/JobCard/JobCard';
-import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
-import SupplierRecruitmentActions from '@/modules/supplier/components/SupplierRecruitmentActions';
-import { filterJobs, getMyJobs } from '@/modules/user/data/recruitment';
-import PanelPage from '@/shared/layout/PanelLayout/PanelPage';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import JobCard from "@/components/data-display/JobCard/JobCard";
+import RecruitmentToolbar from "@/modules/user/components/recruitment/RecruitmentToolbar";
+import SupplierRecruitmentActions from "@/modules/supplier/components/SupplierRecruitmentActions";
+import {
+  fetchSupplierJobs,
+  removeSupplierJob,
+  clearRecruitmentError,
+  levelToApi,
+  toJobCardModel,
+} from "@/features/supplier/recruitment";
+import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import { LIST_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const JOB_BASE = '/supplier/recruitment';
+const JOB_BASE = "/supplier/recruitment";
+
+const buildMyJobsQuery = ({ query, level }) => {
+  const params = {
+    page: 1,
+    pageSize: 50,
+    sort: "desc",
+    mine: true,
+  };
+  const q = query?.trim();
+  if (q) params.search = q;
+  const levelApi = levelToApi(level);
+  if (levelApi) params.level = levelApi;
+  return params;
+};
 
 const SupplierMyJobsView = () => {
-  const [query, setQuery] = useState('');
-  const [level, setLevel] = useState('All');
-  const [myJobs, setMyJobs] = useState(getMyJobs);
-
-  const filtered = useMemo(
-    () => filterJobs(myJobs, query, level),
-    [myJobs, query, level]
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { jobs, jobsLoading, deleting, error } = useSelector(
+    (state) => state.supplierRecruitment,
   );
 
-  const handleDelete = (id) => {
-    setMyJobs((prev) => prev.filter((job) => job.id !== id));
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [level, setLevel] = useState("All");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    dispatch(clearRecruitmentError());
+    dispatch(
+      fetchSupplierJobs(
+        buildMyJobsQuery({ query: debouncedQuery, level }),
+      ),
+    );
+  }, [dispatch, debouncedQuery, level]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const filtered = useMemo(
+    () => (jobs || []).map(toJobCardModel).filter(Boolean),
+    [jobs],
+  );
+
+  const handleDelete = async (id) => {
+    const result = await dispatch(removeSupplierJob(id));
+    if (removeSupplierJob.fulfilled.match(result)) {
+      toast.success("Job deleted");
+      return;
+    }
+    toast.error(result.payload || "Failed to delete job");
   };
 
   return (
@@ -40,27 +94,38 @@ const SupplierMyJobsView = () => {
         showActions={false}
       />
 
-      <div className="space-y-4">
-        {filtered.length > 0 ? (
-          filtered.map((job, index) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              variant="mine"
-              highlighted={index === 0}
-              detailHref={`${JOB_BASE}/${job.id}`}
-              onDelete={handleDelete}
-            />
-          ))
-        ) : (
-          <div className="rounded-xl border border-[#E4E7EC] bg-white px-6 py-14 text-center">
-            <p className="text-[15px] font-semibold text-deep-blue">No job posts yet</p>
-            <p className="mt-2 text-[14px] text-[#64748B]">
-              Post your first role to reach qualified laboratory professionals.
-            </p>
-          </div>
-        )}
-      </div>
+      {jobsLoading && !filtered.length ? (
+        <CardSkeleton
+          variant="job"
+          count={LIST_PAGE_SIZE}
+          className="space-y-4"
+        />
+      ) : (
+        <div className="space-y-4">
+          {filtered.length > 0 ? (
+            filtered.map((job, index) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                variant="mine"
+                highlighted={index === 0}
+                detailHref={`${JOB_BASE}/${job.id}`}
+                onDelete={deleting ? undefined : handleDelete}
+                onEdit={() => navigate(`${JOB_BASE}/${job.id}`)}
+              />
+            ))
+          ) : (
+            <div className="rounded-xl border border-[#E4E7EC] bg-white px-6 py-14 text-center">
+              <p className="text-[15px] font-semibold text-deep-blue">
+                No job posts yet
+              </p>
+              <p className="mt-2 text-[14px] text-[#64748B]">
+                Post your first role to reach qualified laboratory professionals.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </PanelPage>
   );
 };

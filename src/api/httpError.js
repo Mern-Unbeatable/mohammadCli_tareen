@@ -8,7 +8,8 @@ export const getApiErrorMessage = (err, fallback = 'Something went wrong. Please
     err?.error?.details ||
     err?.errors ||
     err?.response?.data?.error?.details ||
-    err?.response?.data?.errors;
+    err?.response?.data?.errors ||
+    err?.raw?.response?.data?.error?.details;
 
   if (Array.isArray(details) && details.length > 0) {
     const messages = details
@@ -25,6 +26,7 @@ export const getApiErrorMessage = (err, fallback = 'Something went wrong. Please
     err?.error?.message ||
     err?.response?.data?.error?.message ||
     err?.response?.data?.message ||
+    err?.payload ||
     fallback
   );
 };

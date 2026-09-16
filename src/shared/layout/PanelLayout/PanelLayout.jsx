@@ -4,19 +4,18 @@ import { LogOut, Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
 import { useAuth } from '@/shared/auth/useAuth';
-
+import { roleLabel as formatRoleLabel } from '@/shared/constants/roles';
 import ScrollToTop from '@/shared/routing/ScrollToTop';
 
 const SIDEBAR_WIDTH = 260;
 
 const PanelLayout = ({ navItems, children }) => {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const roleLabel =
-    user?.role === 'admin' ? 'Admin' : user?.role === 'supplier' ? 'Supplier' : 'User';
+  const roleLabel = formatRoleLabel(role || user?.role);
 
   useEffect(() => {
     setSidebarOpen(false);
