@@ -5,9 +5,6 @@ import * as contactsApi from "./contactsApi";
  * Supplier contacts async thunks — orchestration only; HTTP in contactsApi.
  */
 
-// ═══════════════════════════════════════════════════════════════════════
-// Directory list
-// ═══════════════════════════════════════════════════════════════════════
 export const fetchContactsList = createAsyncThunk(
   "supplierContacts/fetchContactsList",
   async (params = {}, { rejectWithValue }) => {
@@ -21,9 +18,6 @@ export const fetchContactsList = createAsyncThunk(
   },
 );
 
-// ═══════════════════════════════════════════════════════════════════════
-// Contact profile
-// ═══════════════════════════════════════════════════════════════════════
 export const fetchContactDetails = createAsyncThunk(
   "supplierContacts/fetchContactDetails",
   async (contactId, { rejectWithValue }) => {
@@ -37,9 +31,6 @@ export const fetchContactDetails = createAsyncThunk(
   },
 );
 
-// ═══════════════════════════════════════════════════════════════════════
-// Request connection
-// ═══════════════════════════════════════════════════════════════════════
 export const requestContactConnection = createAsyncThunk(
   "supplierContacts/requestContactConnection",
   async (addresseeId, { rejectWithValue }) => {
@@ -49,6 +40,47 @@ export const requestContactConnection = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         contactsApi.getApiErrorMessage(err, "Failed to send connection request"),
+      );
+    }
+  },
+);
+
+export const acceptConnection = createAsyncThunk(
+  "supplierContacts/acceptConnection",
+  async (connectionId, { rejectWithValue }) => {
+    try {
+      const connection = await contactsApi.acceptConnection(connectionId);
+      return { connectionId, connection };
+    } catch (err) {
+      return rejectWithValue(
+        contactsApi.getApiErrorMessage(err, "Failed to accept connection"),
+      );
+    }
+  },
+);
+
+export const declineConnection = createAsyncThunk(
+  "supplierContacts/declineConnection",
+  async (connectionId, { rejectWithValue }) => {
+    try {
+      const connection = await contactsApi.declineConnection(connectionId);
+      return { connectionId, connection };
+    } catch (err) {
+      return rejectWithValue(
+        contactsApi.getApiErrorMessage(err, "Failed to decline connection"),
+      );
+    }
+  },
+);
+
+export const removeConnection = createAsyncThunk(
+  "supplierContacts/removeConnection",
+  async (connectionId, { rejectWithValue }) => {
+    try {
+      return await contactsApi.removeConnection(connectionId);
+    } catch (err) {
+      return rejectWithValue(
+        contactsApi.getApiErrorMessage(err, "Failed to remove connection"),
       );
     }
   },

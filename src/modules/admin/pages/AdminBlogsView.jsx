@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import BlogAdminCard from "@/components/data-display/BlogAdminCard/BlogAdminCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
@@ -20,11 +21,12 @@ const AdminBlogsView = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { blogs, blogsMeta, blogsLoading, error } = useSelector(
+  const { blogs, blogsMeta, blogsLoading, deleting, error } = useSelector(
     (state) => state.adminBlogs,
   );
 
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     dispatch(
@@ -40,10 +42,25 @@ const AdminBlogsView = () => {
     [blogs],
   );
 
-  const handleDelete = async (blogId) => {
-    const result = await dispatch(removeBlogPost(blogId));
+  const handleDeleteRequest = (blogId) => {
+    if (deleting) return;
+    const article = pageItems.find((item) => item.id === blogId);
+    if (!article) return;
+    setPendingDelete(article);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeBlogPost(pendingDelete.id));
     if (removeBlogPost.fulfilled.match(result)) {
       toast.success("Blog deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete blog");
@@ -90,7 +107,7 @@ const AdminBlogsView = () => {
                 const item = pageItems.find((entry) => entry.id === id);
                 navigate("/admin/blogs/new", { state: { article: item } });
               }}
-              onDelete={handleDelete}
+              onDelete={deleting ? undefined : handleDeleteRequest}
             />
           ))}
         </div>
@@ -101,6 +118,27 @@ const AdminBlogsView = () => {
         totalPages={blogsMeta?.totalPages || 1}
         onPageChange={setPage}
         className="mt-2"
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete blog post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this blog"}
+              </span>
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </PanelPage>
   );

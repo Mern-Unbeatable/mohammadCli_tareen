@@ -56,9 +56,10 @@ export async function getContactsList(params = {}) {
     sort: "desc",
     ...params,
   };
-  // Drop empty country / search so the API ignores them
   if (!query.country) delete query.country;
   if (!query.search) delete query.search;
+  if (!query.status) delete query.status;
+  if (!query.direction) delete query.direction;
 
   const response = await crudService.get(
     API_ENDPOINTS.SUPPLIER.CONTACTS.LIST,

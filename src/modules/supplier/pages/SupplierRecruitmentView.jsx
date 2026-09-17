@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
@@ -9,6 +9,7 @@ import SupplierRecruitmentActions from "@/modules/supplier/components/SupplierRe
 import {
   fetchSupplierJobs,
   clearRecruitmentError,
+  invalidateJobsList,
   levelToApi,
   toJobCardModel,
 } from "@/features/supplier/recruitment";
@@ -43,15 +44,16 @@ const SupplierRecruitmentView = () => {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    const timer = setTimeout(() => {
+      if (query === debouncedQuery) return;
+      dispatch(invalidateJobsList());
+      setDebouncedQuery(query);
+      setPage(1);
+    }, 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, debouncedQuery, dispatch]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedQuery, level]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearRecruitmentError());
     dispatch(
       fetchSupplierJobs(
@@ -71,6 +73,19 @@ const SupplierRecruitmentView = () => {
 
   const totalPages = Math.max(1, jobsMeta?.totalPages || 1);
 
+  const handleLevelChange = (next) => {
+    if (next === level) return;
+    dispatch(invalidateJobsList());
+    setLevel(next);
+    setPage(1);
+  };
+
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateJobsList());
+    setPage(next);
+  };
+
   return (
     <PanelPage>
       <PanelPageHeader
@@ -83,13 +98,13 @@ const SupplierRecruitmentView = () => {
         query={query}
         onQueryChange={setQuery}
         level={level}
-        onLevelChange={setLevel}
+        onLevelChange={handleLevelChange}
         basePath={JOB_BASE}
         showTitle={false}
         showActions={false}
       />
 
-      {jobsLoading && !pageItems.length ? (
+      {jobsLoading ? (
         <CardSkeleton
           variant="job"
           count={LIST_PAGE_SIZE}
@@ -101,7 +116,7 @@ const SupplierRecruitmentView = () => {
             <JobCard
               key={job.id}
               job={job}
-              highlighted={index < 4 && page === 1}
+              highlighted={index === 0 && page === 1}
               detailHref={`${JOB_BASE}/${job.id}`}
             />
           ))}
@@ -120,7 +135,7 @@ const SupplierRecruitmentView = () => {
       <Pagination
         page={page}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
         className="mt-2"
       />
     </PanelPage>

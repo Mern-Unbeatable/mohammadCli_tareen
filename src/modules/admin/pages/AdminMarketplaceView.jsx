@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import ListingCard from "@/components/data-display/ListingCard/ListingCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
@@ -32,12 +33,12 @@ const buildListingsQuery = ({ page, category }) => {
 
 const AdminMarketplaceView = () => {
   const dispatch = useDispatch();
-  const { listings, listingsMeta, listingsLoading, error } = useSelector(
-    (state) => state.adminMarketplace,
-  );
+  const { listings, listingsMeta, listingsLoading, deleting, error } =
+    useSelector((state) => state.adminMarketplace);
 
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     setPage(1);
@@ -52,10 +53,25 @@ const AdminMarketplaceView = () => {
     [listings],
   );
 
-  const handleDelete = async (listingId) => {
-    const result = await dispatch(removeListing(listingId));
+  const handleDeleteRequest = (listingId) => {
+    if (deleting) return;
+    const listing = pageItems.find((item) => item.id === listingId);
+    if (!listing) return;
+    setPendingDelete(listing);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeListing(pendingDelete.id));
     if (removeListing.fulfilled.match(result)) {
       toast.success("Listing deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete listing");
@@ -112,7 +128,7 @@ const AdminMarketplaceView = () => {
               listing={listing}
               variant="admin"
               detailHref={`/admin/marketplace/${listing.id}`}
-              onDelete={handleDelete}
+              onDelete={deleting ? undefined : handleDeleteRequest}
             />
           ))}
         </div>
@@ -123,6 +139,27 @@ const AdminMarketplaceView = () => {
         totalPages={listingsMeta?.totalPages || 1}
         onPageChange={setPage}
         className="mt-2"
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete listing?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this listing"}
+              </span>
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </PanelPage>
   );
