@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
@@ -11,6 +11,7 @@ import {
   fetchSupplierGeneralPosts,
   createSupplierGeneralPost,
   clearGeneralError,
+  invalidateGeneralPostsList,
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
@@ -41,11 +42,7 @@ const SupplierGeneralView = () => {
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    setPage(1);
-  }, [category]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearGeneralError());
     dispatch(fetchSupplierGeneralPosts(buildPostsQuery({ page, category })));
   }, [dispatch, page, category]);
@@ -61,6 +58,19 @@ const SupplierGeneralView = () => {
 
   const totalPages = Math.max(1, postsMeta?.totalPages || 1);
 
+  const handleCategoryChange = (next) => {
+    if (next === category) return;
+    dispatch(invalidateGeneralPostsList());
+    setCategory(next);
+    setPage(1);
+  };
+
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateGeneralPostsList());
+    setPage(next);
+  };
+
   const handleCreate = async (form) => {
     const payload = formToCreatePayload(form);
     if (!payload.title) {
@@ -75,7 +85,10 @@ const SupplierGeneralView = () => {
     const result = await dispatch(createSupplierGeneralPost(payload));
     if (createSupplierGeneralPost.fulfilled.match(result)) {
       toast.success("Post published");
-      dispatch(fetchSupplierGeneralPosts(buildPostsQuery({ page: 1, category })));
+      dispatch(invalidateGeneralPostsList());
+      dispatch(
+        fetchSupplierGeneralPosts(buildPostsQuery({ page: 1, category })),
+      );
       setPage(1);
       return true;
     }
@@ -87,13 +100,13 @@ const SupplierGeneralView = () => {
     <PanelPage>
       <GeneralToolbar
         category={category}
-        onCategoryChange={setCategory}
+        onCategoryChange={handleCategoryChange}
         activeView="browse"
         onCreatePost={() => setModalOpen(true)}
         myPostHref={`${BASE}/my-posts`}
       />
 
-      {postsLoading && !pageItems.length ? (
+      {postsLoading ? (
         <CardSkeleton
           variant="generalPost"
           count={GRID_PAGE_SIZE}
@@ -114,7 +127,7 @@ const SupplierGeneralView = () => {
           <Pagination
             page={page}
             totalPages={totalPages}
-            onPageChange={setPage}
+            onPageChange={handlePageChange}
             className="mt-8"
           />
         </>

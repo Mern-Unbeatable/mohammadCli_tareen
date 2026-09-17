@@ -27,12 +27,29 @@ const generalSlice = createSlice({
     clearSelectedPost: (state) => {
       state.selectedPost = null;
     },
+    /** Sync: show skeletons before paint when filter/page changes */
+    invalidateGeneralPostsList: (state) => {
+      state.postsLoading = true;
+      state.posts = [];
+      state.postsMeta = {
+        ...state.postsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchSupplierGeneralPosts.pending, (state) => {
         state.postsLoading = true;
         state.error = null;
+        state.posts = [];
+        state.postsMeta = {
+          ...state.postsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchSupplierGeneralPosts.fulfilled, (state, action) => {
         state.postsLoading = false;
@@ -93,5 +110,9 @@ const generalSlice = createSlice({
   },
 });
 
-export const { clearGeneralError, clearSelectedPost } = generalSlice.actions;
+export const {
+  clearGeneralError,
+  clearSelectedPost,
+  invalidateGeneralPostsList,
+} = generalSlice.actions;
 export default generalSlice.reducer;

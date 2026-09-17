@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import GeneralPostCard from "@/components/data-display/GeneralPostCard/GeneralPostCard";
 import GeneralToolbar from "@/modules/user/components/general/GeneralToolbar";
@@ -12,6 +13,7 @@ import {
   createSupplierGeneralPost,
   removeSupplierGeneralPost,
   clearGeneralError,
+  invalidateGeneralPostsList,
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
@@ -40,12 +42,9 @@ const SupplierMyGeneralPostsView = () => {
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
-  useEffect(() => {
-    setPage(1);
-  }, [category]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearGeneralError());
     dispatch(
       fetchSupplierGeneralPosts(buildMyPostsQuery({ page, category })),
@@ -63,10 +62,40 @@ const SupplierMyGeneralPostsView = () => {
 
   const totalPages = Math.max(1, postsMeta?.totalPages || 1);
 
-  const handleDelete = async (postId) => {
-    const result = await dispatch(removeSupplierGeneralPost(postId));
+  const handleCategoryChange = (next) => {
+    if (next === category) return;
+    dispatch(invalidateGeneralPostsList());
+    setCategory(next);
+    setPage(1);
+  };
+
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateGeneralPostsList());
+    setPage(next);
+  };
+
+  const handleDeleteRequest = (postId) => {
+    if (deleting) return;
+    const post = pageItems.find((item) => item.id === postId);
+    if (!post) return;
+    setPendingDelete(post);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(
+      removeSupplierGeneralPost(pendingDelete.id),
+    );
     if (removeSupplierGeneralPost.fulfilled.match(result)) {
       toast.success("Post deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete post");
@@ -86,6 +115,7 @@ const SupplierMyGeneralPostsView = () => {
     const result = await dispatch(createSupplierGeneralPost(payload));
     if (createSupplierGeneralPost.fulfilled.match(result)) {
       toast.success("Post published");
+      dispatch(invalidateGeneralPostsList());
       dispatch(
         fetchSupplierGeneralPosts(buildMyPostsQuery({ page: 1, category })),
       );
@@ -100,13 +130,13 @@ const SupplierMyGeneralPostsView = () => {
     <PanelPage>
       <GeneralToolbar
         category={category}
-        onCategoryChange={setCategory}
+        onCategoryChange={handleCategoryChange}
         activeView="mine"
         onCreatePost={() => setModalOpen(true)}
         myPostHref={`${BASE}/my-posts`}
       />
 
-      {postsLoading && !pageItems.length ? (
+      {postsLoading ? (
         <CardSkeleton
           variant="generalPost"
           count={GRID_PAGE_SIZE}
@@ -121,14 +151,14 @@ const SupplierMyGeneralPostsView = () => {
                 post={post}
                 variant="mine"
                 detailHref={`${BASE}/${post.id}`}
-                onDelete={deleting ? undefined : handleDelete}
+                onDelete={deleting ? undefined : handleDeleteRequest}
               />
             ))}
           </div>
           <Pagination
             page={page}
             totalPages={totalPages}
-            onPageChange={setPage}
+            onPageChange={handlePageChange}
             className="mt-8"
           />
         </>
@@ -148,6 +178,27 @@ const SupplierMyGeneralPostsView = () => {
         onClose={() => setModalOpen(false)}
         onSubmit={handleCreate}
         saving={saving}
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this post"}
+              </span>
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </PanelPage>
   );
