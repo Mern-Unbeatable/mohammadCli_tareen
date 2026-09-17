@@ -115,7 +115,7 @@ const MyJobsView = () => {
         />
 
         <div className="mt-6 space-y-4">
-          {jobsLoading && !filtered.length ? (
+          {jobsLoading ? (
             <CardSkeleton
               variant="job"
               count={LIST_PAGE_SIZE}
