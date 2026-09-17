@@ -15,6 +15,7 @@ const initialState = {
   contactsLoading: false,
   selectedContactLoading: false,
   connectingId: null,
+  acceptingId: null,
   actionLoading: false,
   error: null,
 };
@@ -57,6 +58,14 @@ const contactsSlice = createSlice({
       .addCase(fetchContactsList.pending, (state) => {
         state.contactsLoading = true;
         state.error = null;
+        // Drop previous tab/page results so the UI can show skeletons
+        // instead of stale People cards while Requests (or vice versa) loads.
+        state.contacts = [];
+        state.contactsMeta = {
+          ...state.contactsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchContactsList.fulfilled, (state, action) => {
         state.contactsLoading = false;
@@ -98,16 +107,26 @@ const contactsSlice = createSlice({
         state.connectingId = null;
         state.error = action.payload;
       })
-      .addCase(acceptConnection.pending, (state) => {
+      .addCase(acceptConnection.pending, (state, action) => {
         state.actionLoading = true;
+        state.acceptingId = action.meta.arg;
         state.error = null;
       })
       .addCase(acceptConnection.fulfilled, (state, action) => {
         state.actionLoading = false;
+        state.acceptingId = null;
         const { connectionId } = action.payload;
-        state.contacts = state.contacts.map((c) =>
-          applyConnectionStatus(c, connectionId, "ACCEPTED"),
+        // Drop from Requests inbox; directory refetch will show Connected
+        state.contacts = state.contacts.filter(
+          (c) =>
+            c.connectionId !== connectionId && c.id !== connectionId,
         );
+        if (state.contactsMeta?.total > 0) {
+          state.contactsMeta = {
+            ...state.contactsMeta,
+            total: Math.max(0, state.contactsMeta.total - 1),
+          };
+        }
         state.selectedContact = applyConnectionStatus(
           state.selectedContact,
           connectionId,
@@ -116,6 +135,7 @@ const contactsSlice = createSlice({
       })
       .addCase(acceptConnection.rejected, (state, action) => {
         state.actionLoading = false;
+        state.acceptingId = null;
         state.error = action.payload;
       })
       .addCase(declineConnection.pending, (state) => {

@@ -1,31 +1,67 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import Pagination from '@/components/common/Pagination/Pagination';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import Container from '@/components/ui/Container';
-import ContactCard from '@/components/data-display/ContactCard/ContactCard';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import Container from "@/components/ui/Container";
+import ContactCard from "@/components/data-display/ContactCard/ContactCard";
 import {
   fetchContactsList,
   requestContactConnection,
+  acceptConnection,
   clearContactsError,
   COUNTRY_OPTIONS,
   toContactCardModel,
-} from '@/features/user/contacts';
-import { GRID_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+} from "@/features/user/contacts";
+import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const PROFILE_BASE = '/contacts';
+const PROFILE_BASE = "/contacts";
 
-const buildContactsQuery = ({ page, search, country }) => {
+const FILTER_OPTIONS = [
+  { id: "people", label: "People" },
+  { id: "requests", label: "Requests" },
+  { id: "connected", label: "Connected" },
+];
+
+const EMPTY_MESSAGES = {
+  people: "No members match your search.",
+  requests: "No pending connection requests.",
+  connected: "You have no connections yet.",
+};
+
+const buildContactsQuery = ({ page, search, country, filter }) => {
   const params = {
     page,
     pageSize: GRID_PAGE_SIZE,
-    sort: 'desc',
+    sort: "desc",
   };
+
+  if (filter === "requests") {
+    params.status = "pending";
+    params.direction = "incoming";
+    return params;
+  }
+
+  if (filter === "connected") {
+    // Server-side ACCEPTED connections for the authenticated user
+    params.status = "accepted";
+    return params;
+  }
+
   const q = search?.trim();
   if (q) params.search = q;
-  if (country && country !== 'All countries') params.country = country;
+  if (country && country !== "All countries") params.country = country;
   return params;
+};
+
+const countLabel = (filter, total) => {
+  if (filter === "requests") {
+    return `${total} request${total === 1 ? "" : "s"}`;
+  }
+  if (filter === "connected") {
+    return `${total} connection${total === 1 ? "" : "s"}`;
+  }
+  return `${total} member${total === 1 ? "" : "s"} found`;
 };
 
 const ContactsView = () => {
@@ -35,13 +71,17 @@ const ContactsView = () => {
     contactsMeta,
     contactsLoading,
     connectingId,
+    acceptingId,
     error,
   } = useSelector((state) => state.userContacts);
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [country, setCountry] = useState('All countries');
+  const [filter, setFilter] = useState("people");
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [country, setCountry] = useState("All countries");
   const [page, setPage] = useState(1);
+
+  const isRequests = filter === "requests";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -59,10 +99,11 @@ const ContactsView = () => {
           page,
           search: debouncedQuery,
           country,
+          filter,
         }),
       ),
     );
-  }, [dispatch, page, debouncedQuery, country]);
+  }, [dispatch, page, debouncedQuery, country, filter]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -79,13 +120,28 @@ const ContactsView = () => {
     contactsMeta?.totalPages || Math.ceil(total / GRID_PAGE_SIZE) || 1,
   );
 
+  const handleFilterChange = (next) => {
+    if (next === filter) return;
+    setFilter(next);
+    setPage(1);
+  };
+
   const handleConnect = async (id) => {
     const card = cards.find((c) => c.id === id);
     if (!card || card.connected || card.pending || connectingId === id) return;
 
     const result = await dispatch(requestContactConnection(id));
     if (requestContactConnection.fulfilled.match(result)) {
-      toast.success('Connection request sent');
+      toast.success("Connection request sent");
+    }
+  };
+
+  const handleAccept = async (connectionId) => {
+    if (!connectionId || acceptingId === connectionId) return;
+
+    const result = await dispatch(acceptConnection(connectionId));
+    if (acceptConnection.fulfilled.match(result)) {
+      toast.success("Connection confirmed");
     }
   };
 
@@ -97,11 +153,12 @@ const ContactsView = () => {
             Contacts Directory
           </h1>
           <p className="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">
-            Find laboratory professionals, suppliers and companies across the network.
+            Find laboratory professionals, suppliers and companies across the
+            network.
           </p>
         </div>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="search"
             value={query}
@@ -109,12 +166,14 @@ const ContactsView = () => {
             placeholder="Search by name, laboratory or position..."
             className="flex-1 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
           />
+
           <select
             value={country}
             onChange={(e) => {
               setCountry(e.target.value);
               setPage(1);
             }}
+            aria-label="Filter by country"
             className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[180px]"
           >
             {COUNTRY_OPTIONS.map((item) => (
@@ -123,13 +182,26 @@ const ContactsView = () => {
               </option>
             ))}
           </select>
+
+          <select
+            value={filter}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            aria-label="Filter contacts"
+            className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[160px]"
+          >
+            {FILTER_OPTIONS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <p className="mb-5 text-[13px] text-[#64748B]">
-          {total} member{total === 1 ? '' : 's'} found
+          {countLabel(filter, total)}
         </p>
 
-        {contactsLoading && !cards.length ? (
+        {contactsLoading ? (
           <CardSkeleton
             variant="contact"
             count={GRID_PAGE_SIZE}
@@ -139,19 +211,22 @@ const ContactsView = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cards.map((contact) => (
               <ContactCard
-                key={contact.id}
+                key={contact.connectionId || contact.id}
                 contact={contact}
                 profileBasePath={PROFILE_BASE}
                 connected={contact.connected}
                 pending={contact.pending || connectingId === contact.id}
+                incoming={contact.incoming || isRequests}
+                accepting={acceptingId === contact.connectionId}
                 onConnect={handleConnect}
+                onAccept={handleAccept}
               />
             ))}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-[#D0D5DD] bg-white px-6 py-10 text-center">
             <p className="text-[14px] text-[#64748B]">
-              No members match your search.
+              {EMPTY_MESSAGES[filter]}
             </p>
           </div>
         )}

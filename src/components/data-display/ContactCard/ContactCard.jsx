@@ -1,60 +1,87 @@
 import { Link } from 'react-router';
-import { Clock, UserPlus } from 'lucide-react';
+import { Check, Clock, UserPlus } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 
-const ContactCard = ({ contact, profileBasePath = '/contacts', connected = false, pending = false, onConnect }) => (
-  <Card className="flex flex-col p-5 text-center">
-    <Avatar
-      src={contact.avatar}
-      alt={contact.name}
-      initials={contact.initials}
-      size="lg"
-      className={`mx-auto ${contact.avatarClass || ''}`}
-    />
-    <Link
-      to={`${profileBasePath}/${contact.id}`}
-      className="mt-3 text-[15px] font-semibold text-primary hover:underline"
-    >
-      {contact.name}
-    </Link>
-    <p className="mt-1 text-[13px] text-[#475467]">{contact.title}</p>
-    <p className="mt-0.5 text-[13px] font-semibold text-deep-blue">{contact.company}</p>
-    <p className="text-[13px] text-[#64748B]">{contact.country}</p>
+const ContactCard = ({
+  contact,
+  profileBasePath = '/contacts',
+  connected = false,
+  pending = false,
+  incoming = false,
+  accepting = false,
+  onConnect,
+  onAccept,
+}) => {
+  const showConfirm = Boolean(incoming && pending && !connected);
 
-    <div className="mt-4 grid grid-cols-2 gap-2">
+  return (
+    <Card className="flex flex-col p-5 text-center">
+      <Avatar
+        src={contact.avatar}
+        alt={contact.name}
+        initials={contact.initials}
+        size="lg"
+        className={`mx-auto ${contact.avatarClass || ''}`}
+      />
       <Link
         to={`${profileBasePath}/${contact.id}`}
-        className="rounded-md bg-pink-secondary px-3 py-2 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
+        className="mt-3 text-[15px] font-semibold text-primary hover:underline"
       >
-        Profile
+        {contact.name}
       </Link>
-      <button
-        type="button"
-        onClick={() => onConnect?.(contact.id)}
-        disabled={connected || pending}
-        className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
-          connected || pending
-            ? 'bg-green-secondary text-green-primary'
-            : 'bg-primary text-white hover:opacity-90'
-        }`}
-      >
-        {connected ? (
-          'Connected'
-        ) : pending ? (
-          <>
-            <Clock className="h-3.5 w-3.5" />
-            Pending
-          </>
+      <p className="mt-1 text-[13px] text-[#475467]">{contact.title}</p>
+      <p className="mt-0.5 text-[13px] font-semibold text-deep-blue">
+        {contact.company}
+      </p>
+      <p className="text-[13px] text-[#64748B]">{contact.country}</p>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Link
+          to={`${profileBasePath}/${contact.id}`}
+          className="rounded-md bg-pink-secondary px-3 py-2 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
+        >
+          Profile
+        </Link>
+        {showConfirm ? (
+          <button
+            type="button"
+            onClick={() => onAccept?.(contact.connectionId, contact.id)}
+            disabled={accepting || !contact.connectionId}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Check className="h-3.5 w-3.5" />
+            {accepting ? 'Confirming…' : 'Confirm'}
+          </button>
         ) : (
-          <>
-            <UserPlus className="h-3.5 w-3.5" />
-            Connect
-          </>
+          <button
+            type="button"
+            onClick={() => onConnect?.(contact.id)}
+            disabled={connected || pending}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
+              connected || pending
+                ? 'bg-green-secondary text-green-primary'
+                : 'bg-primary text-white hover:opacity-90'
+            }`}
+          >
+            {connected ? (
+              'Connected'
+            ) : pending ? (
+              <>
+                <Clock className="h-3.5 w-3.5" />
+                Pending
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-3.5 w-3.5" />
+                Connect
+              </>
+            )}
+          </button>
         )}
-      </button>
-    </div>
-  </Card>
-);
+      </div>
+    </Card>
+  );
+};
 
 export default ContactCard;

@@ -26,6 +26,8 @@ export function toContactCardModel(contact) {
   const status = contact.connectionStatus;
   const connected = isConnected(status);
   const pending = isPending(status);
+  const connectionDirection = contact.connectionDirection || null;
+  const incoming = pending && connectionDirection === "incoming";
 
   return {
     id: contact.id,
@@ -57,8 +59,9 @@ export function toContactCardModel(contact) {
       : "Visible to connections",
     connected,
     pending,
+    incoming,
     connectionStatus: status || null,
-    connectionDirection: contact.connectionDirection || null,
+    connectionDirection,
     connectionId: contact.connectionId || null,
     postIds: [],
     raw: contact,
