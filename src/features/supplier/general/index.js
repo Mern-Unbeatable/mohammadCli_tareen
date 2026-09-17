@@ -8,11 +8,16 @@
  */
 
 export { default as supplierGeneralReducer } from "./generalSlice";
-export { clearGeneralError, clearSelectedPost } from "./generalSlice";
+export {
+  clearGeneralError,
+  clearSelectedPost,
+  invalidateGeneralPostsList,
+} from "./generalSlice";
 export {
   fetchSupplierGeneralPosts,
   fetchSupplierGeneralPostDetails,
   createSupplierGeneralPost,
+  updateSupplierGeneralPost,
   removeSupplierGeneralPost,
 } from "./generalThunks";
 export {
@@ -20,6 +25,7 @@ export {
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
+  postToFormValues,
   formatPostDate,
   formatDisplayDate,
 } from "./generalMappers";

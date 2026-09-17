@@ -348,12 +348,12 @@ const CreateGeneralPostModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 sm:items-start sm:overflow-y-auto sm:p-4 sm:pt-[6vh]"
+      className="fixed inset-0 z-[200] flex items-end justify-center overflow-hidden bg-black/50 sm:items-center sm:p-4"
       onClick={handleBackdropClose}
       role="presentation"
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-[560px] flex-col rounded-t-2xl bg-white sm:max-h-none sm:rounded-xl"
+        className="flex max-h-[92dvh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-2xl bg-white sm:max-h-[90vh] sm:rounded-xl"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -386,180 +386,193 @@ const CreateGeneralPostModal = ({
 
         <form
           onSubmit={handleSubmit}
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
-            Post type
-          </p>
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            {postTypes.map(
-              ({ id, label, sublabel, icon: Icon, activeBorder, activeText }) => {
-                const active = postType === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    disabled={busy || isEdit}
-                    onClick={() => setPostType(id)}
-                    className={`rounded-xl border-2 px-3 py-3 text-left transition-colors disabled:opacity-60 ${
-                      active
-                        ? activeBorder
-                        : "border-[#E4E7EC] hover:border-[#D0D5DD]"
-                    }`}
-                  >
-                    <Icon
-                      className={`h-4 w-4 ${active ? activeText : "text-[#64748B]"}`}
-                    />
-                    <p
-                      className={`mt-2 text-[13px] font-semibold ${active ? activeText : "text-deep-blue"}`}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
+              Post type
+            </p>
+            <div className="mb-5 grid grid-cols-2 gap-3">
+              {postTypes.map(
+                ({
+                  id,
+                  label,
+                  sublabel,
+                  icon: Icon,
+                  activeBorder,
+                  activeText,
+                }) => {
+                  const active = postType === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={busy || isEdit}
+                      onClick={() => setPostType(id)}
+                      className={`rounded-xl border-2 px-3 py-3 text-left transition-colors disabled:opacity-60 ${
+                        active
+                          ? activeBorder
+                          : "border-[#E4E7EC] hover:border-[#D0D5DD]"
+                      }`}
                     >
-                      {label}
-                    </p>
-                    <p className="text-[11px] text-[#98A2B3]">{sublabel}</p>
-                  </button>
-                );
-              },
-            )}
-          </div>
-
-          {postType === "news" ? (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="headline" className={labelClass}>
-                  Headline<span className="text-pink-light"> *</span>
-                </label>
-                <input
-                  id="headline"
-                  type="text"
-                  value={headline}
-                  onChange={(e) => setHeadline(e.target.value)}
-                  placeholder="e.g. FDA Issues New Draft Guidance on Analytical Procedures"
-                  className={fieldClass}
-                  required
-                  disabled={busy}
-                />
-              </div>
-              <div>
-                <label htmlFor="summary" className={labelClass}>
-                  Summary / Description
-                  <span className="text-pink-light"> *</span>
-                </label>
-                <textarea
-                  id="summary"
-                  value={summary}
-                  onChange={(e) => setSummary(e.target.value)}
-                  rows={3}
-                  placeholder="Write a brief summary of the news article..."
-                  className={`${fieldClass} resize-y`}
-                  required
-                  disabled={busy}
-                />
-              </div>
-              <div>
-                <label htmlFor="source" className={labelClass}>
-                  Source / Publisher{" "}
-                  <span className="font-normal text-[#98A2B3]">(optional)</span>
-                </label>
-                <input
-                  id="source"
-                  type="text"
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                  placeholder="e.g. EMA, FDA, Nature, LabManager"
-                  className={fieldClass}
-                  disabled={busy}
-                />
-              </div>
-              <UploadZone
-                label="Upload Image"
-                hint="JPEG, PNG, WebP, GIF — up to 50 MB"
-                accept={IMAGE_ACCEPT}
-                previewUrl={imagePreview}
-                previewIsImage
-                disabled={busy}
-                onPick={handlePickImage}
-                onClear={handleClearImage}
-              />
+                      <Icon
+                        className={`h-4 w-4 ${active ? activeText : "text-[#64748B]"}`}
+                      />
+                      <p
+                        className={`mt-2 text-[13px] font-semibold ${active ? activeText : "text-deep-blue"}`}
+                      >
+                        {label}
+                      </p>
+                      <p className="text-[11px] text-[#98A2B3]">{sublabel}</p>
+                    </button>
+                  );
+                },
+              )}
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="docTitle" className={labelClass}>
-                  Document Title<span className="text-pink-light"> *</span>
-                </label>
-                <input
-                  id="docTitle"
-                  type="text"
-                  value={docTitle}
-                  onChange={(e) => setDocTitle(e.target.value)}
-                  placeholder="e.g. HPLC Method Validation SOP v2.1"
-                  className={fieldClass}
-                  required
-                  disabled={busy}
-                />
-              </div>
-              <div>
-                <label htmlFor="description" className={labelClass}>
-                  Description{" "}
-                  <span className="font-normal text-[#98A2B3]">(optional)</span>
-                </label>
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  placeholder="Briefly describe what this document covers..."
-                  className={`${fieldClass} resize-y`}
-                  disabled={busy}
-                />
-              </div>
-              <UploadZone
-                label="Upload Document"
-                hint="PDF, DOC, XLS, PPT — up to 50 MB"
-                required
-                accept={DOCUMENT_ACCEPT}
-                previewUrl={documentUrl || (documentFile ? "file" : "")}
-                fileName={documentName || documentUrl}
-                disabled={busy}
-                onPick={handlePickDocument}
-                onClear={handleClearDocument}
-              />
-              {!documentFile && !documentUrl ? (
+
+            {postType === "news" ? (
+              <div className="space-y-4">
                 <div>
-                  <label htmlFor="documentUrl" className={labelClass}>
-                    Or paste Document URL
-                    <span className="text-pink-light"> *</span>
+                  <label htmlFor="headline" className={labelClass}>
+                    Headline<span className="text-pink-light"> *</span>
                   </label>
                   <input
-                    id="documentUrl"
-                    type="url"
-                    value={documentUrl}
-                    onChange={(e) => {
-                      setDocumentUrl(e.target.value);
-                      setDocumentName("");
-                      setDocumentFile(null);
-                    }}
-                    placeholder="https://example.com/document.pdf"
+                    id="headline"
+                    type="text"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="e.g. FDA Issues New Draft Guidance on Analytical Procedures"
                     className={fieldClass}
-                    required={!documentFile}
+                    required
                     disabled={busy}
                   />
                 </div>
-              ) : null}
-              <UploadZone
-                label="Upload Image"
-                hint="JPEG, PNG, WebP, GIF — up to 50 MB"
-                accept={IMAGE_ACCEPT}
-                previewUrl={imagePreview}
-                previewIsImage
-                disabled={busy}
-                onPick={handlePickImage}
-                onClear={handleClearImage}
-              />
-            </div>
-          )}
+                <div>
+                  <label htmlFor="summary" className={labelClass}>
+                    Summary / Description
+                    <span className="text-pink-light"> *</span>
+                  </label>
+                  <textarea
+                    id="summary"
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
+                    rows={3}
+                    placeholder="Write a brief summary of the news article..."
+                    className={`${fieldClass} resize-y`}
+                    required
+                    disabled={busy}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="source" className={labelClass}>
+                    Source / Publisher{" "}
+                    <span className="font-normal text-[#98A2B3]">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    id="source"
+                    type="text"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    placeholder="e.g. EMA, FDA, Nature, LabManager"
+                    className={fieldClass}
+                    disabled={busy}
+                  />
+                </div>
+                <UploadZone
+                  label="Upload Image"
+                  hint="JPEG, PNG, WebP, GIF — up to 50 MB"
+                  accept={IMAGE_ACCEPT}
+                  previewUrl={imagePreview}
+                  previewIsImage
+                  disabled={busy}
+                  onPick={handlePickImage}
+                  onClear={handleClearImage}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="docTitle" className={labelClass}>
+                    Document Title<span className="text-pink-light"> *</span>
+                  </label>
+                  <input
+                    id="docTitle"
+                    type="text"
+                    value={docTitle}
+                    onChange={(e) => setDocTitle(e.target.value)}
+                    placeholder="e.g. HPLC Method Validation SOP v2.1"
+                    className={fieldClass}
+                    required
+                    disabled={busy}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className={labelClass}>
+                    Description{" "}
+                    <span className="font-normal text-[#98A2B3]">
+                      (optional)
+                    </span>
+                  </label>
+                  <textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Briefly describe what this document covers..."
+                    className={`${fieldClass} resize-y`}
+                    disabled={busy}
+                  />
+                </div>
+                <UploadZone
+                  label="Upload Document"
+                  hint="PDF, DOC, XLS, PPT — up to 50 MB"
+                  required
+                  accept={DOCUMENT_ACCEPT}
+                  previewUrl={documentUrl || (documentFile ? "file" : "")}
+                  fileName={documentName || documentUrl}
+                  disabled={busy}
+                  onPick={handlePickDocument}
+                  onClear={handleClearDocument}
+                />
+                {!documentFile && !documentUrl ? (
+                  <div>
+                    <label htmlFor="documentUrl" className={labelClass}>
+                      Or paste Document URL
+                      <span className="text-pink-light"> *</span>
+                    </label>
+                    <input
+                      id="documentUrl"
+                      type="url"
+                      value={documentUrl}
+                      onChange={(e) => {
+                        setDocumentUrl(e.target.value);
+                        setDocumentName("");
+                        setDocumentFile(null);
+                      }}
+                      placeholder="https://example.com/document.pdf"
+                      className={fieldClass}
+                      required={!documentFile}
+                      disabled={busy}
+                    />
+                  </div>
+                ) : null}
+                <UploadZone
+                  label="Upload Image"
+                  hint="JPEG, PNG, WebP, GIF — up to 50 MB"
+                  accept={IMAGE_ACCEPT}
+                  previewUrl={imagePreview}
+                  previewIsImage
+                  disabled={busy}
+                  onPick={handlePickImage}
+                  onClear={handleClearImage}
+                />
+              </div>
+            )}
+          </div>
 
-          <div className="mt-6 flex justify-end gap-2 border-t border-[#E4E7EC] pt-4">
+          <div className="flex shrink-0 justify-end gap-2 border-t border-[#E4E7EC] bg-white px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <button
               type="button"
               onClick={handleBackdropClose}

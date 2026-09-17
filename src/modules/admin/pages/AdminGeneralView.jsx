@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import GeneralPostCard from "@/components/data-display/GeneralPostCard/GeneralPostCard";
 import GeneralToolbar from "@/modules/user/components/general/GeneralToolbar";
@@ -31,12 +32,13 @@ const buildPostsQuery = ({ page, category }) => {
 
 const AdminGeneralView = () => {
   const dispatch = useDispatch();
-  const { posts, postsMeta, postsLoading, error } = useSelector(
+  const { posts, postsMeta, postsLoading, deleting, error } = useSelector(
     (state) => state.adminGeneral,
   );
 
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     setPage(1);
@@ -51,10 +53,25 @@ const AdminGeneralView = () => {
     [posts],
   );
 
-  const handleDelete = async (postId) => {
-    const result = await dispatch(removeGeneralPost(postId));
+  const handleDeleteRequest = (postId) => {
+    if (deleting) return;
+    const post = pageItems.find((item) => item.id === postId);
+    if (!post) return;
+    setPendingDelete(post);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeGeneralPost(pendingDelete.id));
     if (removeGeneralPost.fulfilled.match(result)) {
       toast.success("Post deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete post");
@@ -66,6 +83,7 @@ const AdminGeneralView = () => {
         category={category}
         onCategoryChange={setCategory}
         activeView="browse"
+        showBrowse={false}
         showMyPost={false}
         showCreatePost={false}
       />
@@ -94,7 +112,7 @@ const AdminGeneralView = () => {
               post={post}
               variant="admin"
               detailHref={`/admin/general/${post.id}`}
-              onDelete={handleDelete}
+              onDelete={deleting ? undefined : handleDeleteRequest}
             />
           ))}
         </div>
@@ -105,6 +123,27 @@ const AdminGeneralView = () => {
         totalPages={postsMeta?.totalPages || 1}
         onPageChange={setPage}
         className="mt-2"
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this post"}
+              </span>
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </PanelPage>
   );

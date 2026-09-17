@@ -3,6 +3,7 @@ import {
   fetchSupplierGeneralPosts,
   fetchSupplierGeneralPostDetails,
   createSupplierGeneralPost,
+  updateSupplierGeneralPost,
   removeSupplierGeneralPost,
 } from "./generalThunks";
 
@@ -17,6 +18,14 @@ const initialState = {
   error: null,
 };
 
+const upsertPost = (state, post) => {
+  if (!post?.id) return;
+  const index = state.posts.findIndex((row) => row.id === post.id);
+  if (index >= 0) state.posts[index] = post;
+  else state.posts = [post, ...state.posts];
+  if (state.selectedPost?.id === post.id) state.selectedPost = post;
+};
+
 const generalSlice = createSlice({
   name: "supplierGeneral",
   initialState,
@@ -27,12 +36,29 @@ const generalSlice = createSlice({
     clearSelectedPost: (state) => {
       state.selectedPost = null;
     },
+    /** Sync: show skeletons before paint when filter/page changes */
+    invalidateGeneralPostsList: (state) => {
+      state.postsLoading = true;
+      state.posts = [];
+      state.postsMeta = {
+        ...state.postsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchSupplierGeneralPosts.pending, (state) => {
         state.postsLoading = true;
         state.error = null;
+        state.posts = [];
+        state.postsMeta = {
+          ...state.postsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchSupplierGeneralPosts.fulfilled, (state, action) => {
         state.postsLoading = false;
@@ -73,6 +99,18 @@ const generalSlice = createSlice({
         state.saving = false;
         state.error = action.payload;
       })
+      .addCase(updateSupplierGeneralPost.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateSupplierGeneralPost.fulfilled, (state, action) => {
+        state.saving = false;
+        upsertPost(state, action.payload);
+      })
+      .addCase(updateSupplierGeneralPost.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      })
       .addCase(removeSupplierGeneralPost.pending, (state) => {
         state.deleting = true;
         state.error = null;
@@ -93,5 +131,9 @@ const generalSlice = createSlice({
   },
 });
 
-export const { clearGeneralError, clearSelectedPost } = generalSlice.actions;
+export const {
+  clearGeneralError,
+  clearSelectedPost,
+  invalidateGeneralPostsList,
+} = generalSlice.actions;
 export default generalSlice.reducer;

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import JobCard from "@/components/data-display/JobCard/JobCard";
 import RecruitmentToolbar from "@/modules/user/components/recruitment/RecruitmentToolbar";
@@ -10,6 +11,7 @@ import {
   fetchSupplierJobs,
   removeSupplierJob,
   clearRecruitmentError,
+  invalidateJobsList,
   levelToApi,
   toJobCardModel,
 } from "@/features/supplier/recruitment";
@@ -43,13 +45,18 @@ const SupplierMyJobsView = () => {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [level, setLevel] = useState("All");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    const timer = setTimeout(() => {
+      if (query === debouncedQuery) return;
+      dispatch(invalidateJobsList());
+      setDebouncedQuery(query);
+    }, 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, debouncedQuery, dispatch]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearRecruitmentError());
     dispatch(
       fetchSupplierJobs(
@@ -67,10 +74,31 @@ const SupplierMyJobsView = () => {
     [jobs],
   );
 
-  const handleDelete = async (id) => {
-    const result = await dispatch(removeSupplierJob(id));
+  const handleLevelChange = (next) => {
+    if (next === level) return;
+    dispatch(invalidateJobsList());
+    setLevel(next);
+  };
+
+  const handleDeleteRequest = (id) => {
+    if (deleting) return;
+    const job = filtered.find((item) => item.id === id);
+    if (!job) return;
+    setPendingDelete(job);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeSupplierJob(pendingDelete.id));
     if (removeSupplierJob.fulfilled.match(result)) {
       toast.success("Job deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete job");
@@ -88,13 +116,13 @@ const SupplierMyJobsView = () => {
         query={query}
         onQueryChange={setQuery}
         level={level}
-        onLevelChange={setLevel}
+        onLevelChange={handleLevelChange}
         basePath={JOB_BASE}
         showTitle={false}
         showActions={false}
       />
 
-      {jobsLoading && !filtered.length ? (
+      {jobsLoading ? (
         <CardSkeleton
           variant="job"
           count={LIST_PAGE_SIZE}
@@ -110,7 +138,7 @@ const SupplierMyJobsView = () => {
                 variant="mine"
                 highlighted={index === 0}
                 detailHref={`${JOB_BASE}/${job.id}`}
-                onDelete={deleting ? undefined : handleDelete}
+                onDelete={deleting ? undefined : handleDeleteRequest}
                 onEdit={() => navigate(`${JOB_BASE}/${job.id}`)}
               />
             ))
@@ -126,6 +154,36 @@ const SupplierMyJobsView = () => {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete job post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this job"}
+              </span>
+              {pendingDelete.company ? (
+                <>
+                  {" "}
+                  at{" "}
+                  <span className="font-semibold text-deep-blue">
+                    {pendingDelete.company}
+                  </span>
+                </>
+              ) : null}
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      />
     </PanelPage>
   );
 };
