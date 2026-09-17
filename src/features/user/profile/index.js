@@ -12,6 +12,7 @@ export {
   clearProfileError,
   setProfileField,
   clearMemberProfile,
+  resetUserProfile,
 } from "./profileSlice";
 export {
   fetchUserProfile,

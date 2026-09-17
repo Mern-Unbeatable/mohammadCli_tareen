@@ -26,7 +26,13 @@ const ProfileHero = ({
   return (
     <Card>
       <div className="relative h-32 overflow-hidden bg-deep-blue sm:h-36">
-        <img src={user.coverPhoto} alt="" className="h-full w-full object-cover opacity-90" />
+        {user.coverPhoto ? (
+          <img
+            src={user.coverPhoto}
+            alt=""
+            className="h-full w-full object-cover opacity-90"
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-deep-blue/40 to-transparent" />
       </div>
 

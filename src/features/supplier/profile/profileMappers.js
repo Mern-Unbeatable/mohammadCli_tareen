@@ -11,6 +11,8 @@ export const emptyProfileForm = {
   email: "",
   phone: "",
   about: "",
+  avatarUrl: "",
+  coverUrl: "",
 };
 
 export function mapUserToForm(user) {
@@ -23,7 +25,9 @@ export function mapUserToForm(user) {
     country: profile.country || "Belgium",
     email: user?.email || "",
     phone: profile.phone || "",
-    about: [profile.about, profile.aboutExtended].filter(Boolean).join(" ").trim(),
+    about: profile.about || profile.aboutExtended || "",
+    avatarUrl: profile.avatar || "",
+    coverUrl: profile.coverPhoto || "",
   };
 }
 
@@ -38,6 +42,11 @@ export function formToUpdatePayload(form) {
   if (form.company != null) payload.company = String(form.company).trim();
   if (form.country != null) payload.country = String(form.country).trim();
   if (form.phone != null) payload.phone = String(form.phone).trim();
-  if (form.about != null) payload.about = String(form.about).trim();
+  if (form.about != null) {
+    payload.about = String(form.about).trim();
+    payload.aboutExtended = "";
+  }
+  if (form.avatarUrl) payload.avatarUrl = String(form.avatarUrl).trim();
+  if (form.coverUrl) payload.coverUrl = String(form.coverUrl).trim();
   return payload;
 }

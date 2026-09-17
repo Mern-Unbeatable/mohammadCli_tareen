@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { logoutUser, loginUser, registerUser } from "@/features/auth/authThunks";
 import {
   fetchUserProfile,
   updateUserProfile,
@@ -38,6 +39,7 @@ const profileSlice = createSlice({
       state.memberProfile = null;
       state.memberError = null;
     },
+    resetUserProfile: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -89,10 +91,19 @@ const profileSlice = createSlice({
       .addCase(fetchMemberProfile.rejected, (state, action) => {
         state.memberLoading = false;
         state.memberError = action.payload;
-      });
+      })
+      // Clear cached profile so a new session always reloads from the API
+      .addCase(logoutUser.fulfilled, () => initialState)
+      .addCase(logoutUser.rejected, () => initialState)
+      .addCase(loginUser.fulfilled, () => initialState)
+      .addCase(registerUser.fulfilled, () => initialState);
   },
 });
 
-export const { clearProfileError, setProfileField, clearMemberProfile } =
-  profileSlice.actions;
+export const {
+  clearProfileError,
+  setProfileField,
+  clearMemberProfile,
+  resetUserProfile,
+} = profileSlice.actions;
 export default profileSlice.reducer;
