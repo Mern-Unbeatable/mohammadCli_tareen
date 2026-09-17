@@ -58,6 +58,11 @@ export const userRoutes = {
           handle: { title: 'Create listing' },
         },
         {
+          path: '/marketplace/:listingId/edit',
+          element: <CreateListingView />,
+          handle: { title: 'Edit listing' },
+        },
+        {
           path: '/marketplace/:listingId',
           element: <ListingDetailView />,
           handle: { title: 'Listing' },

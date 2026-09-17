@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
-import { ChevronLeft, ImagePlus, X } from "lucide-react";
+import { ChevronLeft, ImagePlus, Loader2, X } from "lucide-react";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import {
   createListing,
+  updateListing,
   categoryToApi,
+  categoryFromApi,
+  conditionFromApi,
   MARKETPLACE_CATEGORY_OPTIONS,
   marketplaceApi,
 } from "@/features/user/marketplace";
@@ -46,7 +49,13 @@ const categoryOptions = MARKETPLACE_CATEGORY_OPTIONS.filter(
 const makePhotoId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+const revokeIfBlob = (url) => {
+  if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+};
+
 const CreateListingView = () => {
+  const { listingId } = useParams();
+  const isEdit = Boolean(listingId);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
@@ -55,6 +64,7 @@ const CreateListingView = () => {
   const profileUser = useSelector((state) => state.userProfile.user);
   const { user: authUser } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [loadingListing, setLoadingListing] = useState(isEdit);
   const [photos, setPhotos] = useState([]);
 
   photosRef.current = photos;
@@ -81,15 +91,69 @@ const CreateListingView = () => {
     price: "",
   });
 
-  const busy = saving || uploading;
+  const busy = saving || uploading || loadingListing;
 
   useEffect(() => {
     return () => {
-      photosRef.current.forEach((photo) => {
-        if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
-      });
+      photosRef.current.forEach((photo) => revokeIfBlob(photo.previewUrl));
     };
   }, []);
+
+  useEffect(() => {
+    if (!isEdit) return undefined;
+
+    let cancelled = false;
+    setLoadingListing(true);
+
+    (async () => {
+      try {
+        const listing = await marketplaceApi.getListingById(listingId);
+        if (cancelled || !listing) return;
+
+        const yearValue = listing.year != null ? String(listing.year) : years[5];
+        setForm({
+          title: listing.title || "",
+          description: listing.description || "",
+          category: categoryFromApi(listing.category),
+          condition: conditionFromApi(listing.condition),
+          year: years.includes(yearValue) ? yearValue : yearValue,
+          price:
+            listing.price != null && listing.price !== ""
+              ? String(listing.price)
+              : "",
+        });
+
+        const imageUrls = Array.isArray(listing.images)
+          ? listing.images.filter(Boolean)
+          : listing.image
+            ? [listing.image]
+            : [];
+
+        setPhotos(
+          imageUrls.map((url) => ({
+            id: makePhotoId(),
+            file: null,
+            url,
+            previewUrl: url,
+            name: "Existing photo",
+          })),
+        );
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(
+            marketplaceApi.getApiErrorMessage(err, "Failed to load listing"),
+          );
+          navigate("/marketplace/my-listings");
+        }
+      } finally {
+        if (!cancelled) setLoadingListing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, listingId, navigate]);
 
   const update = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -118,6 +182,7 @@ const CreateListingView = () => {
       next.push({
         id: makePhotoId(),
         file,
+        url: null,
         previewUrl: URL.createObjectURL(file),
         name: file.name,
       });
@@ -134,7 +199,7 @@ const CreateListingView = () => {
   const handleRemovePhoto = (id) => {
     setPhotos((prev) => {
       const target = prev.find((p) => p.id === id);
-      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      revokeIfBlob(target?.previewUrl);
       return prev.filter((p) => p.id !== id);
     });
   };
@@ -181,13 +246,16 @@ const CreateListingView = () => {
 
     setUploading(true);
     try {
-      let imageUrls = [];
-      if (photos.length) {
-        const uploaded = await marketplaceApi.uploadFiles(
-          photos.map((p) => p.file),
-        );
-        imageUrls = uploaded.map((row) => row.url).filter(Boolean);
-        if (imageUrls.length !== photos.length) {
+      const existingUrls = photos
+        .filter((p) => p.url && !p.file)
+        .map((p) => p.url);
+      const newFiles = photos.filter((p) => p.file).map((p) => p.file);
+
+      let uploadedUrls = [];
+      if (newFiles.length) {
+        const uploaded = await marketplaceApi.uploadFiles(newFiles);
+        uploadedUrls = uploaded.map((row) => row.url).filter(Boolean);
+        if (uploadedUrls.length !== newFiles.length) {
           throw new Error("Some photos failed to upload");
         }
       }
@@ -199,17 +267,27 @@ const CreateListingView = () => {
         condition,
         year,
         price,
-        images: imageUrls,
+        images: [...existingUrls, ...uploadedUrls],
         ...(seller.location ? { location: String(seller.location).trim() } : {}),
       };
 
-      const result = await dispatch(createListing(payload));
-      if (createListing.fulfilled.match(result)) {
-        toast.success("Listing published");
+      const result = isEdit
+        ? await dispatch(updateListing({ listingId, payload }))
+        : await dispatch(createListing(payload));
+
+      const matched = isEdit
+        ? updateListing.fulfilled.match(result)
+        : createListing.fulfilled.match(result);
+
+      if (matched) {
+        toast.success(isEdit ? "Listing updated" : "Listing published");
         navigate("/marketplace/my-listings");
         return;
       }
-      toast.error(result.payload || "Failed to create listing");
+      toast.error(
+        result.payload ||
+          (isEdit ? "Failed to update listing" : "Failed to create listing"),
+      );
     } catch (err) {
       toast.error(
         marketplaceApi.getApiErrorMessage(err, "Failed to upload photos"),
@@ -219,21 +297,36 @@ const CreateListingView = () => {
     }
   };
 
+  if (loadingListing) {
+    return (
+      <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
+        <Container className="max-w-[760px]">
+          <div className="flex h-64 items-center justify-center rounded-xl bg-white shadow-sm">
+            <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
+            <span className="text-[14px] font-medium text-[#64748B]">
+              Loading listing…
+            </span>
+          </div>
+        </Container>
+      </main>
+    );
+  }
+
   return (
     <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
       <Container className="max-w-[760px]">
         <Link
-          to="/marketplace"
+          to="/marketplace/my-listings"
           className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"
         >
           <ChevronLeft className="h-4 w-4" />
-          Back to marketplace
+          Back to my listings
         </Link>
 
         <Card>
           <div className="border-b border-[#E4E7EC] px-5 py-4 sm:px-6">
             <h1 className="text-[22px] font-bold text-deep-blue sm:text-[24px]">
-              Create a listing
+              {isEdit ? "Edit listing" : "Create a listing"}
             </h1>
             <p className="mt-1 text-[14px] text-[#64748B]">
               Sell or exchange second-hand laboratory equipment.
@@ -326,6 +419,9 @@ const CreateListingView = () => {
                   disabled={busy}
                   required
                 >
+                  {!years.includes(String(form.year)) && form.year ? (
+                    <option value={form.year}>{form.year}</option>
+                  ) : null}
                   {years.map((item) => (
                     <option key={item} value={item}>
                       {item}
@@ -436,8 +532,12 @@ const CreateListingView = () => {
                 {uploading
                   ? "Uploading photos…"
                   : saving
-                    ? "Publishing…"
-                    : "Publish listing"}
+                    ? isEdit
+                      ? "Saving…"
+                      : "Publishing…"
+                    : isEdit
+                      ? "Save changes"
+                      : "Publish listing"}
               </button>
             </div>
           </form>

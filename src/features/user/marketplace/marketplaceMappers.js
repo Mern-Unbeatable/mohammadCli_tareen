@@ -45,6 +45,12 @@ const CONDITION_LABEL = {
 
 export const categoryToApi = (label) => CATEGORY_TO_API[label];
 
+export const categoryFromApi = (apiKey) =>
+  CATEGORY_LABEL[apiKey] || "Chromatography";
+
+export const conditionFromApi = (apiKey) =>
+  CONDITION_LABEL[apiKey] || "Good";
+
 export function formatListedAt(dateValue) {
   if (!dateValue) return "";
   const date = new Date(dateValue);

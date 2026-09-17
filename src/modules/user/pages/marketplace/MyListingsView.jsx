@@ -1,24 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import Container from '@/components/ui/Container';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import ListingCard from '@/components/data-display/ListingCard/ListingCard';
-import MarketplaceToolbar from '@/modules/user/components/marketplace/MarketplaceToolbar';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Container from "@/components/ui/Container";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import ListingCard from "@/components/data-display/ListingCard/ListingCard";
+import MarketplaceToolbar from "@/modules/user/components/marketplace/MarketplaceToolbar";
 import {
   fetchListings,
   removeListing,
   clearMarketplaceError,
   categoryToApi,
   toListingCardModel,
-} from '@/features/user/marketplace';
-import { GRID_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+} from "@/features/user/marketplace";
+import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
 const buildMineQuery = ({ query, category }) => {
   const params = {
     page: 1,
     pageSize: GRID_PAGE_SIZE * 3,
-    sort: 'desc',
+    sort: "desc",
     mine: true,
   };
   const q = query?.trim();
@@ -29,14 +30,15 @@ const buildMineQuery = ({ query, category }) => {
 };
 
 const MyListingsView = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { listings, listingsLoading, deleting, error } = useSelector(
     (state) => state.userMarketplace,
   );
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [category, setCategory] = useState('All');
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [category, setCategory] = useState("All");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 350);
@@ -45,7 +47,9 @@ const MyListingsView = () => {
 
   useEffect(() => {
     dispatch(clearMarketplaceError());
-    dispatch(fetchListings(buildMineQuery({ query: debouncedQuery, category })));
+    dispatch(
+      fetchListings(buildMineQuery({ query: debouncedQuery, category })),
+    );
   }, [dispatch, debouncedQuery, category]);
 
   useEffect(() => {
@@ -57,13 +61,18 @@ const MyListingsView = () => {
     [listings],
   );
 
+  const handleEdit = (id) => {
+    if (!id) return;
+    navigate(`/marketplace/${id}/edit`);
+  };
+
   const handleDelete = async (id) => {
     const result = await dispatch(removeListing(id));
     if (removeListing.fulfilled.match(result)) {
-      toast.success('Listing removed');
+      toast.success("Listing removed");
       return;
     }
-    toast.error(result.payload || 'Failed to delete listing');
+    toast.error(result.payload || "Failed to delete listing");
   };
 
   return (
@@ -78,7 +87,9 @@ const MyListingsView = () => {
         />
 
         <section className="mt-6">
-          <h2 className="mb-4 text-[16px] font-bold text-deep-blue">My listings</h2>
+          <h2 className="mb-4 text-[16px] font-bold text-deep-blue">
+            My listings
+          </h2>
 
           {listingsLoading ? (
             <CardSkeleton
@@ -93,15 +104,19 @@ const MyListingsView = () => {
                   key={listing.id}
                   listing={listing}
                   variant="mine"
+                  onEdit={handleEdit}
                   onDelete={deleting ? undefined : handleDelete}
                 />
               ))}
             </div>
           ) : (
             <div className="rounded-xl border border-[#E4E7EC] bg-white px-6 py-14 text-center">
-              <p className="text-[15px] font-semibold text-deep-blue">No listings yet</p>
+              <p className="text-[15px] font-semibold text-deep-blue">
+                No listings yet
+              </p>
               <p className="mt-2 text-[14px] text-[#64748B]">
-                Create your first listing to sell laboratory equipment to verified members.
+                Create your first listing to sell laboratory equipment to
+                verified members.
               </p>
             </div>
           )}

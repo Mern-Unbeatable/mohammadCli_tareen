@@ -24,6 +24,8 @@ export {
 export {
   MARKETPLACE_CATEGORY_OPTIONS,
   categoryToApi,
+  categoryFromApi,
+  conditionFromApi,
   toListingCardModel,
   toListingDetailModel,
   formatListedAt,
