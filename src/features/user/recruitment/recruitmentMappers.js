@@ -86,6 +86,44 @@ export function toJobDetailModel(job) {
   return toJobCardModel(job);
 }
 
+/** Map API job onto PostJobView form fields. */
+export function jobToFormValues(job) {
+  if (!job) {
+    return {
+      title: "",
+      company: "",
+      applyLink: "",
+      location: "",
+      salary: "",
+      employmentType: EMPLOYMENT_TYPE_OPTIONS[0],
+      level: RECRUITMENT_LEVEL_OPTIONS[2] || RECRUITMENT_LEVEL_OPTIONS[1],
+      description: "",
+      requirements: "",
+    };
+  }
+
+  return {
+    title: job.title || "",
+    company: job.company || "",
+    applyLink: job.applyLink || "",
+    location: job.location || "",
+    salary: job.salary || "",
+    employmentType:
+      EMPLOYMENT_LABEL[job.employmentType] ||
+      job.employmentType ||
+      EMPLOYMENT_TYPE_OPTIONS[0],
+    level:
+      LEVEL_LABEL[job.level] ||
+      job.level ||
+      RECRUITMENT_LEVEL_OPTIONS[2] ||
+      RECRUITMENT_LEVEL_OPTIONS[1],
+    description: job.about || job.description || "",
+    requirements: Array.isArray(job.requirements)
+      ? job.requirements.join("\n")
+      : String(job.requirements || ""),
+  };
+}
+
 /**
  * Build create payload from post-job form state.
  */

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
 import { CardSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import ListingCard from "@/components/data-display/ListingCard/ListingCard";
 import MarketplaceToolbar from "@/modules/user/components/marketplace/MarketplaceToolbar";
 import {
@@ -39,6 +40,7 @@ const MyListingsView = () => {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 350);
@@ -66,10 +68,25 @@ const MyListingsView = () => {
     navigate(`/marketplace/${id}/edit`);
   };
 
-  const handleDelete = async (id) => {
-    const result = await dispatch(removeListing(id));
+  const handleDeleteRequest = (id) => {
+    if (deleting) return;
+    const listing = filtered.find((item) => item.id === id);
+    if (!listing) return;
+    setPendingDelete(listing);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeListing(pendingDelete.id));
     if (removeListing.fulfilled.match(result)) {
       toast.success("Listing removed");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete listing");
@@ -105,7 +122,7 @@ const MyListingsView = () => {
                   listing={listing}
                   variant="mine"
                   onEdit={handleEdit}
-                  onDelete={deleting ? undefined : handleDelete}
+                  onDelete={deleting ? undefined : handleDeleteRequest}
                 />
               ))}
             </div>
@@ -122,6 +139,27 @@ const MyListingsView = () => {
           )}
         </section>
       </Container>
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete listing?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this listing"}
+              </span>
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      />
     </main>
   );
 };

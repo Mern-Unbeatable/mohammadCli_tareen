@@ -79,6 +79,11 @@ export const userRoutes = {
           handle: { title: 'Post job' },
         },
         {
+          path: '/recruitment/:jobId/edit',
+          element: <PostJobView />,
+          handle: { title: 'Edit job' },
+        },
+        {
           path: '/recruitment/:jobId',
           element: <JobDetailView />,
           handle: { title: 'Job' },
