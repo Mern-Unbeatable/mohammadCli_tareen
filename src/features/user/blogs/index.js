@@ -8,7 +8,11 @@
  */
 
 export { default as userBlogsReducer } from "./blogsSlice";
-export { clearBlogsError, clearSelectedBlog } from "./blogsSlice";
+export {
+  clearBlogsError,
+  clearSelectedBlog,
+  invalidateBlogsList,
+} from "./blogsSlice";
 export {
   fetchBlogs,
   fetchLatestBlogs,

@@ -72,10 +72,13 @@ export const removePost = createAsyncThunk(
 
 export const addComment = createAsyncThunk(
   "userFeed/addComment",
-  async ({ postId, body }, { rejectWithValue }) => {
+  async ({ postId, body, parentCommentId }, { rejectWithValue }) => {
     try {
-      const comment = await feedApi.addComment(postId, body);
-      return { postId, comment };
+      const comment = await feedApi.addComment(postId, {
+        content: body,
+        parentCommentId,
+      });
+      return { postId, comment, parentCommentId: comment?.parentCommentId ?? parentCommentId ?? null };
     } catch (err) {
       return rejectWithValue(
         feedApi.getApiErrorMessage(err, "Failed to add comment"),
@@ -106,6 +109,20 @@ export const reactToPost = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         feedApi.getApiErrorMessage(err, "Failed to react to post"),
+      );
+    }
+  },
+);
+
+export const likeComment = createAsyncThunk(
+  "userFeed/likeComment",
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      const data = await feedApi.likeComment(postId, commentId);
+      return { postId, commentId, data };
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to like comment"),
       );
     }
   },

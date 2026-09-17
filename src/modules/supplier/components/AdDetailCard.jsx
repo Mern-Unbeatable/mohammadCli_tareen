@@ -67,6 +67,7 @@ const AdDetailCard = ({
           onReact={onReact}
           commentsOpen={commentsOpen}
           onToggleComments={onToggleComments}
+          commentCount={ad.stats?.comments ?? 0}
           onShare={onShare}
           shared={shared}
         />

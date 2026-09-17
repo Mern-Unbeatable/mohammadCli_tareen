@@ -58,6 +58,11 @@ export const userRoutes = {
           handle: { title: 'Create listing' },
         },
         {
+          path: '/marketplace/:listingId/edit',
+          element: <CreateListingView />,
+          handle: { title: 'Edit listing' },
+        },
+        {
           path: '/marketplace/:listingId',
           element: <ListingDetailView />,
           handle: { title: 'Listing' },
@@ -72,6 +77,11 @@ export const userRoutes = {
           path: '/recruitment/create',
           element: <PostJobView />,
           handle: { title: 'Post job' },
+        },
+        {
+          path: '/recruitment/:jobId/edit',
+          element: <PostJobView />,
+          handle: { title: 'Edit job' },
         },
         {
           path: '/recruitment/:jobId',

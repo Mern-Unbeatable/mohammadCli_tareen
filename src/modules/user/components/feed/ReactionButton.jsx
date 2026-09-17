@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { reactions } from '@/modules/user/data/reactions';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { reactions } from "@/modules/user/data/reactions";
 
 const LONG_PRESS_MS = 450;
 const HOVER_DELAY_MS = 350;
 const PICKER_WIDTH = 300;
 
-const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
+const ReactionPicker = ({
+  open,
+  anchorRef,
+  pickerRef,
+  onSelect,
+  onClose,
+  onKeepOpen,
+}) => {
   const [position, setPosition] = useState({ left: 0, bottom: 0 });
 
   useEffect(() => {
@@ -25,12 +32,12 @@ const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
     };
 
     updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
 
     return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
     };
   }, [open, anchorRef]);
 
@@ -38,12 +45,14 @@ const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
 
   return createPortal(
     <div
+      ref={pickerRef}
       className="fixed z-[110]"
       style={{
         left: position.left,
         bottom: position.bottom,
-        transform: 'translateX(-50%)',
+        transform: "translateX(-50%)",
       }}
+      onMouseEnter={onKeepOpen}
       onMouseLeave={onClose}
     >
       <div className="flex items-center gap-0.5 rounded-full border border-[#E4E7EC] bg-white px-2 py-1.5 shadow-[0_8px_24px_rgba(10,26,68,0.15)] sm:gap-1">
@@ -52,7 +61,14 @@ const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
             key={reaction.id}
             type="button"
             title={reaction.label}
-            onClick={() => onSelect(reaction.id)}
+            // Stop pointerdown so the document "outside click" listener
+            // does not unmount the portal before this click fires.
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect(reaction.id);
+            }}
             className="flex h-9 w-9 items-center justify-center rounded-full text-[22px] transition-transform hover:scale-110 hover:bg-[#F9FAFB] sm:h-10 sm:w-10 sm:text-[26px]"
           >
             {reaction.emoji}
@@ -60,31 +76,37 @@ const ReactionPicker = ({ open, anchorRef, onSelect, onClose }) => {
         ))}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
 const ReactionButton = ({ reactionId, onReact }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const wrapRef = useRef(null);
+  const pickerRef = useRef(null);
   const hoverTimer = useRef(null);
   const longPressTimer = useRef(null);
   const pickerOpenedByTouch = useRef(false);
+  const lastTouchReactAt = useRef(0);
   const selected = reactions.find((r) => r.id === reactionId);
 
   const openPicker = useCallback(() => setPickerOpen(true), []);
   const closePicker = useCallback(() => setPickerOpen(false), []);
 
-  const handleSelect = (id) => {
-    onReact(id);
-    closePicker();
-  };
-
-  const clearHoverTimer = () => {
+  const clearHoverTimer = useCallback(() => {
     if (hoverTimer.current) {
       clearTimeout(hoverTimer.current);
       hoverTimer.current = null;
     }
+  }, []);
+
+  const keepPickerOpen = useCallback(() => {
+    clearHoverTimer();
+  }, [clearHoverTimer]);
+
+  const handleSelect = (id) => {
+    onReact(id);
+    closePicker();
   };
 
   const clearLongPressTimer = () => {
@@ -101,7 +123,8 @@ const ReactionButton = ({ reactionId, onReact }) => {
 
   const handleMouseLeave = () => {
     clearHoverTimer();
-    hoverTimer.current = setTimeout(closePicker, 200);
+    // Delay close so the cursor can move into the portaled picker.
+    hoverTimer.current = setTimeout(closePicker, 250);
   };
 
   const handleTouchStart = () => {
@@ -113,31 +136,34 @@ const ReactionButton = ({ reactionId, onReact }) => {
     }, LONG_PRESS_MS);
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e) => {
     clearLongPressTimer();
     if (pickerOpenedByTouch.current || pickerOpen) return;
-    if (!selected) onReact('like');
+    e.preventDefault();
+    lastTouchReactAt.current = Date.now();
+    onReact(selected ? null : "like");
   };
 
   const handleClick = () => {
     if (pickerOpen) return;
+    if (Date.now() - lastTouchReactAt.current < 500) return;
     if (selected) {
       onReact(null);
       return;
     }
-    onReact('like');
+    onReact("like");
   };
 
   useEffect(() => {
     const handleOutside = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        closePicker();
-      }
+      const inTrigger = wrapRef.current?.contains(e.target);
+      const inPicker = pickerRef.current?.contains(e.target);
+      if (!inTrigger && !inPicker) closePicker();
     };
     if (pickerOpen) {
-      document.addEventListener('pointerdown', handleOutside);
+      document.addEventListener("pointerdown", handleOutside);
     }
-    return () => document.removeEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
   }, [pickerOpen, closePicker]);
 
   useEffect(
@@ -145,7 +171,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
       clearHoverTimer();
       clearLongPressTimer();
     },
-    []
+    [clearHoverTimer],
   );
 
   return (
@@ -158,8 +184,10 @@ const ReactionButton = ({ reactionId, onReact }) => {
       <ReactionPicker
         open={pickerOpen}
         anchorRef={wrapRef}
+        pickerRef={pickerRef}
         onSelect={handleSelect}
         onClose={closePicker}
+        onKeepOpen={keepPickerOpen}
       />
       <button
         type="button"
@@ -169,7 +197,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
         onTouchCancel={clearLongPressTimer}
         onContextMenu={(e) => e.preventDefault()}
         className={`flex w-full items-center justify-center gap-2 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] ${
-          selected ? selected.color : 'text-[#475467]'
+          selected ? selected.color : "text-[#475467]"
         }`}
       >
         {selected ? (

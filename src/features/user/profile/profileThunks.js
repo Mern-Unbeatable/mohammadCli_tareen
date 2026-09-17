@@ -20,6 +20,12 @@ export const fetchUserProfile = createAsyncThunk(
       );
     }
   },
+  {
+    condition: (_, { getState }) => {
+      // Avoid duplicate concurrent /users/me calls from layout + page mounts
+      return !getState().userProfile.loading;
+    },
+  },
 );
 
 export const updateUserProfile = createAsyncThunk(

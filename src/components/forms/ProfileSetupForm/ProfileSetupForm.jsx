@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import Card from '@/components/ui/Card';
 
@@ -6,26 +7,61 @@ const fieldClass =
 
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-deep-blue';
 
-const UploadBox = ({ title, hint, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="flex w-full flex-col items-center justify-center rounded-lg border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-8 text-center transition-colors hover:border-primary hover:bg-secondary/40"
-  >
-    <Upload className="h-6 w-6 text-[#98A2B3]" />
-    <p className="mt-3 text-[13px] font-semibold text-deep-blue">{title}</p>
-    <p className="mt-1 text-[11px] text-[#98A2B3]">{hint}</p>
-  </button>
-);
+const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
+
+const UploadBox = ({ title, hint, previewUrl, onPick, disabled }) => {
+  const inputRef = useRef(null);
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => inputRef.current?.click()}
+      className="relative flex w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-8 text-center transition-colors hover:border-primary hover:bg-secondary/40 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (file) onPick?.(file);
+        }}
+      />
+      {previewUrl ? (
+        <img
+          src={previewUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
+      <div
+        className={`relative z-[1] flex flex-col items-center ${
+          previewUrl ? 'rounded-md bg-white/90 px-3 py-2 shadow-sm' : ''
+        }`}
+      >
+        <Upload className="h-6 w-6 text-[#98A2B3]" />
+        <p className="mt-3 text-[13px] font-semibold text-deep-blue">{title}</p>
+        <p className="mt-1 text-[11px] text-[#98A2B3]">{hint}</p>
+      </div>
+    </button>
+  );
+};
 
 const ProfileSetupForm = ({
   values,
   onChange,
   onSubmit,
+  onUploadAvatar,
+  onUploadCover,
+  uploading = false,
   countries = [],
   submitLabel = 'Save and Start Networking',
   title = 'Set up your professional profile',
   subtitle = 'This is what laboratories, suppliers and recruiters will see.',
+  submitDisabled = false,
 }) => (
   <Card>
     <div className="border-b border-[#E4E7EC] px-5 py-5 sm:px-8 sm:py-6">
@@ -120,9 +156,9 @@ const ProfileSetupForm = ({
             id="email"
             type="email"
             value={values.email}
-            onChange={(e) => onChange('email', e.target.value)}
-            className={fieldClass}
-            required
+            readOnly
+            className={`${fieldClass} cursor-not-allowed bg-[#F9FAFB] text-[#64748B]`}
+            title="Email cannot be changed here"
           />
         </div>
         <div>
@@ -155,13 +191,26 @@ const ProfileSetupForm = ({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <UploadBox title="Upload Profile Photo" hint="JPG, PNG or WebP · 400×400px" />
-        <UploadBox title="Upload Cover Photo" hint="JPG, PNG or WebP · 1600×600px" />
+        <UploadBox
+          title={uploading ? 'Uploading…' : 'Upload Profile Photo'}
+          hint="JPG, PNG or WebP · 400×400px"
+          previewUrl={values.avatarUrl || null}
+          onPick={onUploadAvatar}
+          disabled={uploading || !onUploadAvatar}
+        />
+        <UploadBox
+          title={uploading ? 'Uploading…' : 'Upload Cover Photo'}
+          hint="JPG, PNG or WebP · 1600×600px"
+          previewUrl={values.coverUrl || null}
+          onPick={onUploadCover}
+          disabled={uploading || !onUploadCover}
+        />
       </div>
 
       <button
         type="submit"
-        className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#066BB0]"
+        disabled={submitDisabled || uploading}
+        className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#066BB0] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitLabel}
       </button>

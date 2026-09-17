@@ -55,15 +55,42 @@ function toAuthorModel(author = {}) {
   };
 }
 
-function toCommentModel(comment) {
+function toCommentModel(comment, depth = 0) {
   if (!comment) return null;
+  const liked = Boolean(
+    comment.liked ?? comment.isLiked ?? comment.myLike ?? false,
+  );
+
+  let replies = [];
+  if (depth === 0 && Array.isArray(comment.replies)) {
+    const flattenLevel1 = (items) => {
+      const out = [];
+      for (const item of items || []) {
+        const node = toCommentModel(item, 1);
+        if (node) out.push(node);
+        if (Array.isArray(item.replies) && item.replies.length) {
+          out.push(...flattenLevel1(item.replies));
+        }
+      }
+      return out;
+    };
+    replies = flattenLevel1(comment.replies).sort((a, b) => {
+      const aTime = new Date(a.raw?.createdAt || 0).getTime();
+      const bTime = new Date(b.raw?.createdAt || 0).getTime();
+      return aTime - bTime;
+    });
+  }
+
   return {
     id: comment.id,
     author: toAuthorModel(comment.author || comment.user || {}),
     content: comment.content || comment.body || "",
     time: formatRelativeTime(comment.createdAt || comment.time),
-    replies: comment.replies ?? 0,
-    liked: Boolean(comment.liked),
+    parentCommentId: comment.parentCommentId ?? null,
+    replyCount: depth === 0 ? replies.length : 0,
+    replies: depth === 0 ? replies : [],
+    liked,
+    likeCount: comment.likeCount ?? comment.likesCount ?? 0,
     raw: comment,
   };
 }
@@ -73,9 +100,15 @@ export function toFeedPostModel(post) {
 
   const type = TYPE_LABEL[post.type] || String(post.type || "").toLowerCase();
   const author = toAuthorModel(post.author || post.user || {});
-  const comments = Array.isArray(post.comments)
-    ? post.comments.map(toCommentModel).filter(Boolean)
-    : [];
+  const comments = (
+    Array.isArray(post.comments)
+      ? post.comments.map((c) => toCommentModel(c)).filter(Boolean)
+      : []
+  ).sort((a, b) => {
+    const aTime = new Date(a.raw?.createdAt || 0).getTime();
+    const bTime = new Date(b.raw?.createdAt || 0).getTime();
+    return aTime - bTime;
+  });
 
   const reactionCount =
     post.stats?.reactions ??
@@ -103,14 +136,32 @@ export function toFeedPostModel(post) {
         postedAgo,
     },
     content: post.content || post.body || post.text || "",
-    attachment: post.attachment || null,
+    image: post.image || post.imageUrl || null,
+    attachment: post.attachment
+      ? post.attachment
+      : post.documentUrl
+        ? {
+            name:
+              post.documentName ||
+              decodeURIComponent(
+                String(post.documentUrl).split("/").pop() || "Document",
+              ),
+            meta: post.documentMeta || "Document",
+            url: post.documentUrl,
+          }
+        : null,
     stats: {
       reactions: reactionCount,
       comments: commentCount,
       shares: shareCount,
     },
     comments,
-    myReaction: post.myReaction || post.reaction || null,
+    myReaction: post.myReaction
+      ? String(post.myReaction).toLowerCase()
+      : post.reaction
+        ? String(post.reaction).toLowerCase()
+        : null,
+    reactionCounts: post.reactionCounts || null,
     raw: post,
   };
 }

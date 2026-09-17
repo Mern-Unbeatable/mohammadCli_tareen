@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
@@ -11,7 +11,10 @@ import {
   updateUserProfile,
   clearProfileError,
   setProfileField,
+  profileApi,
 } from '@/features/user/profile';
+
+const IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const ProfileSetupView = () => {
   const navigate = useNavigate();
@@ -19,6 +22,7 @@ const ProfileSetupView = () => {
   const { form, loading, saving, error, saveError } = useSelector(
     (state) => state.userProfile,
   );
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     dispatch(clearProfileError());
@@ -40,9 +44,31 @@ const ProfileSetupView = () => {
     return profileCountries;
   }, [form.country]);
 
+  const uploadImage = async (fieldKey, file) => {
+    if (!file || uploading || saving) return;
+    if (!IMAGE_MIME.has(file.type)) {
+      toast.error('Please upload a JPG, PNG, or WebP image');
+      return;
+    }
+    setUploading(true);
+    try {
+      const data = await profileApi.uploadFile(file);
+      dispatch(setProfileField({ key: fieldKey, value: data.url }));
+      toast.success(
+        fieldKey === 'avatarUrl' ? 'Profile photo ready' : 'Cover photo ready',
+      );
+    } catch (err) {
+      toast.error(
+        profileApi.getApiErrorMessage(err, 'Failed to upload image'),
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || uploading) return;
 
     if (!form.firstName?.trim() || !form.lastName?.trim()) {
       toast.error('First and last name are required');
@@ -80,8 +106,12 @@ const ProfileSetupView = () => {
           values={form}
           onChange={(key, value) => dispatch(setProfileField({ key, value }))}
           onSubmit={handleSubmit}
+          onUploadAvatar={(file) => uploadImage('avatarUrl', file)}
+          onUploadCover={(file) => uploadImage('coverUrl', file)}
+          uploading={uploading}
           countries={countries}
           submitLabel={saving ? 'Saving…' : undefined}
+          submitDisabled={saving || uploading}
         />
       </Container>
     </main>

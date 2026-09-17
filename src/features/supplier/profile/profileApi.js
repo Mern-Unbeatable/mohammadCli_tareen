@@ -34,6 +34,27 @@ export async function updateProfile(payload) {
   return user;
 }
 
+/**
+ * Upload a single file via /uploads.
+ * Field name must be `file` (matches multer upload.single("file")).
+ */
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.SUPPLIER.UPLOADS.SINGLE,
+    formData,
+    null,
+    { timeout: 60000 },
+  );
+  const data = unwrapApiData(response) || response;
+  if (!data?.url) {
+    throw new Error("Upload did not return a file URL");
+  }
+  return data;
+}
+
 export async function changePassword(input) {
   const response = await crudService.patch(
     API_ENDPOINTS.SUPPLIER.PROFILE.CHANGE_PASSWORD,

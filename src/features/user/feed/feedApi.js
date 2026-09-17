@@ -76,6 +76,27 @@ export async function createPost(payload) {
   return unwrapApiData(response) || response;
 }
 
+/**
+ * Upload a single file via existing /uploads endpoint.
+ * Field name must be `file` (matches multer upload.single("file")).
+ */
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.USER.UPLOADS.SINGLE,
+    formData,
+    null,
+    { timeout: 60000 },
+  );
+  const data = unwrapApiData(response) || response;
+  if (!data?.url) {
+    throw new Error("Upload did not return a file URL");
+  }
+  return data;
+}
+
 export async function updatePost(postId, payload) {
   const response = await crudService.patch(
     API_ENDPOINTS.USER.FEED.UPDATE(postId),
@@ -92,8 +113,18 @@ export async function deletePost(postId) {
 }
 
 export async function addComment(postId, payload) {
-  const body =
-    typeof payload === "string" ? { body: payload } : payload;
+  const text =
+    typeof payload === "string"
+      ? payload
+      : payload?.content ?? payload?.body ?? "";
+  const parentCommentId =
+    typeof payload === "object" && payload
+      ? payload.parentCommentId || undefined
+      : undefined;
+  const body = {
+    content: String(text).trim(),
+    ...(parentCommentId ? { parentCommentId } : {}),
+  };
   const response = await crudService.post(
     API_ENDPOINTS.USER.FEED.COMMENTS(postId),
     body,
@@ -116,6 +147,13 @@ export async function reactToPost(postId, type) {
   const response = await crudService.post(
     API_ENDPOINTS.USER.FEED.REACTIONS(postId),
     { type },
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function likeComment(postId, commentId) {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.COMMENT_LIKE(postId, commentId),
   );
   return unwrapApiData(response) || response;
 }

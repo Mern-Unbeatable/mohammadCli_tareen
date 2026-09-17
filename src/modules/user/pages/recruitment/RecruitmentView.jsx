@@ -1,26 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import Pagination from '@/components/common/Pagination/Pagination';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import Container from '@/components/ui/Container';
-import JobCard from '@/components/data-display/JobCard/JobCard';
-import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import Container from "@/components/ui/Container";
+import JobCard from "@/components/data-display/JobCard/JobCard";
+import RecruitmentToolbar from "@/modules/user/components/recruitment/RecruitmentToolbar";
 import {
   fetchJobs,
   clearRecruitmentError,
+  invalidateJobsList,
   levelToApi,
   toJobCardModel,
-} from '@/features/user/recruitment';
-import { LIST_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+} from "@/features/user/recruitment";
+import { LIST_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const JOB_BASE = '/recruitment';
+const JOB_BASE = "/recruitment";
 
 const buildJobsQuery = ({ page, query, level }) => {
   const params = {
     page,
     pageSize: LIST_PAGE_SIZE,
-    sort: 'desc',
+    sort: "desc",
   };
   const q = query?.trim();
   if (q) params.search = q;
@@ -35,20 +36,22 @@ const RecruitmentView = () => {
     (state) => state.userRecruitment,
   );
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [level, setLevel] = useState('All');
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [level, setLevel] = useState("All");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (query === debouncedQuery) return;
+      dispatch(invalidateJobsList());
       setDebouncedQuery(query);
       setPage(1);
     }, 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, debouncedQuery, dispatch]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearRecruitmentError());
     dispatch(
       fetchJobs(buildJobsQuery({ page, query: debouncedQuery, level })),
@@ -66,6 +69,19 @@ const RecruitmentView = () => {
 
   const totalPages = Math.max(1, jobsMeta?.totalPages || 1);
 
+  const handleLevelChange = (value) => {
+    if (value === level) return;
+    dispatch(invalidateJobsList());
+    setLevel(value);
+    setPage(1);
+  };
+
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateJobsList());
+    setPage(next);
+  };
+
   return (
     <main className="pt-6 pb-8 sm:pt-8">
       <Container>
@@ -73,16 +89,13 @@ const RecruitmentView = () => {
           query={query}
           onQueryChange={setQuery}
           level={level}
-          onLevelChange={(value) => {
-            setLevel(value);
-            setPage(1);
-          }}
+          onLevelChange={handleLevelChange}
           activeView="browse"
           basePath={JOB_BASE}
         />
 
         <div className="mt-6 space-y-4">
-          {jobsLoading && !pageItems.length ? (
+          {jobsLoading ? (
             <CardSkeleton
               variant="job"
               count={LIST_PAGE_SIZE}
@@ -112,7 +125,7 @@ const RecruitmentView = () => {
         <Pagination
           page={page}
           totalPages={totalPages}
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
           className="mt-8"
         />
       </Container>

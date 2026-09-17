@@ -95,3 +95,39 @@ export function formToCreatePayload(form) {
 
   return payload;
 }
+
+/** Map API/general post model onto CreateGeneralPostModal fields. */
+export function postToFormValues(post) {
+  if (!post) {
+    return {
+      postType: "news",
+      headline: "",
+      summary: "",
+      source: "",
+      docTitle: "",
+      description: "",
+      documentUrl: "",
+      imageUrl: "",
+    };
+  }
+
+  const type = TYPE_LABEL[post.type] || String(post.type || "").toLowerCase();
+  const isDocument = type === "document";
+  const bodyText = Array.isArray(post.body)
+    ? post.body.join("\n")
+    : post.summary || "";
+
+  return {
+    postType: isDocument ? "document" : "news",
+    headline: isDocument ? "" : post.title || "",
+    summary: isDocument ? "" : bodyText || post.summary || "",
+    source: post.source || post.category || "",
+    docTitle: isDocument ? post.title || "" : "",
+    description: isDocument ? bodyText || post.summary || "" : "",
+    documentUrl: post.documentUrl || "",
+    imageUrl:
+      post.imageUrl && !String(post.imageUrl).includes("images.unsplash.com")
+        ? post.imageUrl
+        : "",
+  };
+}

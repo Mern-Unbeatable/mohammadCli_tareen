@@ -18,8 +18,18 @@ const ListingCard = ({
   return (
     <Card className="flex h-full flex-col">
       <div className="relative aspect-[4/3] overflow-hidden bg-[#F9FAFB]">
-        <Link to={href}>
-          <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" />
+        <Link to={href} className="block h-full w-full">
+          {listing.image ? (
+            <img
+              src={listing.image}
+              alt={listing.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[12px] font-medium text-[#98A2B3]">
+              No photo
+            </div>
+          )}
         </Link>
         {variant !== 'mine' && (
           <button

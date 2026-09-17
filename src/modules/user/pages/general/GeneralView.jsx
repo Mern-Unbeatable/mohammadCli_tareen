@@ -94,7 +94,7 @@ const GeneralView = () => {
           myPostHref={`${BASE}/my-posts`}
         />
 
-        {postsLoading && !pageItems.length ? (
+        {postsLoading ? (
           <CardSkeleton
             variant="generalPost"
             count={GRID_PAGE_SIZE}

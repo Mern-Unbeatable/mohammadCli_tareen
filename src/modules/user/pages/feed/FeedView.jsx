@@ -72,7 +72,12 @@ const FeedView = () => {
     [posts],
   );
 
-  const handlePublish = async ({ type, content }) => {
+  const handlePublish = async ({
+    type,
+    content,
+    imageUrl,
+    documentUrl,
+  }) => {
     const apiType =
       type === "question"
         ? "QUESTION"
@@ -80,9 +85,14 @@ const FeedView = () => {
           ? "SUPPLIERS"
           : "INFORMATION";
 
-    const result = await dispatch(
-      createPost({ type: apiType, content: content.trim() }),
-    );
+    const payload = {
+      type: apiType,
+      content: (content || "").trim(),
+    };
+    if (imageUrl) payload.imageUrl = imageUrl;
+    if (documentUrl) payload.documentUrl = documentUrl;
+
+    const result = await dispatch(createPost(payload));
     if (createPost.fulfilled.match(result)) {
       toast.success("Post published");
       setCreateOpen(false);
@@ -96,6 +106,8 @@ const FeedView = () => {
             : {}),
         }),
       );
+    } else {
+      toast.error(result.payload || "Failed to publish post");
     }
   };
 

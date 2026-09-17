@@ -8,7 +8,7 @@
  */
 
 export { default as userRecruitmentReducer } from "./recruitmentSlice";
-export { clearRecruitmentError, clearSelectedJob } from "./recruitmentSlice";
+export { clearRecruitmentError, clearSelectedJob, invalidateJobsList } from "./recruitmentSlice";
 export {
   fetchJobs,
   fetchJobDetails,
@@ -25,6 +25,7 @@ export {
   employmentToApi,
   toJobCardModel,
   toJobDetailModel,
+  jobToFormValues,
   formToCreatePayload,
   formatPostedAgo,
 } from "./recruitmentMappers";

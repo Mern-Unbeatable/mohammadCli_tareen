@@ -15,7 +15,7 @@ const initialState = {
   selectedJob: null,
   applications: [],
   applicationsMeta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
-  jobsLoading: false,
+  jobsLoading: true,
   selectedJobLoading: false,
   applicationsLoading: false,
   saving: false,
@@ -42,12 +42,29 @@ const recruitmentSlice = createSlice({
     clearSelectedJob: (state) => {
       state.selectedJob = null;
     },
+    /** Sync: show job skeletons before paint when filter/page/search changes */
+    invalidateJobsList: (state) => {
+      state.jobsLoading = true;
+      state.jobs = [];
+      state.jobsMeta = {
+        ...state.jobsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchJobs.pending, (state) => {
         state.jobsLoading = true;
         state.error = null;
+        state.jobs = [];
+        state.jobsMeta = {
+          ...state.jobsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
         state.jobsLoading = false;
@@ -150,6 +167,6 @@ const recruitmentSlice = createSlice({
   },
 });
 
-export const { clearRecruitmentError, clearSelectedJob } =
+export const { clearRecruitmentError, clearSelectedJob, invalidateJobsList } =
   recruitmentSlice.actions;
 export default recruitmentSlice.reducer;

@@ -1,10 +1,10 @@
 import Card from '@/components/ui/Card';
 import Skeleton from './Skeleton';
 
-/** Matches ContactCard layout */
+/** Matches ContactCard layout (Avatar size="lg" = h-14) */
 export const ContactCardSkeleton = () => (
   <Card className="flex flex-col p-5 text-center">
-    <Skeleton className="mx-auto h-16 w-16" rounded="full" />
+    <Skeleton className="mx-auto h-14 w-14" rounded="full" />
     <Skeleton className="mx-auto mt-3 h-4 w-28" />
     <Skeleton className="mx-auto mt-2 h-3 w-36" />
     <Skeleton className="mx-auto mt-1.5 h-3.5 w-24" />

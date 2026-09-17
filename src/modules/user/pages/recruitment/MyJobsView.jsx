@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import Container from '@/components/ui/Container';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import JobCard from '@/components/data-display/JobCard/JobCard';
-import RecruitmentToolbar from '@/modules/user/components/recruitment/RecruitmentToolbar';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Container from "@/components/ui/Container";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
+import JobCard from "@/components/data-display/JobCard/JobCard";
+import RecruitmentToolbar from "@/modules/user/components/recruitment/RecruitmentToolbar";
 import {
   fetchJobs,
   removeJob,
@@ -14,16 +15,16 @@ import {
   levelToApi,
   toJobCardModel,
   formatPostedAgo,
-} from '@/features/user/recruitment';
-import { LIST_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+} from "@/features/user/recruitment";
+import { LIST_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const JOB_BASE = '/recruitment';
+const JOB_BASE = "/recruitment";
 
 const buildMyJobsQuery = ({ query, level }) => {
   const params = {
     page: 1,
     pageSize: 50,
-    sort: 'desc',
+    sort: "desc",
     mine: true,
   };
   const q = query?.trim();
@@ -45,9 +46,10 @@ const MyJobsView = () => {
     error,
   } = useSelector((state) => state.userRecruitment);
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [level, setLevel] = useState('All');
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [level, setLevel] = useState("All");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 350);
@@ -56,13 +58,11 @@ const MyJobsView = () => {
 
   useEffect(() => {
     dispatch(clearRecruitmentError());
-    dispatch(
-      fetchJobs(buildMyJobsQuery({ query: debouncedQuery, level })),
-    );
+    dispatch(fetchJobs(buildMyJobsQuery({ query: debouncedQuery, level })));
   }, [dispatch, debouncedQuery, level]);
 
   useEffect(() => {
-    dispatch(fetchMyApplications({ page: 1, pageSize: 20, sort: 'desc' }));
+    dispatch(fetchMyApplications({ page: 1, pageSize: 20, sort: "desc" }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -80,12 +80,12 @@ const MyJobsView = () => {
         const job = app.job ? toJobCardModel(app.job) : null;
         return {
           id: app.id,
-          status: app.status || 'PENDING',
+          status: app.status || "PENDING",
           appliedAt: formatPostedAgo(app.appliedAt || app.createdAt).replace(
             /^Posted /,
-            'Applied ',
+            "Applied ",
           ),
-          coverLetter: app.coverLetter || '',
+          coverLetter: app.coverLetter || "",
           job,
           jobId: job?.id || app.jobId,
         };
@@ -93,13 +93,28 @@ const MyJobsView = () => {
     [applications],
   );
 
-  const handleDelete = async (id) => {
-    const result = await dispatch(removeJob(id));
+  const handleDeleteRequest = (id) => {
+    if (deleting) return;
+    const job = filtered.find((item) => item.id === id);
+    if (!job) return;
+    setPendingDelete(job);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeJob(pendingDelete.id));
     if (removeJob.fulfilled.match(result)) {
-      toast.success('Job deleted');
+      toast.success("Job deleted");
+      setPendingDelete(null);
       return;
     }
-    toast.error(result.payload || 'Failed to delete job');
+    toast.error(result.payload || "Failed to delete job");
   };
 
   return (
@@ -115,7 +130,7 @@ const MyJobsView = () => {
         />
 
         <div className="mt-6 space-y-4">
-          {jobsLoading && !filtered.length ? (
+          {jobsLoading ? (
             <CardSkeleton
               variant="job"
               count={LIST_PAGE_SIZE}
@@ -129,13 +144,15 @@ const MyJobsView = () => {
                 variant="mine"
                 highlighted={index === 0}
                 detailHref={`${JOB_BASE}/${job.id}`}
-                onDelete={deleting ? undefined : handleDelete}
-                onEdit={() => navigate(`${JOB_BASE}/${job.id}`)}
+                onDelete={deleting ? undefined : handleDeleteRequest}
+                onEdit={() => navigate(`${JOB_BASE}/${job.id}/edit`)}
               />
             ))
           ) : (
             <div className="rounded-xl border border-[#E4E7EC] bg-white px-6 py-14 text-center">
-              <p className="text-[15px] font-semibold text-deep-blue">No job posts yet</p>
+              <p className="text-[15px] font-semibold text-deep-blue">
+                No job posts yet
+              </p>
               <p className="mt-2 text-[14px] text-[#64748B]">
                 Post your first role to reach qualified laboratory professionals.
               </p>
@@ -145,7 +162,9 @@ const MyJobsView = () => {
 
         <section className="mt-10">
           <div className="mb-4">
-            <h2 className="text-[20px] font-bold text-deep-blue">My Applications</h2>
+            <h2 className="text-[20px] font-bold text-deep-blue">
+              My Applications
+            </h2>
             <p className="mt-1 text-[14px] text-[#64748B]">
               Roles you have applied to across the network.
             </p>
@@ -171,24 +190,26 @@ const MyJobsView = () => {
                           to={`${JOB_BASE}/${app.jobId}`}
                           className="text-[15px] font-semibold text-primary hover:underline"
                         >
-                          {app.job?.title || 'Job posting'}
+                          {app.job?.title || "Job posting"}
                         </Link>
                       ) : (
                         <p className="text-[15px] font-semibold text-deep-blue">
-                          {app.job?.title || 'Job posting'}
+                          {app.job?.title || "Job posting"}
                         </p>
                       )}
                       <p className="mt-0.5 text-[13px] text-[#64748B]">
                         {[app.job?.company, app.job?.location]
                           .filter(Boolean)
-                          .join(' · ') || '—'}
+                          .join(" · ") || "—"}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
                       <span className="inline-flex rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                         {app.status}
                       </span>
-                      <span className="text-[11px] text-[#98A2B3]">{app.appliedAt}</span>
+                      <span className="text-[11px] text-[#98A2B3]">
+                        {app.appliedAt}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -203,6 +224,36 @@ const MyJobsView = () => {
           )}
         </section>
       </Container>
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete job post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this job"}
+              </span>
+              {pendingDelete.company ? (
+                <>
+                  {" "}
+                  at{" "}
+                  <span className="font-semibold text-deep-blue">
+                    {pendingDelete.company}
+                  </span>
+                </>
+              ) : null}
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      />
     </main>
   );
 };

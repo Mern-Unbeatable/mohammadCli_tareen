@@ -1,27 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
   Search,
   Sparkles,
-} from 'lucide-react';
-import { toast } from 'react-toastify';
-import Pagination from '@/components/common/Pagination/Pagination';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import Container from '@/components/ui/Container';
-import LatestHubCard from '@/components/data-display/BlogCard/LatestHubCard';
-import BlogGridCard from '@/components/data-display/BlogCard/BlogGridCard';
+} from "lucide-react";
+import { toast } from "react-toastify";
+import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import Container from "@/components/ui/Container";
+import LatestHubCard from "@/components/data-display/BlogCard/LatestHubCard";
+import BlogGridCard from "@/components/data-display/BlogCard/BlogGridCard";
 import {
   fetchBlogs,
   fetchLatestBlogs,
   clearBlogsError,
+  invalidateBlogsList,
   toBlogCardModel,
-} from '@/features/user/blogs';
-import { GRID_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+} from "@/features/user/blogs";
+import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const BLOG_BASE = '/blogs';
+const BLOG_BASE = "/blogs";
 
 const BlogsView = () => {
   const dispatch = useDispatch();
@@ -34,21 +35,22 @@ const BlogsView = () => {
     error,
   } = useSelector((state) => state.userBlogs);
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [page, setPage] = useState(1);
   const carouselRef = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    const timer = setTimeout(() => {
+      if (query === debouncedQuery) return;
+      dispatch(invalidateBlogsList());
+      setDebouncedQuery(query);
+      setPage(1);
+    }, 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, debouncedQuery, dispatch]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedQuery]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearBlogsError());
     const search = debouncedQuery.trim() || undefined;
     dispatch(fetchLatestBlogs(search ? { search } : {}));
@@ -56,7 +58,7 @@ const BlogsView = () => {
       fetchBlogs({
         page,
         pageSize: GRID_PAGE_SIZE,
-        sort: 'desc',
+        sort: "desc",
         ...(search ? { search } : {}),
       }),
     );
@@ -78,13 +80,19 @@ const BlogsView = () => {
 
   const totalPages = Math.max(1, blogsMeta?.totalPages || 1);
 
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateBlogsList());
+    setPage(next);
+  };
+
   const scrollCarousel = (direction) => {
     const container = carouselRef.current;
     if (!container) return;
-    const card = container.querySelector('[data-hub-card]');
+    const card = container.querySelector("[data-hub-card]");
     const gap = 16;
     const step = card ? card.offsetWidth + gap : 320;
-    container.scrollBy({ left: direction * step, behavior: 'smooth' });
+    container.scrollBy({ left: direction * step, behavior: "smooth" });
   };
 
   return (
@@ -129,8 +137,8 @@ const BlogsView = () => {
               type="button"
               onClick={() =>
                 document
-                  .getElementById('latest-hub')
-                  ?.scrollIntoView({ behavior: 'smooth' })
+                  .getElementById("latest-hub")
+                  ?.scrollIntoView({ behavior: "smooth" })
               }
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[12px] font-semibold text-white hover:bg-[#066BB0] sm:mt-5 sm:px-5 sm:text-[13px]"
             >
@@ -166,7 +174,7 @@ const BlogsView = () => {
               </div>
             </div>
 
-            {latestLoading && !latestItems.length ? (
+            {latestLoading ? (
               <>
                 <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:hidden">
                   <CardSkeleton
@@ -236,7 +244,7 @@ const BlogsView = () => {
               Previous Article
             </h2>
 
-            {blogsLoading && !archiveItems.length ? (
+            {blogsLoading ? (
               <CardSkeleton
                 variant="blogGrid"
                 count={GRID_PAGE_SIZE}
@@ -256,7 +264,7 @@ const BlogsView = () => {
                 <Pagination
                   page={page}
                   totalPages={totalPages}
-                  onPageChange={setPage}
+                  onPageChange={handlePageChange}
                   className="mt-8"
                 />
               </>

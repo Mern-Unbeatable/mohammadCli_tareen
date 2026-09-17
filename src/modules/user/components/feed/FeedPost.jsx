@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge';
 import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
-import { addComment, reactToPost } from '@/features/user/feed';
+import { addComment, likeComment, reactToPost } from '@/features/user/feed';
 import { toProfilePageUser } from '@/features/user/profile';
 
 const badgeByType = {
@@ -19,12 +19,17 @@ const badgeByType = {
 };
 
 const REACTION_API = {
-  like: 'LIKE',
-  love: 'LOVE',
-  celebrate: 'CELEBRATE',
-  support: 'SUPPORT',
-  insightful: 'INSIGHTFUL',
-  curious: 'CURIOUS',
+  like: "like",
+  love: "love",
+  haha: "haha",
+  wow: "wow",
+  sad: "sad",
+  angry: "angry",
+  // Legacy LinkedIn-style ids from older clients/UI
+  celebrate: "haha",
+  support: "wow",
+  insightful: "sad",
+  curious: "angry",
 };
 
 const PostHeader = ({ post, onReport }) => {
@@ -87,6 +92,9 @@ const PromoPricing = ({ post }) => (
 const FeedPost = ({ post, onReport }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.userProfile);
+  const likingCommentId = useSelector(
+    (state) => state.userFeed.likingCommentId,
+  );
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
 
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -96,11 +104,15 @@ const FeedPost = ({ post, onReport }) => {
   );
   const [shared, setShared] = useState(false);
   const [stats, setStats] = useState(post.stats);
+  const [reactionCounts, setReactionCounts] = useState(
+    post.reactionCounts || null,
+  );
   const [comments, setComments] = useState(post.comments ?? []);
 
   useEffect(() => {
     setStats(post.stats);
     setComments(post.comments ?? []);
+    setReactionCounts(post.reactionCounts || null);
     setReactionId(
       post.myReaction ? String(post.myReaction).toLowerCase() : null,
     );
@@ -109,6 +121,7 @@ const FeedPost = ({ post, onReport }) => {
   const handleReact = async (id) => {
     const next = reactionId === id ? null : id;
     const prevId = reactionId;
+    const prevStats = stats;
     setReactionId(next);
     setStats((prev) => ({
       ...prev,
@@ -120,55 +133,107 @@ const FeedPost = ({ post, onReport }) => {
             : prev.reactions,
     }));
 
-    const apiType = REACTION_API[next || prevId] || 'LIKE';
+    const apiType = REACTION_API[next || prevId] || "like";
     const result = await dispatch(
       reactToPost({ postId: post.id, type: apiType }),
     );
     if (reactToPost.rejected.match(result)) {
       setReactionId(prevId);
-      setStats(post.stats);
+      setStats(prevStats);
       toast.error(result.payload || 'Failed to update reaction');
+      return;
+    }
+
+    const data = result.payload?.data;
+    if (data) {
+      const serverReaction =
+        data.myReaction !== undefined
+          ? data.myReaction
+          : data.reacted
+            ? data.type
+            : null;
+      setReactionId(
+        serverReaction ? String(serverReaction).toLowerCase() : null,
+      );
+      if (data.reactionCount != null || data.stats?.reactions != null) {
+        setStats((prev) => ({
+          ...prev,
+          reactions: data.reactionCount ?? data.stats.reactions,
+        }));
+      }
+      if (data.reactionCounts) {
+        setReactionCounts(data.reactionCounts);
+      }
     }
   };
 
-  const handleAddComment = async (text) => {
+  const handleAddComment = async (text, parentCommentId) => {
     const result = await dispatch(
-      addComment({ postId: post.id, body: text }),
+      addComment({
+        postId: post.id,
+        body: text,
+        parentCommentId: parentCommentId || undefined,
+      }),
     );
     if (addComment.fulfilled.match(result)) {
-      const comment = result.payload?.comment;
-      if (comment) {
-        setComments((prev) => [
-          {
-            id: comment.id,
-            author: {
-              initials: profileUser?.initials || 'MB',
-              name: profileUser?.name || 'You',
-              subtitle: [profileUser?.title, profileUser?.company]
-                .filter(Boolean)
-                .join(' · '),
-              avatar: profileUser?.avatar,
-            },
-            content: comment.body || comment.content || text,
-            time: 'Just now',
-            replies: 0,
-            liked: false,
-          },
-          ...prev,
-        ]);
-        setStats((prev) => ({ ...prev, comments: prev.comments + 1 }));
-      }
-    } else {
-      toast.error(result.payload || 'Failed to add comment');
+      return true;
     }
+
+    toast.error(result.payload || "Failed to add comment");
+    return false;
   };
 
-  const handleLikeComment = (commentId) => {
+  const findComment = (list, commentId) => {
+    for (const item of list || []) {
+      if (item.id === commentId) return item;
+      const nested = findComment(item.replies, commentId);
+      if (nested) return nested;
+    }
+    return null;
+  };
+
+  const mapComments = (list, commentId, updater) =>
+    (list || []).map((item) => {
+      if (item.id === commentId) return updater(item);
+      if (!Array.isArray(item.replies) || item.replies.length === 0) return item;
+      return {
+        ...item,
+        replies: mapComments(item.replies, commentId, updater),
+      };
+    });
+
+  const handleLikeComment = async (commentId) => {
+    const previous = findComment(comments, commentId);
+    if (!previous) return;
+
+    const nextLiked = !previous.liked;
     setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId ? { ...c, liked: !c.liked } : c,
-      ),
+      mapComments(prev, commentId, (c) => ({
+        ...c,
+        liked: nextLiked,
+        likeCount: Math.max(0, (c.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+      })),
     );
+
+    const result = await dispatch(
+      likeComment({ postId: post.id, commentId }),
+    );
+    if (likeComment.rejected.match(result)) {
+      setComments((prev) => mapComments(prev, commentId, () => previous));
+      toast.error(result.payload || 'Failed to like comment');
+      return;
+    }
+
+    const data = result.payload?.data;
+    if (data) {
+      setComments((prev) =>
+        mapComments(prev, commentId, (c) => ({
+          ...c,
+          liked: Boolean(data.liked ?? data.isLiked),
+          likeCount: data.likeCount ?? c.likeCount ?? 0,
+        })),
+      );
+    }
   };
 
   const handleShare = () => {
@@ -234,12 +299,17 @@ const FeedPost = ({ post, onReport }) => {
           )}
         </div>
 
-        <PostStats stats={stats} reactionId={reactionId} />
+        <PostStats
+          stats={stats}
+          reactionId={reactionId}
+          reactionCounts={reactionCounts}
+        />
         <PostActions
           reactionId={reactionId}
           onReact={handleReact}
           commentsOpen={commentsOpen}
           onToggleComments={toggleComments}
+          commentCount={stats?.comments ?? 0}
           onShare={handleShare}
           shared={shared}
         />
@@ -250,6 +320,7 @@ const FeedPost = ({ post, onReport }) => {
             currentUser={profileUser}
             onAddComment={handleAddComment}
             onLikeComment={handleLikeComment}
+            likingCommentId={likingCommentId}
           />
         )}
       </Card>

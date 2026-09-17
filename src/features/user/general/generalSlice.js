@@ -3,6 +3,7 @@ import {
   fetchGeneralPosts,
   fetchGeneralPostDetails,
   createGeneralPost,
+  updateGeneralPost,
   removeGeneralPost,
 } from "./generalThunks";
 
@@ -10,11 +11,19 @@ const initialState = {
   posts: [],
   postsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 },
   selectedPost: null,
-  postsLoading: false,
+  postsLoading: true,
   selectedPostLoading: false,
   saving: false,
   deleting: false,
   error: null,
+};
+
+const upsertPost = (state, post) => {
+  if (!post?.id) return;
+  const index = state.posts.findIndex((row) => row.id === post.id);
+  if (index >= 0) state.posts[index] = post;
+  else state.posts = [post, ...state.posts];
+  if (state.selectedPost?.id === post.id) state.selectedPost = post;
 };
 
 const generalSlice = createSlice({
@@ -27,12 +36,28 @@ const generalSlice = createSlice({
     clearSelectedPost: (state) => {
       state.selectedPost = null;
     },
+    invalidateGeneralPostsList: (state) => {
+      state.postsLoading = true;
+      state.posts = [];
+      state.postsMeta = {
+        ...state.postsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchGeneralPosts.pending, (state) => {
         state.postsLoading = true;
         state.error = null;
+        state.posts = [];
+        state.postsMeta = {
+          ...state.postsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchGeneralPosts.fulfilled, (state, action) => {
         state.postsLoading = false;
@@ -73,6 +98,18 @@ const generalSlice = createSlice({
         state.saving = false;
         state.error = action.payload;
       })
+      .addCase(updateGeneralPost.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateGeneralPost.fulfilled, (state, action) => {
+        state.saving = false;
+        upsertPost(state, action.payload);
+      })
+      .addCase(updateGeneralPost.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      })
       .addCase(removeGeneralPost.pending, (state) => {
         state.deleting = true;
         state.error = null;
@@ -93,5 +130,9 @@ const generalSlice = createSlice({
   },
 });
 
-export const { clearGeneralError, clearSelectedPost } = generalSlice.actions;
+export const {
+  clearGeneralError,
+  clearSelectedPost,
+  invalidateGeneralPostsList,
+} = generalSlice.actions;
 export default generalSlice.reducer;

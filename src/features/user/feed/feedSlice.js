@@ -8,6 +8,7 @@ import {
   addComment,
   removeComment,
   reactToPost,
+  likeComment,
 } from "./feedThunks";
 
 const initialState = {
@@ -20,6 +21,7 @@ const initialState = {
   deleting: false,
   commenting: false,
   reactingId: null,
+  likingCommentId: null,
   error: null,
 };
 
@@ -124,17 +126,61 @@ const feedSlice = createSlice({
       .addCase(addComment.fulfilled, (state, action) => {
         state.commenting = false;
         const { postId, comment } = action.payload;
-        const appendComment = (post) => {
-          if (!post || post.id !== postId) return post;
+        const parentId =
+          comment?.parentCommentId ?? action.payload.parentCommentId ?? null;
+
+        const insertComment = (post) => {
+          if (!post || post.id !== postId || !comment?.id) return post;
           const comments = Array.isArray(post.comments) ? post.comments : [];
+
+          const exists = comments.some(
+            (row) =>
+              row.id === comment.id ||
+              (Array.isArray(row.replies) &&
+                row.replies.some((r) => r.id === comment.id)),
+          );
+          if (exists) return post;
+
+          const nextCount =
+            (post.stats?.comments ?? post.commentCount ?? 0) + 1;
+          const nextComment = {
+            ...comment,
+            replies: [],
+            replyCount: 0,
+          };
+
+          if (parentId) {
+            return {
+              ...post,
+              comments: comments.map((row) => {
+                if (row.id !== parentId) return row;
+                const replies = Array.isArray(row.replies) ? row.replies : [];
+                return {
+                  ...row,
+                  replyCount: (row.replyCount ?? replies.length) + 1,
+                  replies: [...replies, nextComment],
+                };
+              }),
+              commentCount: nextCount,
+              stats: {
+                ...(post.stats || {}),
+                comments: nextCount,
+              },
+            };
+          }
+
           return {
             ...post,
-            comments: comment ? [...comments, comment] : comments,
-            commentCount: (post.commentCount || comments.length) + (comment ? 1 : 0),
+            comments: [...comments, nextComment],
+            commentCount: nextCount,
+            stats: {
+              ...(post.stats || {}),
+              comments: nextCount,
+            },
           };
         };
-        state.posts = state.posts.map(appendComment);
-        state.selectedPost = appendComment(state.selectedPost);
+        state.posts = state.posts.map(insertComment);
+        state.selectedPost = insertComment(state.selectedPost);
       })
       .addCase(addComment.rejected, (state, action) => {
         state.commenting = false;
@@ -149,13 +195,47 @@ const feedSlice = createSlice({
         const { postId, commentId } = action.payload;
         const stripComment = (post) => {
           if (!post || post.id !== postId) return post;
-          const comments = (post.comments || []).filter(
-            (c) => c.id !== commentId,
+          let removed = 0;
+
+          const countTree = (node) =>
+            1 +
+            (Array.isArray(node.replies)
+              ? node.replies.reduce((sum, child) => sum + countTree(child), 0)
+              : 0);
+
+          const stripTree = (list = []) =>
+            list
+              .map((row) => {
+                if (row.id === commentId) {
+                  removed = countTree(row);
+                  return null;
+                }
+                if (!Array.isArray(row.replies) || row.replies.length === 0) {
+                  return row;
+                }
+                const nextReplies = stripTree(row.replies);
+                if (nextReplies.length === row.replies.length) return row;
+                return {
+                  ...row,
+                  replies: nextReplies,
+                  replyCount: nextReplies.length,
+                };
+              })
+              .filter(Boolean);
+
+          const nextComments = stripTree(post.comments);
+          const nextCount = Math.max(
+            0,
+            (post.stats?.comments ?? post.commentCount ?? 0) - removed,
           );
           return {
             ...post,
-            comments,
-            commentCount: Math.max(0, (post.commentCount || comments.length + 1) - 1),
+            comments: nextComments,
+            commentCount: nextCount,
+            stats: {
+              ...(post.stats || {}),
+              comments: nextCount,
+            },
           };
         };
         state.posts = state.posts.map(stripComment);
@@ -172,16 +252,36 @@ const feedSlice = createSlice({
       .addCase(reactToPost.fulfilled, (state, action) => {
         state.reactingId = null;
         const { postId, data } = action.payload;
+        const myReaction =
+          data?.myReaction !== undefined
+            ? data.myReaction
+            : data?.reacted
+              ? data?.type ?? null
+              : data?.reacted === false
+                ? null
+                : undefined;
+        const reactionCount =
+          data?.reactionCount ?? data?.stats?.reactions ?? undefined;
+
         const applyReaction = (post) => {
           if (!post || post.id !== postId) return post;
+
+          const nextMyReaction =
+            myReaction !== undefined ? myReaction : post.myReaction;
+          const nextCount =
+            reactionCount !== undefined
+              ? reactionCount
+              : (post.stats?.reactions ?? post.reactionCount ?? 0);
+
           return {
             ...post,
-            ...(data && typeof data === "object" ? data : {}),
-            myReaction: data?.myReaction ?? data?.type ?? post.myReaction,
-            reactionCount:
-              data?.reactionCount ??
-              data?.stats?.reactions ??
-              post.reactionCount,
+            myReaction: nextMyReaction,
+            reactionCount: nextCount,
+            reactionCounts: data?.reactionCounts ?? post.reactionCounts,
+            stats: {
+              ...(post.stats || {}),
+              reactions: nextCount,
+            },
           };
         };
         state.posts = state.posts.map(applyReaction);
@@ -189,6 +289,56 @@ const feedSlice = createSlice({
       })
       .addCase(reactToPost.rejected, (state, action) => {
         state.reactingId = null;
+        state.error = action.payload;
+      })
+      .addCase(likeComment.pending, (state, action) => {
+        state.likingCommentId = action.meta.arg?.commentId || null;
+        state.error = null;
+      })
+      .addCase(likeComment.fulfilled, (state, action) => {
+        state.likingCommentId = null;
+        const { postId, commentId, data } = action.payload;
+        const liked = Boolean(data?.liked ?? data?.isLiked);
+        const likeCount =
+          data?.likeCount ??
+          (typeof data?.likesCount === "number" ? data.likesCount : undefined);
+
+        const applyLike = (post) => {
+          if (!post || post.id !== postId) return post;
+
+          const patchTree = (list = []) =>
+            list.map((comment) => {
+              const next =
+                comment.id === commentId
+                  ? {
+                      ...comment,
+                      liked,
+                      isLiked: liked,
+                      likeCount:
+                        likeCount !== undefined
+                          ? likeCount
+                          : Math.max(
+                              0,
+                              (comment.likeCount ?? 0) + (liked ? 1 : -1),
+                            ),
+                    }
+                  : comment;
+              if (!Array.isArray(comment.replies) || comment.replies.length === 0) {
+                return next;
+              }
+              return { ...next, replies: patchTree(comment.replies) };
+            });
+
+          return {
+            ...post,
+            comments: patchTree(post.comments),
+          };
+        };
+        state.posts = state.posts.map(applyLike);
+        state.selectedPost = applyLike(state.selectedPost);
+      })
+      .addCase(likeComment.rejected, (state, action) => {
+        state.likingCommentId = null;
         state.error = action.payload;
       });
   },

@@ -1,30 +1,34 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import Pagination from '@/components/common/Pagination/Pagination';
-import { CardSkeleton } from '@/components/common/Skeleton';
-import Container from '@/components/ui/Container';
-import GeneralPostCard from '@/components/data-display/GeneralPostCard/GeneralPostCard';
-import GeneralToolbar from '@/modules/user/components/general/GeneralToolbar';
-import CreateGeneralPostModal from '@/shared/pages/general/CreateGeneralPostModal';
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Pagination from "@/components/common/Pagination/Pagination";
+import { CardSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
+import Container from "@/components/ui/Container";
+import GeneralPostCard from "@/components/data-display/GeneralPostCard/GeneralPostCard";
+import GeneralToolbar from "@/modules/user/components/general/GeneralToolbar";
+import CreateGeneralPostModal from "@/shared/pages/general/CreateGeneralPostModal";
 import {
   fetchGeneralPosts,
   createGeneralPost,
+  updateGeneralPost,
   removeGeneralPost,
   clearGeneralError,
+  invalidateGeneralPostsList,
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
-} from '@/features/user/general';
-import { GRID_PAGE_SIZE } from '@/shared/hooks/usePaginatedList';
+  postToFormValues,
+} from "@/features/user/general";
+import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
-const BASE = '/general';
+const BASE = "/general";
 
 const buildMyPostsQuery = ({ page, category }) => {
   const params = {
     page,
     pageSize: GRID_PAGE_SIZE,
-    sort: 'desc',
+    sort: "desc",
     mine: true,
   };
   const type = categoryToApi(category);
@@ -37,15 +41,13 @@ const MyGeneralPostsView = () => {
   const { posts, postsMeta, postsLoading, saving, deleting, error } =
     useSelector((state) => state.userGeneral);
 
-  const [category, setCategory] = useState('All');
+  const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
-  useEffect(() => {
-    setPage(1);
-  }, [category]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     dispatch(clearGeneralError());
     dispatch(fetchGeneralPosts(buildMyPostsQuery({ page, category })));
   }, [dispatch, page, category]);
@@ -61,34 +63,97 @@ const MyGeneralPostsView = () => {
 
   const totalPages = Math.max(1, postsMeta?.totalPages || 1);
 
-  const handleDelete = async (postId) => {
-    const result = await dispatch(removeGeneralPost(postId));
-    if (removeGeneralPost.fulfilled.match(result)) {
-      toast.success('Post deleted');
-      return;
-    }
-    toast.error(result.payload || 'Failed to delete post');
+  const handleCategoryChange = (next) => {
+    if (next === category) return;
+    dispatch(invalidateGeneralPostsList());
+    setCategory(next);
+    setPage(1);
   };
 
-  const handleCreate = async (form) => {
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateGeneralPostsList());
+    setPage(next);
+  };
+
+  const handleOpenCreate = () => {
+    setEditingPost(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (postId) => {
+    const post = pageItems.find((item) => item.id === postId);
+    if (!post) return;
+    setEditingPost(post);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    if (saving) return;
+    setModalOpen(false);
+    setEditingPost(null);
+  };
+
+  const handleDeleteRequest = (postId) => {
+    if (deleting) return;
+    const post = pageItems.find((item) => item.id === postId);
+    if (!post) return;
+    setPendingDelete(post);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeGeneralPost(pendingDelete.id));
+    if (removeGeneralPost.fulfilled.match(result)) {
+      toast.success("Post deleted");
+      setPendingDelete(null);
+      return;
+    }
+    toast.error(result.payload || "Failed to delete post");
+  };
+
+  const handleSubmit = async (form) => {
     const payload = formToCreatePayload(form);
     if (!payload.title) {
-      toast.error('Title is required');
+      toast.error("Title is required");
       return false;
     }
-    if (payload.type === 'DOCUMENT' && !payload.documentUrl) {
-      toast.error('Document URL is required');
+    if (payload.type === "DOCUMENT" && !payload.documentUrl) {
+      toast.error("Document URL is required");
+      return false;
+    }
+
+    if (editingPost?.id) {
+      // Allow clearing cover image on update (backend accepts null)
+      if (!form.imageUrl) payload.imageUrl = null;
+
+      const result = await dispatch(
+        updateGeneralPost({ postId: editingPost.id, payload }),
+      );
+      if (updateGeneralPost.fulfilled.match(result)) {
+        toast.success("Post updated");
+        setEditingPost(null);
+        return true;
+      }
+      toast.error(result.payload || "Failed to update post");
       return false;
     }
 
     const result = await dispatch(createGeneralPost(payload));
     if (createGeneralPost.fulfilled.match(result)) {
-      toast.success('Post published');
+      toast.success("Post published");
+      dispatch(invalidateGeneralPostsList());
       dispatch(fetchGeneralPosts(buildMyPostsQuery({ page: 1, category })));
       setPage(1);
       return true;
     }
-    toast.error(result.payload || 'Failed to create post');
+    toast.error(result.payload || "Failed to create post");
     return false;
   };
 
@@ -97,13 +162,13 @@ const MyGeneralPostsView = () => {
       <Container>
         <GeneralToolbar
           category={category}
-          onCategoryChange={setCategory}
+          onCategoryChange={handleCategoryChange}
           activeView="mine"
-          onCreatePost={() => setModalOpen(true)}
+          onCreatePost={handleOpenCreate}
           myPostHref={`${BASE}/my-posts`}
         />
 
-        {postsLoading && !pageItems.length ? (
+        {postsLoading ? (
           <CardSkeleton
             variant="generalPost"
             count={GRID_PAGE_SIZE}
@@ -118,14 +183,15 @@ const MyGeneralPostsView = () => {
                   post={post}
                   variant="mine"
                   detailHref={`${BASE}/${post.id}`}
-                  onDelete={deleting ? undefined : handleDelete}
+                  onEdit={handleEdit}
+                  onDelete={deleting ? undefined : handleDeleteRequest}
                 />
               ))}
             </div>
             <Pagination
               page={page}
               totalPages={totalPages}
-              onPageChange={setPage}
+              onPageChange={handlePageChange}
               className="mt-8"
             />
           </>
@@ -135,16 +201,42 @@ const MyGeneralPostsView = () => {
               No posts yet
             </p>
             <p className="mt-2 text-[14px] text-[#64748B] sm:text-[15px]">
-              Share industry news or documentation with the laboratory community.
+              Share industry news or documentation with the laboratory
+              community.
             </p>
           </div>
         )}
 
         <CreateGeneralPostModal
           open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSubmit={handleCreate}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmit}
           saving={saving}
+          mode={editingPost ? "edit" : "create"}
+          initialValues={
+            editingPost ? postToFormValues(editingPost) : null
+          }
+        />
+
+        <ConfirmModal
+          open={Boolean(pendingDelete)}
+          title="Delete post?"
+          description={
+            pendingDelete ? (
+              <p className="text-[14px] leading-relaxed text-[#64748B]">
+                This will permanently remove{" "}
+                <span className="font-semibold text-deep-blue">
+                  {pendingDelete.title || "this post"}
+                </span>
+                . This action cannot be undone.
+              </p>
+            ) : null
+          }
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirming={deleting}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
         />
       </Container>
     </main>
