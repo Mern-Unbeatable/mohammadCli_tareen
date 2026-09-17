@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import Container from '@/components/ui/Container';
-import NotFound from '@/shared/pages/NotFound';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import Container from "@/components/ui/Container";
+import { BlogDetailSkeleton } from "@/components/common/Skeleton";
+import NotFound from "@/shared/pages/NotFound";
 import {
   fetchBlogBySlug,
   fetchLatestBlogs,
@@ -12,19 +12,16 @@ import {
   clearBlogsError,
   toBlogCardModel,
   toBlogDetailModel,
-} from '@/features/user/blogs';
+} from "@/features/user/blogs";
 
-const BLOG_BASE = '/blogs';
+const BLOG_BASE = "/blogs";
 
 const BlogDetailView = () => {
   const { slug } = useParams();
   const dispatch = useDispatch();
-  const {
-    selectedBlog,
-    selectedBlogLoading,
-    latestBlogs,
-    error,
-  } = useSelector((state) => state.userBlogs);
+  const { selectedBlog, selectedBlogLoading, latestBlogs, error } = useSelector(
+    (state) => state.userBlogs,
+  );
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -64,9 +61,14 @@ const BlogDetailView = () => {
 
   if (selectedBlogLoading || (!detail && !error)) {
     return (
-      <main className="flex h-64 items-center justify-center">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-        <span className="text-[14px] text-[#64748B]">Loading article…</span>
+      <main>
+        <div className="py-5 sm:py-8">
+          <Container className="max-w-[960px]">
+            <div className="xl:max-w-none">
+              <BlogDetailSkeleton />
+            </div>
+          </Container>
+        </div>
       </main>
     );
   }
