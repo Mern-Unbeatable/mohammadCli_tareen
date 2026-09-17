@@ -44,6 +44,19 @@ export const createGeneralPost = createAsyncThunk(
   },
 );
 
+export const updateGeneralPost = createAsyncThunk(
+  "userGeneral/updateGeneralPost",
+  async ({ postId, payload }, { rejectWithValue }) => {
+    try {
+      return await generalApi.updatePost(postId, payload);
+    } catch (err) {
+      return rejectWithValue(
+        generalApi.getApiErrorMessage(err, "Failed to update post"),
+      );
+    }
+  },
+);
+
 export const removeGeneralPost = createAsyncThunk(
   "userGeneral/removeGeneralPost",
   async (postId, { rejectWithValue }) => {

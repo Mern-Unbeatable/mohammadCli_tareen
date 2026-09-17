@@ -1,21 +1,21 @@
-import { Link } from 'react-router';
-import PanelPageHeader from '@/shared/layout/PanelLayout/PanelPageHeader';
-import { panelPrimaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
-import { generalCategories } from '@/modules/user/data/general';
+import { Link } from "react-router";
+import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
+import { panelPrimaryBtn } from "@/shared/layout/PanelLayout/panelPageTheme";
+import { generalCategories } from "@/modules/user/data/general";
 
 const actionBtn =
-  'inline-flex items-center justify-center rounded-md px-3 py-2 text-[12px] font-semibold transition-colors';
+  "inline-flex items-center justify-center rounded-md px-3 py-2 text-[12px] font-semibold transition-colors";
 
 const GeneralToolbar = ({
   category,
   onCategoryChange,
-  activeView = 'browse',
+  activeView = "browse",
   onCreatePost,
   showMyPost = true,
   showCreatePost = true,
-  myPostHref = '/general/my-posts',
+  myPostHref = "/general/my-posts",
 }) => (
-  <div className="space-y-3">
+  <div className="space-y-3 mb-4 md:mb-6 lg:mb-8">
     <PanelPageHeader
       title="General"
       subtitle="Events, training, industry news, and documentation for the laboratory community."
@@ -25,16 +25,20 @@ const GeneralToolbar = ({
             <Link
               to={myPostHref}
               className={`${actionBtn} w-full sm:w-auto ${
-                activeView === 'mine'
-                  ? 'bg-green-secondary text-green-primary'
-                  : 'border border-green-primary/30 text-green-primary hover:bg-green-secondary'
+                activeView === "mine"
+                  ? "bg-green-secondary text-green-primary"
+                  : "border border-green-primary/30 text-green-primary hover:bg-green-secondary"
               }`}
             >
               My Post
             </Link>
           ) : null}
           {showCreatePost ? (
-            <button type="button" onClick={onCreatePost} className={`${panelPrimaryBtn} w-full sm:w-auto`}>
+            <button
+              type="button"
+              onClick={onCreatePost}
+              className={`${panelPrimaryBtn} w-full sm:w-auto`}
+            >
               Create Post
             </button>
           ) : null}
@@ -52,8 +56,8 @@ const GeneralToolbar = ({
             onClick={() => onCategoryChange(item)}
             className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors ${
               isActive
-                ? 'bg-[#E67E22] text-white'
-                : 'border border-[#E4E7EC] bg-white text-[#475467] hover:border-[#D0D5DD] hover:text-deep-blue'
+                ? "bg-[#E67E22] text-white"
+                : "border border-[#E4E7EC] bg-white text-[#475467] hover:border-[#D0D5DD] hover:text-deep-blue"
             }`}
           >
             {item}
