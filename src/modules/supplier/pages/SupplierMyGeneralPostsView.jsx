@@ -172,6 +172,7 @@ const SupplierMyGeneralPostsView = () => {
         onCategoryChange={handleCategoryChange}
         activeView="mine"
         onCreatePost={handleOpenCreate}
+        browseHref={BASE}
         myPostHref={`${BASE}/my-posts`}
       />
 

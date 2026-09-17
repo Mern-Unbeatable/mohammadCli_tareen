@@ -83,6 +83,7 @@ const AdminGeneralView = () => {
         category={category}
         onCategoryChange={setCategory}
         activeView="browse"
+        showBrowse={false}
         showMyPost={false}
         showCreatePost={false}
       />

@@ -103,6 +103,7 @@ const SupplierGeneralView = () => {
         onCategoryChange={handleCategoryChange}
         activeView="browse"
         onCreatePost={() => setModalOpen(true)}
+        browseHref={BASE}
         myPostHref={`${BASE}/my-posts`}
       />
 
