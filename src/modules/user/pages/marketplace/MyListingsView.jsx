@@ -80,7 +80,7 @@ const MyListingsView = () => {
         <section className="mt-6">
           <h2 className="mb-4 text-[16px] font-bold text-deep-blue">My listings</h2>
 
-          {listingsLoading && !filtered.length ? (
+          {listingsLoading ? (
             <CardSkeleton
               variant="listing"
               count={GRID_PAGE_SIZE}

@@ -80,6 +80,52 @@ export async function createListing(payload) {
   return unwrapApiData(response) || response;
 }
 
+/**
+ * Upload a single file via /uploads.
+ * Field name must be `file` (matches multer upload.single("file")).
+ */
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.USER.UPLOADS.SINGLE,
+    formData,
+    null,
+    { timeout: 60000 },
+  );
+  const data = unwrapApiData(response) || response;
+  if (!data?.url) {
+    throw new Error("Upload did not return a file URL");
+  }
+  return data;
+}
+
+/**
+ * Upload multiple files via /uploads/multiple.
+ * Field name must be `files` (matches multer upload.array("files", 12)).
+ */
+export async function uploadFiles(files = []) {
+  const list = Array.from(files).filter(Boolean);
+  if (!list.length) return [];
+
+  const formData = new FormData();
+  list.forEach((file) => formData.append("files", file));
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.USER.UPLOADS.MULTIPLE,
+    formData,
+    null,
+    { timeout: 120000 },
+  );
+  const data = unwrapApiData(response) || response;
+  const rows = Array.isArray(data) ? data : [];
+  if (!rows.length || rows.some((row) => !row?.url)) {
+    throw new Error("Upload did not return file URLs");
+  }
+  return rows;
+}
+
 export async function updateListing(listingId, payload) {
   const response = await crudService.patch(
     API_ENDPOINTS.USER.MARKETPLACE.UPDATE(listingId),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
@@ -10,6 +10,7 @@ import {
   requestContactConnection,
   acceptConnection,
   clearContactsError,
+  invalidateContactsList,
   COUNTRY_OPTIONS,
   toContactCardModel,
 } from "@/features/user/contacts";
@@ -43,7 +44,6 @@ const buildContactsQuery = ({ page, search, country, filter }) => {
   }
 
   if (filter === "connected") {
-    // Server-side ACCEPTED connections for the authenticated user
     params.status = "accepted";
     return params;
   }
@@ -85,13 +85,16 @@ const ContactsView = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (query === debouncedQuery) return;
+      dispatch(invalidateContactsList());
       setDebouncedQuery(query);
       setPage(1);
     }, 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, debouncedQuery, dispatch]);
 
-  useEffect(() => {
+  // Run before paint so skeletons replace stale cards immediately on filter/page change
+  useLayoutEffect(() => {
     dispatch(clearContactsError());
     dispatch(
       fetchContactsList(
@@ -122,8 +125,22 @@ const ContactsView = () => {
 
   const handleFilterChange = (next) => {
     if (next === filter) return;
+    dispatch(invalidateContactsList());
     setFilter(next);
     setPage(1);
+  };
+
+  const handleCountryChange = (next) => {
+    if (next === country) return;
+    dispatch(invalidateContactsList());
+    setCountry(next);
+    setPage(1);
+  };
+
+  const handlePageChange = (next) => {
+    if (next === page) return;
+    dispatch(invalidateContactsList());
+    setPage(next);
   };
 
   const handleConnect = async (id) => {
@@ -169,10 +186,7 @@ const ContactsView = () => {
 
           <select
             value={country}
-            onChange={(e) => {
-              setCountry(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => handleCountryChange(e.target.value)}
             aria-label="Filter by country"
             className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[180px]"
           >
@@ -198,7 +212,7 @@ const ContactsView = () => {
         </div>
 
         <p className="mb-5 text-[13px] text-[#64748B]">
-          {countLabel(filter, total)}
+          {contactsLoading ? "Loading…" : countLabel(filter, total)}
         </p>
 
         {contactsLoading ? (
@@ -234,7 +248,7 @@ const ContactsView = () => {
         <Pagination
           page={page}
           totalPages={totalPages}
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
           className="mt-8"
         />
       </Container>

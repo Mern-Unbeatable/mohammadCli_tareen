@@ -52,6 +52,17 @@ const contactsSlice = createSlice({
     clearSelectedContact: (state) => {
       state.selectedContact = null;
     },
+    /** Sync: show skeletons before paint when filter/page/search changes */
+    invalidateContactsList: (state) => {
+      state.contactsLoading = true;
+      state.contacts = [];
+      state.contactsMeta = {
+        ...state.contactsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -185,6 +196,6 @@ const contactsSlice = createSlice({
   },
 });
 
-export const { clearContactsError, clearSelectedContact } =
+export const { clearContactsError, clearSelectedContact, invalidateContactsList } =
   contactsSlice.actions;
 export default contactsSlice.reducer;

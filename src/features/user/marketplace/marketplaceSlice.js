@@ -48,6 +48,12 @@ const marketplaceSlice = createSlice({
       .addCase(fetchListings.pending, (state) => {
         state.listingsLoading = true;
         state.error = null;
+        state.listings = [];
+        state.listingsMeta = {
+          ...state.listingsMeta,
+          total: 0,
+          totalPages: 1,
+        };
       })
       .addCase(fetchListings.fulfilled, (state, action) => {
         state.listingsLoading = false;
