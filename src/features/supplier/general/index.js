@@ -17,6 +17,7 @@ export {
   fetchSupplierGeneralPosts,
   fetchSupplierGeneralPostDetails,
   createSupplierGeneralPost,
+  updateSupplierGeneralPost,
   removeSupplierGeneralPost,
 } from "./generalThunks";
 export {
@@ -24,6 +25,7 @@ export {
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
+  postToFormValues,
   formatPostDate,
   formatDisplayDate,
 } from "./generalMappers";

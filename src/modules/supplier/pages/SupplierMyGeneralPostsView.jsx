@@ -11,12 +11,14 @@ import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
 import {
   fetchSupplierGeneralPosts,
   createSupplierGeneralPost,
+  updateSupplierGeneralPost,
   removeSupplierGeneralPost,
   clearGeneralError,
   invalidateGeneralPostsList,
   categoryToApi,
   toGeneralPostModel,
   formToCreatePayload,
+  postToFormValues,
 } from "@/features/supplier/general";
 import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 
@@ -42,6 +44,7 @@ const SupplierMyGeneralPostsView = () => {
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   useLayoutEffect(() => {
@@ -75,6 +78,24 @@ const SupplierMyGeneralPostsView = () => {
     setPage(next);
   };
 
+  const handleOpenCreate = () => {
+    setEditingPost(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (postId) => {
+    const post = pageItems.find((item) => item.id === postId);
+    if (!post) return;
+    setEditingPost(post);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    if (saving) return;
+    setModalOpen(false);
+    setEditingPost(null);
+  };
+
   const handleDeleteRequest = (postId) => {
     if (deleting) return;
     const post = pageItems.find((item) => item.id === postId);
@@ -101,7 +122,7 @@ const SupplierMyGeneralPostsView = () => {
     toast.error(result.payload || "Failed to delete post");
   };
 
-  const handleCreate = async (form) => {
+  const handleSubmit = async (form) => {
     const payload = formToCreatePayload(form);
     if (!payload.title) {
       toast.error("Title is required");
@@ -109,6 +130,24 @@ const SupplierMyGeneralPostsView = () => {
     }
     if (payload.type === "DOCUMENT" && !payload.documentUrl) {
       toast.error("Document URL is required");
+      return false;
+    }
+
+    if (editingPost?.id) {
+      if (!form.imageUrl) payload.imageUrl = null;
+
+      const result = await dispatch(
+        updateSupplierGeneralPost({
+          postId: editingPost.id,
+          payload,
+        }),
+      );
+      if (updateSupplierGeneralPost.fulfilled.match(result)) {
+        toast.success("Post updated");
+        setEditingPost(null);
+        return true;
+      }
+      toast.error(result.payload || "Failed to update post");
       return false;
     }
 
@@ -132,7 +171,7 @@ const SupplierMyGeneralPostsView = () => {
         category={category}
         onCategoryChange={handleCategoryChange}
         activeView="mine"
-        onCreatePost={() => setModalOpen(true)}
+        onCreatePost={handleOpenCreate}
         myPostHref={`${BASE}/my-posts`}
       />
 
@@ -151,6 +190,7 @@ const SupplierMyGeneralPostsView = () => {
                 post={post}
                 variant="mine"
                 detailHref={`${BASE}/${post.id}`}
+                onEdit={handleEdit}
                 onDelete={deleting ? undefined : handleDeleteRequest}
               />
             ))}
@@ -175,9 +215,11 @@ const SupplierMyGeneralPostsView = () => {
 
       <CreateGeneralPostModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleCreate}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmit}
         saving={saving}
+        mode={editingPost ? "edit" : "create"}
+        initialValues={editingPost ? postToFormValues(editingPost) : null}
       />
 
       <ConfirmModal
