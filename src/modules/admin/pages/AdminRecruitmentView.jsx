@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { ChevronDown } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import JobCard from "@/components/data-display/JobCard/JobCard";
 import PanelPage from "@/shared/layout/PanelLayout/PanelPage";
@@ -56,13 +57,14 @@ const buildJobsQuery = ({ page, timeFilter, level }) => {
 
 const AdminRecruitmentView = () => {
   const dispatch = useDispatch();
-  const { jobs, jobsMeta, jobsLoading, error } = useSelector(
+  const { jobs, jobsMeta, jobsLoading, deleting, error } = useSelector(
     (state) => state.adminRecruitment,
   );
 
   const [timeFilter, setTimeFilter] = useState("All Time");
   const [level, setLevel] = useState("All");
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     setPage(1);
@@ -77,10 +79,25 @@ const AdminRecruitmentView = () => {
     [jobs],
   );
 
-  const handleDelete = async (jobId) => {
-    const result = await dispatch(removeJob(jobId));
+  const handleDeleteRequest = (jobId) => {
+    if (deleting) return;
+    const job = pageItems.find((item) => item.id === jobId);
+    if (!job) return;
+    setPendingDelete(job);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removeJob(pendingDelete.id));
     if (removeJob.fulfilled.match(result)) {
       toast.success("Job deleted");
+      setPendingDelete(null);
       return;
     }
     toast.error(result.payload || "Failed to delete job");
@@ -133,7 +150,7 @@ const AdminRecruitmentView = () => {
               job={job}
               variant="admin"
               detailHref={`/admin/recruitment/${job.id}`}
-              onDelete={handleDelete}
+              onDelete={deleting ? undefined : handleDeleteRequest}
             />
           ))}
         </div>
@@ -144,6 +161,36 @@ const AdminRecruitmentView = () => {
         totalPages={jobsMeta?.totalPages || 1}
         onPageChange={setPage}
         className="mt-2"
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete job post?"
+        description={
+          pendingDelete ? (
+            <p className="text-[14px] leading-relaxed text-[#64748B]">
+              This will permanently remove{" "}
+              <span className="font-semibold text-deep-blue">
+                {pendingDelete.title || "this job"}
+              </span>
+              {pendingDelete.company ? (
+                <>
+                  {" "}
+                  at{" "}
+                  <span className="font-semibold text-deep-blue">
+                    {pendingDelete.company}
+                  </span>
+                </>
+              ) : null}
+              . This action cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </PanelPage>
   );
