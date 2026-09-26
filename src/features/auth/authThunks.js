@@ -109,6 +109,22 @@ export const forgotPassword = createAsyncThunk(
   },
 );
 
+// `meta.status` lets the page tell an invalid/expired link (400) apart from
+// validation (422), rate-limit (429) and network errors.
+export const verifyResetToken = createAsyncThunk(
+  "auth/verifyResetToken",
+  async (token, { rejectWithValue }) => {
+    try {
+      return await authApi.verifyResetToken(token);
+    } catch (err) {
+      return rejectWithValue(
+        authApi.getApiErrorMessage(err, "Could not check this reset link"),
+        { status: err?.status ?? null },
+      );
+    }
+  },
+);
+
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (input, { rejectWithValue }) => {
@@ -117,6 +133,7 @@ export const resetPassword = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         authApi.getApiErrorMessage(err, "Failed to reset password"),
+        { status: err?.status ?? null },
       );
     }
   },

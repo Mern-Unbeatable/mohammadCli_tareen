@@ -117,6 +117,14 @@ export async function forgotPassword(email) {
   return unwrapApiData(response) ?? response;
 }
 
+export async function verifyResetToken(token) {
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN,
+    { token },
+  );
+  return unwrapApiData(response) ?? response;
+}
+
 export async function resetPassword({ token, password, confirmPassword }) {
   const response = await axiosInstance.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
     token,
