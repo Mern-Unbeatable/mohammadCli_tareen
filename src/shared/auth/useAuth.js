@@ -7,13 +7,16 @@ import {
   fetchUserProfile,
   refreshSession,
   changePassword,
+  forgotPassword,
+  resetPassword,
   clearError,
 } from "@/features/auth";
 import { normalizeAppRole, roleHomePath } from "@/shared/constants/roles";
 
 /**
  * Auth hook — mirrors Postman Auth flow:
- * login / register / refresh / logout / me / changePassword
+ * login / register / refresh / logout / me / changePassword /
+ * forgotPassword / resetPassword
  */
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -98,6 +101,28 @@ export const useAuth = () => {
     return { ok: false, error: message };
   };
 
+  const requestPasswordReset = async (email) => {
+    const resultAction = await dispatch(forgotPassword(email));
+    if (forgotPassword.fulfilled.match(resultAction)) {
+      return { ok: true, message: resultAction.payload?.message };
+    }
+    return {
+      ok: false,
+      error: resultAction.payload || "Failed to send reset link.",
+    };
+  };
+
+  const confirmPasswordReset = async (input) => {
+    const resultAction = await dispatch(resetPassword(input));
+    if (resetPassword.fulfilled.match(resultAction)) {
+      return { ok: true, message: resultAction.payload?.message };
+    }
+    return {
+      ok: false,
+      error: resultAction.payload || "Failed to reset password.",
+    };
+  };
+
   return {
     user,
     token,
@@ -112,6 +137,8 @@ export const useAuth = () => {
     refresh,
     fetchProfile,
     changePassword: updatePassword,
+    forgotPassword: requestPasswordReset,
+    resetPassword: confirmPasswordReset,
     clearError: () => dispatch(clearError()),
     homePath,
     isUser: role === "USER",

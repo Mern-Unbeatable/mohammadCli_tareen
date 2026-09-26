@@ -21,5 +21,7 @@ export {
   refreshSession,
   logoutUser,
   changePassword,
+  forgotPassword,
+  resetPassword,
 } from "./authThunks";
 export * as authApi from "./authApi";

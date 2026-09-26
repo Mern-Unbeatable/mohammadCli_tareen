@@ -108,6 +108,25 @@ export async function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// Forgot / reset password
+// ═══════════════════════════════════════════════════════════════════════
+export async function forgotPassword(email) {
+  const response = await axiosInstance.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, {
+    email,
+  });
+  return unwrapApiData(response) ?? response;
+}
+
+export async function resetPassword({ token, password, confirmPassword }) {
+  const response = await axiosInstance.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+    token,
+    password,
+    confirmPassword,
+  });
+  return unwrapApiData(response) ?? response;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // Me (current user)
 // ═══════════════════════════════════════════════════════════════════════
 export async function me() {

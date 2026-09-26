@@ -4,10 +4,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
 import { getSafeRedirectPath } from '@/shared/routing/safeRedirect';
-
-const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
-const inputClass =
-  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-gray-100';
+import { inputClass, labelClass } from '@/modules/auth/components/AuthFormFields';
 
 const LoginView = () => {
   const navigate = useNavigate();
@@ -111,7 +108,11 @@ const LoginView = () => {
                 />
                 <span className="text-[14px] text-[#475467]">Keep me signed in</span>
               </label>
-              <Link to="#" className="text-[14px] font-medium text-primary hover:underline">
+              <Link
+                to="/forgot-password"
+                state={email ? { email } : undefined}
+                className="text-[14px] font-medium text-primary hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
