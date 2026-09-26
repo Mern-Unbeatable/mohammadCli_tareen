@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { IoIosArrowDown } from 'react-icons/io';
-import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
 import { getSafeRedirectPath } from '@/shared/routing/safeRedirect';
+import {
+  inputClass,
+  labelClass,
+  PasswordField,
+  PasswordStrength,
+} from '@/modules/auth/components/AuthFormFields';
 
-const labelClass = 'mb-1.5 block text-base font-medium text-deep-blue';
-const inputClass =
-  'w-full rounded-md border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-[15px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-gray-100';
 const selectClass = `${inputClass} appearance-none pr-10`;
 
 const SelectField = ({ id, label, value, onChange, children, disabled }) => (
@@ -40,35 +43,6 @@ const profileOptions = [
 
 const countries = ['Belgium', 'France', 'Germany', 'Netherlands', 'United Kingdom', 'United States'];
 
-const PasswordField = ({ id, label, value, onChange, visible, onToggle, disabled }) => (
-  <div>
-    <label htmlFor={id} className={labelClass}>
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        id={id}
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`${inputClass} pr-10`}
-        placeholder="••••••••"
-        required
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
-        aria-label={visible ? 'Hide password' : 'Show password'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#64748B]"
-      >
-        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
-  </div>
-);
-
 const RegisterView = () => {
   const navigate = useNavigate();
   const { register, loading, homePath } = useAuth();
@@ -87,13 +61,6 @@ const RegisterView = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-
-  const strength = [
-    password.length >= 8,
-    /[A-Z]/.test(password),
-    /\d/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -315,19 +282,7 @@ const RegisterView = () => {
               />
             </div>
 
-            <div>
-              <p className="text-[14px] text-[#64748B]">
-                Use 8+ characters with an uppercase letter, a number and a symbol.
-              </p>
-              <div className="mt-2 flex gap-2">
-                {strength.map((passed, index) => (
-                  <span
-                    key={index}
-                    className={`h-1 flex-1 rounded-full ${passed ? 'bg-primary' : 'bg-[#E4E7EC]'}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <PasswordStrength password={password} />
 
             <label className="flex cursor-pointer items-start gap-2.5">
               <input

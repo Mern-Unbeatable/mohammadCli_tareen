@@ -94,6 +94,35 @@ export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+// Forgot / reset password
+// ═══════════════════════════════════════════════════════════════════════
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async (email, { rejectWithValue }) => {
+    try {
+      return await authApi.forgotPassword(email);
+    } catch (err) {
+      return rejectWithValue(
+        authApi.getApiErrorMessage(err, "Failed to send reset link"),
+      );
+    }
+  },
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async (input, { rejectWithValue }) => {
+    try {
+      return await authApi.resetPassword(input);
+    } catch (err) {
+      return rejectWithValue(
+        authApi.getApiErrorMessage(err, "Failed to reset password"),
+      );
+    }
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════
 // Change password
 // ═══════════════════════════════════════════════════════════════════════
 export const changePassword = createAsyncThunk(
