@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { ArrowLeft, Loader2, MailCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
 import { inputClass, labelClass } from '@/modules/auth/components/AuthFormFields';
+
+/** Matches the server's per-account cooldown between reset emails. */
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const ForgotPasswordView = () => {
   const location = useLocation();
@@ -11,6 +14,20 @@ const ForgotPasswordView = () => {
 
   const [email, setEmail] = useState(location.state?.email || '');
   const [sentTo, setSentTo] = useState('');
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    if (!cooldownUntil) return undefined;
+    const timer = setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= cooldownUntil) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownUntil]);
+
+  const secondsLeft = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
 
   const sendResetLink = async (address) => {
     const result = await forgotPassword(address);
@@ -18,6 +35,9 @@ const ForgotPasswordView = () => {
       toast.error(result.error);
       return;
     }
+    const sentAt = Date.now();
+    setNow(sentAt);
+    setCooldownUntil(sentAt + RESEND_COOLDOWN_SECONDS * 1000);
     setSentTo(address);
     toast.success(result.message || 'Password reset link sent');
   };
@@ -65,10 +85,14 @@ const ForgotPasswordView = () => {
                 <button
                   type="button"
                   onClick={() => sendResetLink(sentTo)}
-                  disabled={loading}
-                  className="font-medium text-primary hover:underline disabled:opacity-60"
+                  disabled={loading || secondsLeft > 0}
+                  className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:no-underline"
                 >
-                  {loading ? 'Sending...' : 'resend the link'}
+                  {loading
+                    ? 'Sending...'
+                    : secondsLeft > 0
+                      ? `resend the link in ${secondsLeft}s`
+                      : 'resend the link'}
                 </button>
                 .
               </p>
