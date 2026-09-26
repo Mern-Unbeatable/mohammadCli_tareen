@@ -8,6 +8,7 @@ import {
   refreshSession,
   changePassword,
   forgotPassword,
+  verifyResetToken,
   resetPassword,
   clearError,
 } from "@/features/auth";
@@ -112,6 +113,18 @@ export const useAuth = () => {
     };
   };
 
+  const checkResetToken = async (resetToken) => {
+    const resultAction = await dispatch(verifyResetToken(resetToken));
+    if (verifyResetToken.fulfilled.match(resultAction)) {
+      return { ok: true, expiresAt: resultAction.payload?.expiresAt };
+    }
+    return {
+      ok: false,
+      status: resultAction.meta?.status ?? null,
+      error: resultAction.payload || "Could not check this reset link.",
+    };
+  };
+
   const confirmPasswordReset = async (input) => {
     const resultAction = await dispatch(resetPassword(input));
     if (resetPassword.fulfilled.match(resultAction)) {
@@ -119,6 +132,7 @@ export const useAuth = () => {
     }
     return {
       ok: false,
+      status: resultAction.meta?.status ?? null,
       error: resultAction.payload || "Failed to reset password.",
     };
   };
@@ -138,6 +152,7 @@ export const useAuth = () => {
     fetchProfile,
     changePassword: updatePassword,
     forgotPassword: requestPasswordReset,
+    verifyResetToken: checkResetToken,
     resetPassword: confirmPasswordReset,
     clearError: () => dispatch(clearError()),
     homePath,
