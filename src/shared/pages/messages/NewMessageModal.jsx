@@ -1,37 +1,39 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { messageRecipients } from '@/modules/user/data/messages';
+import { Loader2, X } from 'lucide-react';
+import RecipientPicker from '@/shared/pages/messages/RecipientPicker';
 
 const fieldClass =
   'w-full rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10';
 
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-deep-blue';
 
-const NewMessageModal = ({ open, onClose, onSend }) => {
-  const [recipientId, setRecipientId] = useState('');
+const NewMessageForm = ({
+  onClose,
+  onSend,
+  recipients,
+  recipientsLoading,
+  onSearchRecipients,
+  initialRecipientId,
+  submitting,
+}) => {
+  const [selected, setSelected] = useState(initialRecipientId ? [initialRecipientId] : []);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!open) return undefined;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [open]);
+  }, []);
 
-  useEffect(() => {
-    if (!open) {
-      setRecipientId('');
-      setMessage('');
-    }
-  }, [open]);
+  const recipientId = selected[0] || '';
+  const canSubmit = Boolean(recipientId) && message.trim().length > 0 && !submitting;
 
-  if (!open) return null;
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSend?.({ recipientId, message });
-    onClose();
+    if (!canSubmit) return;
+    const ok = await onSend?.({ recipientId, message: message.trim() });
+    if (ok !== false) onClose();
   };
 
   return (
@@ -53,7 +55,7 @@ const NewMessageModal = ({ open, onClose, onSend }) => {
               New Message
             </h2>
             <p className="mt-1 text-[13px] text-[#64748B] sm:text-[14px]">
-              Send a new message to anyone in your network.
+              Send a message to someone in your network.
             </p>
           </div>
           <button
@@ -71,23 +73,16 @@ const NewMessageModal = ({ open, onClose, onSend }) => {
           className="overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
         >
           <div className="mb-4">
-            <label htmlFor="recipient" className={labelClass}>
+            <p className={labelClass}>
               Select User<span className="text-pink-light"> *</span>
-            </label>
-            <select
-              id="recipient"
-              value={recipientId}
-              onChange={(e) => setRecipientId(e.target.value)}
-              className={fieldClass}
-              required
-            >
-              <option value="">Choose a contact...</option>
-              {messageRecipients.map(({ id, name }) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            </p>
+            <RecipientPicker
+              recipients={recipients}
+              loading={recipientsLoading}
+              selected={selected}
+              onChange={setSelected}
+              onSearch={onSearchRecipients}
+            />
           </div>
 
           <div>
@@ -98,7 +93,8 @@ const NewMessageModal = ({ open, onClose, onSend }) => {
               id="new-message-body"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={5}
+              rows={4}
+              maxLength={5000}
               placeholder="Write your message..."
               className={`${fieldClass} resize-y`}
               required
@@ -115,8 +111,10 @@ const NewMessageModal = ({ open, onClose, onSend }) => {
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
+              disabled={!canSubmit}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0] disabled:opacity-60"
             >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Send Message
             </button>
           </div>
@@ -125,5 +123,9 @@ const NewMessageModal = ({ open, onClose, onSend }) => {
     </div>
   );
 };
+
+/** Form state resets on every open because the form remounts. */
+const NewMessageModal = ({ open, ...props }) =>
+  open ? <NewMessageForm {...props} /> : null;
 
 export default NewMessageModal;

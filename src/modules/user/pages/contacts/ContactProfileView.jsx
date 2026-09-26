@@ -101,7 +101,7 @@ const ContactProfileView = () => {
             connected={contact.connected}
             pending={contact.pending || connectingId === contact.id}
             onConnect={handleConnect}
-            messageHref="/messages"
+            messageHref={`/messages?user=${contact.id}`}
           />
         </Container>
       </main>

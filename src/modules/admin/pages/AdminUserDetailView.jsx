@@ -146,7 +146,7 @@ const AdminUserDetailView = () => {
           <ProfileHero
             user={profile}
             showMessage
-            messageHref="/admin/chat"
+            messageHref={`/admin/chat?user=${userId}`}
             showEdit={false}
           />
           <ProfessionalInfoCard user={profile} extended />
@@ -163,7 +163,7 @@ const AdminUserDetailView = () => {
           isPremium={profile.membershipStatus === "premium"}
           showEdit={false}
           showMessage
-          messageHref="/admin/chat"
+          messageHref={`/admin/chat?user=${userId}`}
           subscriptionSlot={
             <SubscriptionDetailsCard subscription={profile.subscription} />
           }

@@ -87,7 +87,7 @@ const SupplierContactProfileView = () => {
           connected={contact.connected}
           pending={contact.pending || connectingId === contact.id}
           onConnect={handleConnect}
-          messageHref="/supplier/messages"
+          messageHref={`/supplier/messages?user=${contact.id}`}
         />
       </PanelPage>
 

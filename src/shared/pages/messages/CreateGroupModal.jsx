@@ -1,41 +1,35 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { groupMembers } from '@/modules/user/data/messages';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import RecipientPicker from '@/shared/pages/messages/RecipientPicker';
 
 const fieldClass =
   'w-full rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10';
 
-const CreateGroupModal = ({ open, onClose, onCreate }) => {
+const CreateGroupForm = ({
+  onClose,
+  onCreate,
+  recipients,
+  recipientsLoading,
+  onSearchRecipients,
+  submitting,
+}) => {
   const [groupName, setGroupName] = useState('');
   const [selected, setSelected] = useState([]);
 
   useEffect(() => {
-    if (!open) return undefined;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [open]);
+  }, []);
 
-  useEffect(() => {
-    if (!open) {
-      setGroupName('');
-      setSelected([]);
-    }
-  }, [open]);
+  const canSubmit = groupName.trim().length > 0 && selected.length > 0 && !submitting;
 
-  if (!open) return null;
-
-  const toggleMember = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onCreate?.({ name: groupName, members: selected });
-    onClose();
+    if (!canSubmit) return;
+    const ok = await onCreate?.({ name: groupName.trim(), members: selected });
+    if (ok !== false) onClose();
   };
 
   return (
@@ -77,27 +71,23 @@ const CreateGroupModal = ({ open, onClose, onCreate }) => {
             type="text"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
+            maxLength={160}
             placeholder="e.g. Microbiology Network EU"
             className={fieldClass}
             required
           />
 
-          <p className="mb-2 mt-5 text-[13px] font-semibold text-deep-blue">Add Members</p>
-          <ul className="space-y-1">
-            {groupMembers.map(({ id, name }) => (
-              <li key={id}>
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-[#F9FAFB]">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(id)}
-                    onChange={() => toggleMember(id)}
-                    className="h-4 w-4 rounded border-[#D0D5DD] text-primary focus:ring-primary/20"
-                  />
-                  <span className="text-[14px] text-[#475467]">{name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
+          <p className="mb-2 mt-5 text-[13px] font-semibold text-deep-blue">
+            Add Members{selected.length ? ` (${selected.length})` : ''}
+          </p>
+          <RecipientPicker
+            multiple
+            recipients={recipients}
+            loading={recipientsLoading}
+            selected={selected}
+            onChange={setSelected}
+            onSearch={onSearchRecipients}
+          />
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button
@@ -109,8 +99,10 @@ const CreateGroupModal = ({ open, onClose, onCreate }) => {
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0]"
+              disabled={!canSubmit}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#066BB0] disabled:opacity-60"
             >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Create Group
             </button>
           </div>
@@ -119,5 +111,9 @@ const CreateGroupModal = ({ open, onClose, onCreate }) => {
     </div>
   );
 };
+
+/** Form state resets on every open because the form remounts. */
+const CreateGroupModal = ({ open, ...props }) =>
+  open ? <CreateGroupForm {...props} /> : null;
 
 export default CreateGroupModal;
