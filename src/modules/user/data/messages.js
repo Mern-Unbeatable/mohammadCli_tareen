@@ -1,12 +1,7 @@
-export const messageRecipients = [
-  { id: 'marcus-weber', name: 'Dr. Marcus Weber' },
-  { id: 'isabelle-fontaine', name: 'Isabelle Fontaine' },
-  { id: 'james-thornton', name: 'James Thornton' },
-  { id: 'carlos-rodrigues', name: 'Carlos Rodrigues' },
-];
-
-export const groupMembers = messageRecipients;
-
+/**
+ * Demo conversations for the developer component catalog only.
+ * Real inboxes load data from the messages API.
+ */
 export const directChats = [
   {
     id: 'marcus-weber',
@@ -162,7 +157,3 @@ export const groupChats = [
     ],
   },
 ];
-
-export const getDirectChat = (id) => directChats.find((chat) => chat.id === id);
-
-export const getGroupChat = (id) => groupChats.find((chat) => chat.id === id);

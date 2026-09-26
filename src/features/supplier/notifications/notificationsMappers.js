@@ -78,6 +78,9 @@ const notificationVisual = (type) => {
 export function toSupplierLink(link) {
   if (!link) return null;
   if (link.startsWith("/supplier/")) return link;
+  if (link === "/messages" || link.startsWith("/messages?")) {
+    return `/supplier${link}`;
+  }
   if (link.startsWith("/contacts/")) {
     return `/supplier${link}`;
   }

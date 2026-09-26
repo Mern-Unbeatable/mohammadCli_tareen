@@ -33,6 +33,28 @@ export const API_ENDPOINTS = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════
+  // Messaging (all roles; realtime events arrive over Socket.IO)
+  // ═══════════════════════════════════════════════════════════════════════
+  MESSAGES: {
+    LIST: "/messages",
+    RECIPIENTS: "/messages/recipients",
+    DIRECT: "/messages/direct",
+    GROUP: "/messages/group",
+    DETAILS: (conversationId) => `/messages/${conversationId}`,
+    RENAME: (conversationId) => `/messages/${conversationId}`,
+    THREAD: (conversationId) => `/messages/${conversationId}/messages`,
+    SEND: (conversationId) => `/messages/${conversationId}/messages`,
+    DELETE_MESSAGE: (conversationId, messageId) =>
+      `/messages/${conversationId}/messages/${messageId}`,
+    READ: (conversationId) => `/messages/${conversationId}/read`,
+    PARTICIPANTS: (conversationId) => `/messages/${conversationId}/participants`,
+    PARTICIPANT: (conversationId, userId) =>
+      `/messages/${conversationId}/participants/${userId}`,
+    LEAVE: (conversationId) => `/messages/${conversationId}/leave`,
+    UPLOAD: "/uploads",
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
   // Admin
   // ═══════════════════════════════════════════════════════════════════════
   ADMIN: {
@@ -87,6 +109,15 @@ export const API_ENDPOINTS = {
       LIST: "/general",
       DETAILS: (postId) => `/general/${postId}`,
       DELETE: (postId) => `/general/${postId}`,
+    },
+
+    MESSAGES: {
+      LIST: "/admin/messages",
+      DETAILS: (conversationId) => `/admin/messages/${conversationId}`,
+      THREAD: (conversationId) => `/admin/messages/${conversationId}/messages`,
+      DELETE_MESSAGE: (conversationId, messageId) =>
+        `/admin/messages/${conversationId}/messages/${messageId}`,
+      DELETE: (conversationId) => `/admin/messages/${conversationId}`,
     },
 
     /** Profile endpoints the admin panel also uses */
@@ -144,13 +175,6 @@ export const API_ENDPOINTS = {
       READ_ALL: "/notifications/read-all",
       READ: (notificationId) => `/notifications/${notificationId}/read`,
       DELETE: (notificationId) => `/notifications/${notificationId}`,
-    },
-
-    MESSAGES: {
-      LIST: "/messages",
-      DIRECT: "/messages/direct",
-      GROUP: "/messages/group",
-      THREAD: (conversationId) => `/messages/${conversationId}/messages`,
     },
 
     CONTACTS: {
@@ -239,17 +263,6 @@ export const API_ENDPOINTS = {
     BLOGS: {
       LIST: "/blogs",
       DETAILS: (slug) => `/blogs/${slug}`,
-    },
-
-    MESSAGES: {
-      LIST: "/messages",
-      DIRECT: "/messages/direct",
-      GROUP: "/messages/group",
-      THREAD: (conversationId) => `/messages/${conversationId}/messages`,
-      SEND: (conversationId) => `/messages/${conversationId}/messages`,
-      DELETE_MESSAGE: (conversationId, messageId) =>
-        `/messages/${conversationId}/messages/${messageId}`,
-      LEAVE: (conversationId) => `/messages/${conversationId}/leave`,
     },
 
     NOTIFICATIONS: {
