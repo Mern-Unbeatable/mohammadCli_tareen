@@ -26,6 +26,7 @@ export {
   toAdRowModel,
   toAdDetailModel,
   formToCreatePayload,
+  adToForm,
   formatUploadDate,
   formatDisplayDate,
   formatPrice,

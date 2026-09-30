@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
@@ -28,6 +28,7 @@ import {
   createSupplierAd,
   updateSupplierAd,
   formToCreatePayload,
+  adToForm,
 } from '@/features/supplier/advertisements';
 import { panelPrimaryBtn, panelSecondaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 
@@ -84,22 +85,17 @@ const defaultForm = {
   videoName: '',
 };
 
-const CreateAdModal = ({ open, onClose, onCreated, editAdId = null }) => {
+const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = null }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { saving } = useSelector((state) => state.supplierAds);
   const dialogRef = useRef(null);
   const [step, setStep] = useState('type');
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(() =>
+    initialAd ? { ...defaultForm, ...adToForm(initialAd) } : defaultForm
+  );
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-
-  const reset = useCallback(() => {
-    setStep('type');
-    setForm(defaultForm);
-    setSuccess(false);
-    setError('');
-  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -108,10 +104,6 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null }) => {
       document.body.style.overflow = '';
     };
   }, [open]);
-
-  useEffect(() => {
-    if (!open) reset();
-  }, [open, reset]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -137,7 +129,9 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null }) => {
       description:
         form.description ||
         'High-precision UV-Vis spectrophotometer for routine QC and research applications.',
-      image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop',
+      image:
+        form.imageUrl ||
+        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop',
       startDate: duration?.startDate || '18 Aug 2026',
       expiryDate: duration?.endDate || '1 Sep 2026',
       price: form.price ? `€${form.price}` : duration?.price || '€60',
@@ -272,7 +266,7 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null }) => {
         <div className="flex shrink-0 items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-6 sm:pt-5">
           <div className="min-w-0 pr-2">
             <h2 id="create-ad-title" className="text-[18px] font-bold text-deep-blue sm:text-[20px]">
-              Create Advertisement
+              {editAdId ? 'Resubmit Advertisement' : 'Create Advertisement'}
             </h2>
             <p className="mt-1 text-[13px] leading-relaxed text-[#64748B] sm:text-[14px]">
               Promote your products and services to laboratory professionals on Lab Unity.

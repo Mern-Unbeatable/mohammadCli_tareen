@@ -141,6 +141,46 @@ export function toAdDetailModel(ad) {
   };
 }
 
+const fileNameFromUrl = (url) => {
+  if (!url) return "";
+  try {
+    const name = new URL(url).pathname.split("/").filter(Boolean).pop();
+    return name ? decodeURIComponent(name) : "";
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * Map an API advertisement back onto CreateAdModal form state (resubmit).
+ */
+export function adToForm(ad) {
+  const categoryId =
+    Object.keys(CATEGORY_API).find((id) => CATEGORY_API[id] === ad?.category) ||
+    "product";
+  const durationId =
+    Object.keys(DURATION_DAYS).find(
+      (id) => DURATION_DAYS[id] === ad?.durationDays,
+    ) || "14d";
+
+  return {
+    categoryId,
+    title: ad?.title || "",
+    description: ad?.description || "",
+    price: ad?.price === null || ad?.price === undefined ? "" : String(ad.price),
+    contact: ad?.contact || "",
+    eventDate: ad?.eventDate ? String(ad.eventDate).slice(0, 10) : "",
+    eventTime: ad?.eventTime || "",
+    location: ad?.location || "",
+    organizer: ad?.organizer || "",
+    durationId,
+    imageUrl: ad?.imageUrl || "",
+    videoUrl: ad?.videoUrl || "",
+    imageName: fileNameFromUrl(ad?.imageUrl),
+    videoName: fileNameFromUrl(ad?.videoUrl),
+  };
+}
+
 /**
  * Build create/update body from CreateAdModal form state.
  */
