@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
 import { ProfilePageSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import ProfilePageContent from "@/components/data-display/ProfilePageContent/ProfilePageContent";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
 import {
@@ -15,7 +16,11 @@ import {
   clearProfileError,
   toProfilePageUser,
 } from "@/features/user/profile";
-import { fetchFeed, toFeedPostModel } from "@/features/user/feed";
+import {
+  fetchMyPosts,
+  removePost,
+  toFeedPostModel,
+} from "@/features/user/feed";
 import {
   fetchMyReports,
   clearReportsError,
@@ -29,13 +34,15 @@ const ProfileView = () => {
     loading,
     error: profileError,
   } = useSelector((state) => state.userProfile);
-  const { posts, postsLoading } = useSelector((state) => state.userFeed);
+  const { myPosts, myPostsLoaded, myPostsStale, myPostsError, deleting } =
+    useSelector((state) => state.userFeed);
   const {
     reports,
     reportsLoading,
     error: reportsError,
   } = useSelector((state) => state.userReports);
   const [reportPost, setReportPost] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const isPremium =
@@ -48,8 +55,8 @@ const ProfileView = () => {
     ["premium", "trial", "cancelled"].includes(profileUser?.membershipStatus);
 
   const activity = useMemo(
-    () => (posts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
-    [posts],
+    () => (myPosts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
+    [myPosts],
   );
 
   const myReports = useMemo(
@@ -61,9 +68,33 @@ const ProfileView = () => {
     dispatch(clearProfileError());
     dispatch(clearReportsError());
     dispatch(fetchUserProfile());
-    dispatch(fetchFeed({ page: 1, pageSize: 5, mine: true, sort: "desc" }));
     dispatch(fetchMyReports({ page: 1, pageSize: 10, sort: "desc" }));
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchMyPosts());
+  }, [dispatch, myPostsStale]);
+
+  useEffect(() => {
+    if (myPostsError) toast.error(myPostsError);
+  }, [myPostsError]);
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removePost(pendingDelete.id));
+    if (removePost.fulfilled.match(result)) {
+      toast.success("Post deleted");
+      setPendingDelete(null);
+      return;
+    }
+    toast.error(result.payload || "Failed to delete post");
+  };
 
   useEffect(() => {
     if (profileError) toast.error(profileError);
@@ -76,8 +107,8 @@ const ProfileView = () => {
   if (loading && !profileUser) {
     return (
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
-          <ProfilePageSkeleton showSubscription />
+        <Container className="max-w-7xl">
+          <ProfilePageSkeleton showSubscription sidebar />
         </Container>
       </main>
     );
@@ -94,12 +125,13 @@ const ProfileView = () => {
   return (
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
+        <Container className="max-w-7xl">
           <ProfilePageContent
             user={profileUser}
             posts={activity}
-            postsLoading={postsLoading && activity.length === 0}
+            postsLoading={!myPostsLoaded && !myPostsError}
             onReport={setReportPost}
+            onDelete={deleting ? undefined : setPendingDelete}
             isPremium={isPremium}
             subscriptionSlot={
               showSubscriptionCard ? (
@@ -108,11 +140,11 @@ const ProfileView = () => {
                 />
               ) : null
             }
+            sidebarSlot={
+              <MyReportsCard reports={myReports} loading={reportsLoading} />
+            }
+            postsTitle="My Posts"
           />
-
-          <div className="mt-4">
-            <MyReportsCard reports={myReports} loading={reportsLoading} />
-          </div>
 
           {!profileUser.isActive && (
             <p className="mt-6 text-center text-[13px] text-[#64748B]">
@@ -132,6 +164,17 @@ const ProfileView = () => {
         open={Boolean(reportPost)}
         post={reportPost}
         onClose={() => setReportPost(null)}
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete post?"
+        description="This will permanently remove this post, including its comments and reactions. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

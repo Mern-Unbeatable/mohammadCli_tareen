@@ -231,8 +231,14 @@ const SupplierAdsView = () => {
       </Card>
 
       <CreateAdModal
+        key={createOpen ? resubmitAdId || "new" : "closed"}
         open={createOpen}
         editAdId={resubmitAdId}
+        initialAd={
+          resubmitAdId
+            ? (ads || []).find((ad) => ad.id === resubmitAdId) || null
+            : null
+        }
         onClose={() => {
           setCreateOpen(false);
           setResubmitAdId(null);

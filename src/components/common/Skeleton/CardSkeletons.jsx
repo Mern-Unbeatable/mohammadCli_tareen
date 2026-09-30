@@ -325,30 +325,59 @@ export const MyReportsCardSkeleton = () => (
 /**
  * Full own-profile page skeleton — mirrors ProfilePageContent premium layout.
  */
-export const ProfilePageSkeleton = ({ showSubscription = true }) => (
-  <div className="space-y-4" aria-busy="true" aria-live="polite">
-    <ProfileHeroSkeleton />
-    {showSubscription ? (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-        <SubscriptionDetailsCardSkeleton />
-        <ContactInfoCardSkeleton showProfessional />
+export const ProfilePageSkeleton = ({ showSubscription = true, sidebar = false }) =>
+  sidebar ? (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <ProfileHeroSkeleton />
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:items-start">
+        <div className="contents lg:flex lg:flex-col lg:gap-4">
+          {showSubscription && (
+            <div className="order-1">
+              <SubscriptionDetailsCardSkeleton />
+            </div>
+          )}
+          <div className="order-4">
+            <MyReportsCardSkeleton />
+          </div>
+        </div>
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+          <div className="order-2">
+            <ContactInfoCardSkeleton showProfessional={showSubscription} />
+          </div>
+          <section className="order-3">
+            <Skeleton className="mb-4 h-5 w-24" />
+            <div className="space-y-4">
+              <FeedPostCardSkeleton />
+              <FeedPostCardSkeleton />
+            </div>
+          </section>
+        </div>
       </div>
-    ) : (
-      <>
-        <ProfessionalInfoCardSkeleton />
-        <ContactInfoCardSkeleton />
-      </>
-    )}
-    <section>
-      <Skeleton className="mb-4 h-5 w-24" />
-      <div className="space-y-4">
-        <FeedPostCardSkeleton />
-        <FeedPostCardSkeleton />
-      </div>
-    </section>
-    <MyReportsCardSkeleton />
-  </div>
-);
+    </div>
+  ) : (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <ProfileHeroSkeleton />
+      {showSubscription ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+          <SubscriptionDetailsCardSkeleton />
+          <ContactInfoCardSkeleton showProfessional />
+        </div>
+      ) : (
+        <>
+          <ProfessionalInfoCardSkeleton />
+          <ContactInfoCardSkeleton />
+        </>
+      )}
+      <section>
+        <Skeleton className="mb-4 h-5 w-24" />
+        <div className="space-y-4">
+          <FeedPostCardSkeleton />
+          <FeedPostCardSkeleton />
+        </div>
+      </section>
+      <MyReportsCardSkeleton />
+    </div>
+  );
 
 /**
  * Contact profile page skeleton (hero + professional + contact + activity).
@@ -539,9 +568,19 @@ export const BarChartCardSkeleton = ({
 /** Matches ProfileSetupForm */
 export const ProfileSetupFormSkeleton = () => (
   <Card aria-busy="true" aria-live="polite">
-    <div className="border-b border-[#E4E7EC] px-5 py-5 sm:px-8 sm:py-6">
-      <Skeleton className="h-7 w-40 sm:h-8 sm:w-48" />
-      <Skeleton className="mt-3 h-3.5 w-full max-w-md" />
+    <Skeleton className="h-32 w-full sm:h-36" rounded="none" />
+    <div className="relative border-b border-[#E4E7EC] px-4 pb-5 pt-3 sm:px-6 sm:pb-6 sm:pt-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+        <Skeleton
+          className="-mt-[4.25rem] h-[104px] w-[104px] shrink-0 border-[3px] border-white sm:-mt-[4.75rem]"
+          rounded="full"
+        />
+        <div className="min-w-0 flex-1 space-y-2 sm:pb-0.5">
+          <Skeleton className="h-7 w-48 sm:h-8 sm:w-64" />
+          <Skeleton className="h-3.5 w-full max-w-md" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+      </div>
     </div>
     <div className="space-y-5 px-5 py-6 sm:px-8 sm:py-8">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -581,10 +620,6 @@ export const ProfileSetupFormSkeleton = () => (
       <div className="space-y-2">
         <Skeleton className="h-3.5 w-40" />
         <Skeleton className="h-28 w-full" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Skeleton className="h-32 w-full" rounded="lg" />
-        <Skeleton className="h-32 w-full" rounded="lg" />
       </div>
       <Skeleton className="h-10 w-32" />
     </div>

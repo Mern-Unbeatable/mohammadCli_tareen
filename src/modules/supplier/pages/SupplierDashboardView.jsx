@@ -278,7 +278,11 @@ const SupplierDashboardView = () => {
         )}
       </Card>
 
-      <CreateAdModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateAdModal
+        key={createOpen ? "open" : "closed"}
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+      />
     </PanelPage>
   );
 };

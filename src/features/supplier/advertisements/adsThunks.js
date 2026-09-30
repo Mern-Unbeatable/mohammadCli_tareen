@@ -38,6 +38,25 @@ export const fetchSupplierAdDetails = createAsyncThunk(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
+// Duration pricing — refetched each time Create Ad opens so admin edits show
+// ═══════════════════════════════════════════════════════════════════════
+export const fetchSupplierAdPricing = createAsyncThunk(
+  "supplierAds/fetchSupplierAdPricing",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await adsApi.getAdPricing();
+    } catch (err) {
+      return rejectWithValue(
+        adsApi.getApiErrorMessage(err, "Failed to load advertisement pricing"),
+      );
+    }
+  },
+  {
+    condition: (_, { getState }) => !getState().supplierAds.pricingLoading,
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════
 // Create
 // ═══════════════════════════════════════════════════════════════════════
 export const createSupplierAd = createAsyncThunk(

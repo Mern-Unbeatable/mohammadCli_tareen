@@ -102,7 +102,7 @@ const CommentBody = ({
         {comment.author?.name}
       </p>
       <p className="text-[11px] text-[#64748B]">{comment.author?.subtitle}</p>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-[#475467]">
+      <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-[#475467]">
         {comment.content}
       </p>
     </div>

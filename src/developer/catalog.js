@@ -614,7 +614,7 @@ export const COMPONENT_DOCS = [
     id: 'profile-setup-form',
     name: 'ProfileSetupForm',
     category: 'forms',
-    summary: 'Professional profile setup form with upload zones.',
+    summary: 'Professional profile setup form with profile-style cover and avatar uploads.',
     path: 'src/components/forms/ProfileSetupForm/',
     importExample:
       "import ProfileSetupForm from '@/components/forms/ProfileSetupForm/ProfileSetupForm'\nimport { DEMO_PROFILE_FORM } from '@/data/demoData'",
@@ -778,6 +778,8 @@ export const COMPONENT_DOCS = [
       { name: 'onReport', type: '(post) => void', required: false, description: 'Report handler.' },
       { name: 'isPremium', type: 'boolean', required: false, description: 'Premium layout with subscription slot.' },
       { name: 'subscriptionSlot', type: 'ReactNode', required: false, description: 'Subscription card for premium users.' },
+      { name: 'sidebarSlot', type: 'ReactNode', required: false, description: 'Left-column content under the subscription card; enables the two-column layout (info + posts on the right).' },
+      { name: 'postsTitle', type: 'string', required: false, description: 'Heading for the posts section (default "Activity").' },
     ],
     requiredExample: `<ProfilePageContent user={user} posts={posts} onReport={setReportPost} />`,
     optionalExample: `<ProfilePageContent isPremium subscriptionSlot={<SubscriptionDetailsCard />} … />`,

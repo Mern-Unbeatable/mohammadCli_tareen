@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { Upload } from 'lucide-react';
+import { Camera } from 'lucide-react';
+import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
 
 const fieldClass =
@@ -9,7 +10,7 @@ const labelClass = 'mb-1.5 block text-[13px] font-semibold text-deep-blue';
 
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
 
-const UploadBox = ({ title, hint, previewUrl, onPick, disabled }) => {
+const ImagePickButton = ({ onPick, disabled, className, label, title, children }) => {
   const inputRef = useRef(null);
 
   return (
@@ -17,7 +18,9 @@ const UploadBox = ({ title, hint, previewUrl, onPick, disabled }) => {
       type="button"
       disabled={disabled}
       onClick={() => inputRef.current?.click()}
-      className="relative flex w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#D0D5DD] bg-[#F9FAFB] px-4 py-8 text-center transition-colors hover:border-primary hover:bg-secondary/40 disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label={label}
+      title={title}
+      className={className}
     >
       <input
         ref={inputRef}
@@ -30,25 +33,83 @@ const UploadBox = ({ title, hint, previewUrl, onPick, disabled }) => {
           if (file) onPick?.(file);
         }}
       />
-      {previewUrl ? (
-        <img
-          src={previewUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : null}
-      <div
-        className={`relative z-[1] flex flex-col items-center ${
-          previewUrl ? 'rounded-md bg-white/90 px-3 py-2 shadow-sm' : ''
-        }`}
-      >
-        <Upload className="h-6 w-6 text-[#98A2B3]" />
-        <p className="mt-3 text-[13px] font-semibold text-deep-blue">{title}</p>
-        <p className="mt-1 text-[11px] text-[#98A2B3]">{hint}</p>
-      </div>
+      {children}
     </button>
   );
 };
+
+const toInitials = (firstName, lastName) =>
+  [firstName, lastName]
+    .map((part) => part?.trim()?.[0]?.toUpperCase())
+    .filter(Boolean)
+    .join('') || 'U';
+
+const ProfileMediaHeader = ({
+  values,
+  title,
+  subtitle,
+  onUploadAvatar,
+  onUploadCover,
+  uploading,
+}) => (
+  <>
+    <div className="relative h-32 overflow-hidden bg-deep-blue sm:h-36">
+      {values.coverUrl ? (
+        <img
+          src={values.coverUrl}
+          alt=""
+          className="h-full w-full object-cover opacity-90"
+        />
+      ) : null}
+      <div className="absolute inset-0 bg-gradient-to-t from-deep-blue/40 to-transparent" />
+      <ImagePickButton
+        onPick={onUploadCover}
+        disabled={uploading || !onUploadCover}
+        title="JPG, PNG or WebP · 1600×600px"
+        className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-deep-blue shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 sm:right-4 sm:top-4"
+      >
+        <Camera className="h-3.5 w-3.5" />
+        {uploading ? 'Uploading…' : values.coverUrl ? 'Change cover' : 'Add cover'}
+      </ImagePickButton>
+    </div>
+
+    <div className="relative border-b border-[#E4E7EC] px-4 pb-5 pt-3 sm:px-6 sm:pb-6 sm:pt-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+        <ImagePickButton
+          onPick={onUploadAvatar}
+          disabled={uploading || !onUploadAvatar}
+          label="Change profile photo"
+          title="JPG, PNG or WebP · 400×400px"
+          className="group relative -mt-[4.25rem] self-start rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 sm:-mt-[4.75rem]"
+        >
+          <Avatar
+            src={values.avatarUrl || null}
+            alt=""
+            initials={toInitials(values.firstName, values.lastName)}
+            size="xl"
+            className="border-[3px] border-white"
+          />
+          <span className="absolute inset-[3px] flex items-center justify-center rounded-full bg-deep-blue/40 opacity-0 transition-opacity group-hover:opacity-100 group-disabled:opacity-0">
+            <Camera className="h-6 w-6 text-white" />
+          </span>
+          <span className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary text-white">
+            <Camera className="h-4 w-4" />
+          </span>
+        </ImagePickButton>
+
+        <div className="min-w-0 sm:pb-0.5">
+          <h1 className="text-[22px] font-bold leading-tight text-deep-blue sm:text-[26px]">
+            {title}
+          </h1>
+          <p className="mt-1 text-[14px] text-[#64748B]">{subtitle}</p>
+          <p className="mt-1 text-[12px] text-[#98A2B3]">
+            Photo 400×400px · Cover 1600×600px · JPG, PNG or WebP
+          </p>
+        </div>
+      </div>
+    </div>
+  </>
+);
 
 const ProfileSetupForm = ({
   values,
@@ -64,10 +125,14 @@ const ProfileSetupForm = ({
   submitDisabled = false,
 }) => (
   <Card>
-    <div className="border-b border-[#E4E7EC] px-5 py-5 sm:px-8 sm:py-6">
-      <h1 className="text-[22px] font-bold text-deep-blue sm:text-[26px]">{title}</h1>
-      <p className="mt-2 text-[14px] text-[#64748B]">{subtitle}</p>
-    </div>
+    <ProfileMediaHeader
+      values={values}
+      title={title}
+      subtitle={subtitle}
+      onUploadAvatar={onUploadAvatar}
+      onUploadCover={onUploadCover}
+      uploading={uploading}
+    />
 
     <form onSubmit={onSubmit} className="space-y-5 px-5 py-6 sm:px-8 sm:py-8">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -187,23 +252,6 @@ const ProfileSetupForm = ({
           onChange={(e) => onChange('about', e.target.value)}
           className={`${fieldClass} resize-y`}
           required
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <UploadBox
-          title={uploading ? 'Uploading…' : 'Upload Profile Photo'}
-          hint="JPG, PNG or WebP · 400×400px"
-          previewUrl={values.avatarUrl || null}
-          onPick={onUploadAvatar}
-          disabled={uploading || !onUploadAvatar}
-        />
-        <UploadBox
-          title={uploading ? 'Uploading…' : 'Upload Cover Photo'}
-          hint="JPG, PNG or WebP · 1600×600px"
-          previewUrl={values.coverUrl || null}
-          onPick={onUploadCover}
-          disabled={uploading || !onUploadCover}
         />
       </div>
 

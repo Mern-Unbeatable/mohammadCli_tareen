@@ -8,9 +8,14 @@
  */
 
 export { default as userFeedReducer } from "./feedSlice";
-export { clearFeedError, clearSelectedPost } from "./feedSlice";
+export {
+  clearFeedError,
+  clearSelectedPost,
+  invalidateFeedPosts,
+} from "./feedSlice";
 export {
   fetchFeed,
+  fetchMyPosts,
   fetchPostDetails,
   createPost,
   updatePost,

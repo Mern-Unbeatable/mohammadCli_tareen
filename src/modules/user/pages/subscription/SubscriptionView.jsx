@@ -20,6 +20,7 @@ import {
   toProfilePageUser,
 } from '@/features/user/profile';
 import CancelSubscriptionModal from '@/modules/user/components/subscription/CancelSubscriptionModal';
+import { SUPPORT_CONTACT } from '@/shared/constants/support';
 
 const PLAN_API = {
   monthly: 'MONTHLY',
@@ -299,7 +300,7 @@ const SubscriptionView = () => {
                     </li>
                     <li className="flex items-center gap-2 text-[12px] text-[#64748B]">
                       <Mail className="h-4 w-4 shrink-0 text-primary" />
-                      support@labunity.com
+                      {SUPPORT_CONTACT.email}
                     </li>
                   </ul>
 

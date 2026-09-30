@@ -2,8 +2,6 @@ import { Clock, MessageCircle, UserPlus } from 'lucide-react';
 import { Link } from 'react-router';
 import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
-import { currentUser } from '@/modules/user/data/dashboard';
-
 const ContactProfileHero = ({
   contact,
   connected = false,
@@ -15,11 +13,13 @@ const ContactProfileHero = ({
 }) => (
   <Card>
     <div className="relative h-32 overflow-hidden bg-deep-blue sm:h-36">
-      <img
-        src={coverPhoto || contact.coverPhoto || currentUser.coverPhoto}
-        alt=""
-        className="h-full w-full object-cover opacity-90"
-      />
+      {coverPhoto || contact.coverPhoto ? (
+        <img
+          src={coverPhoto || contact.coverPhoto}
+          alt=""
+          className="h-full w-full object-cover opacity-90"
+        />
+      ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-deep-blue/40 to-transparent" />
     </div>
 

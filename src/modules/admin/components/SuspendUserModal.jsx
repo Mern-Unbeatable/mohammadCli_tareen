@@ -18,9 +18,12 @@ const SuspendUserModal = ({ open, userName, onClose, onConfirm }) => {
 
   if (!open) return null;
 
+  const trimmedReason = reason.trim();
+
   const handleSubmit = (event) => {
     event.preventDefault();
-    onConfirm?.(reason.trim());
+    if (!trimmedReason) return;
+    onConfirm?.(trimmedReason);
     onClose();
   };
 
@@ -68,6 +71,7 @@ const SuspendUserModal = ({ open, userName, onClose, onConfirm }) => {
               onChange={(event) => setReason(event.target.value)}
               placeholder="Why Suspend this user"
               required
+              maxLength={500}
               rows={5}
               className="w-full resize-none rounded-lg border border-[#D0D5DD] px-3.5 py-2.5 text-[14px] text-deep-blue outline-none transition-colors placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/15"
             />
@@ -83,7 +87,8 @@ const SuspendUserModal = ({ open, userName, onClose, onConfirm }) => {
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-pink-light px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:opacity-90"
+              disabled={!trimmedReason}
+              className="rounded-lg bg-pink-light px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Suspend
             </button>

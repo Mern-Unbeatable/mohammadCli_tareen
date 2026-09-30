@@ -1,6 +1,7 @@
 /**
- * Default values + setting keys for admin app settings.
- * Used when the API has no value yet for a key.
+ * Setting keys + non-pricing UI defaults for admin app settings.
+ * Pricing (`subscription_pricing`, `sponsored_pricing`) defaults live on the
+ * API, which always returns normalized numeric values for those keys.
  */
 
 export const SETTINGS_KEYS = {
@@ -24,12 +25,6 @@ export const SUBSCRIPTION_FEATURES = [
   "Settings",
 ];
 
-export const DEFAULT_SPONSORED_TIERS = [
-  { id: "7-days", label: "7 Days", price: "18.00" },
-  { id: "14-days", label: "14 Days", price: "18.00" },
-  { id: "30-days", label: "30 Days", price: "18.00" },
-];
-
 export const DEFAULT_MARKETPLACE_CATEGORIES = [
   "Chromatography",
   "Spectroscopy",
@@ -42,8 +37,3 @@ export const DEFAULT_MARKETPLACE_CATEGORIES = [
 ];
 
 export const DEFAULT_GENERAL_CATEGORIES = ["News", "Document"];
-
-export const DEFAULT_SUBSCRIPTION_PRICING = {
-  monthly: "200.00",
-  yearly: "18.00",
-};

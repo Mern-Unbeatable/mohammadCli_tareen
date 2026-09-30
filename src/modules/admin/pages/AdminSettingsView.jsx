@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Calculator, Check, Trash2, Wallet } from "lucide-react";
+import { Calculator, Check, RefreshCw, Trash2, Wallet } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
 import { AdminSettingsSkeleton } from "@/components/common/Skeleton";
@@ -9,6 +9,7 @@ import PanelPageHeader from "@/shared/layout/PanelLayout/PanelPageHeader";
 import {
   panelPageTheme,
   panelPrimaryBtn,
+  panelSecondaryBtn,
 } from "@/shared/layout/PanelLayout/panelPageTheme";
 import {
   fetchAdminSettings,
@@ -16,10 +17,8 @@ import {
   clearSettingsError,
   SETTINGS_KEYS,
   SUBSCRIPTION_FEATURES,
-  DEFAULT_SPONSORED_TIERS,
   DEFAULT_MARKETPLACE_CATEGORIES,
   DEFAULT_GENERAL_CATEGORIES,
-  DEFAULT_SUBSCRIPTION_PRICING,
 } from "@/features/admin/settings";
 
 const inputClass =
@@ -51,6 +50,7 @@ const PriceField = ({ id, label, value, onChange }) => (
       <input
         id={id}
         type="text"
+        inputMode="decimal"
         value={value}
         onChange={onChange}
         className={inputClass}
@@ -62,56 +62,36 @@ const PriceField = ({ id, label, value, onChange }) => (
   </div>
 );
 
-const hydrateForm = (settings = {}) => {
-  const sub = settings[SETTINGS_KEYS.subscription];
-  const sponsored = settings[SETTINGS_KEYS.sponsored];
-  const marketCats = settings[SETTINGS_KEYS.marketplaceCategories];
-  const generalCats = settings[SETTINGS_KEYS.generalCategories];
+const priceText = (value) =>
+  value === null || value === undefined ? "" : String(value);
 
-  return {
-    monthlyPrice:
-      sub?.monthly != null
-        ? String(sub.monthly)
-        : DEFAULT_SUBSCRIPTION_PRICING.monthly,
-    yearlyPrice:
-      sub?.yearly != null
-        ? String(sub.yearly)
-        : DEFAULT_SUBSCRIPTION_PRICING.yearly,
-    sponsoredTiers:
-      Array.isArray(sponsored) && sponsored.length
-        ? sponsored
-        : DEFAULT_SPONSORED_TIERS,
-    marketplaceCategories: Array.isArray(marketCats)
-      ? marketCats
-      : DEFAULT_MARKETPLACE_CATEGORIES,
-    generalCategories: Array.isArray(generalCats)
-      ? generalCats
-      : DEFAULT_GENERAL_CATEGORIES,
-  };
+/** Returns a non-negative number, or null when the input is not a valid price. */
+const parsePrice = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const number = Number(text);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 };
+
+const toTierForm = (tiers) =>
+  (Array.isArray(tiers) ? tiers : []).map((tier) => ({
+    id: tier.id,
+    label: tier.label,
+    price: priceText(tier.price),
+  }));
+
+const PAGE_HEADER = (
+  <PanelPageHeader
+    title="Settings"
+    subtitle="Manage your subscription and Sponsored Price"
+  />
+);
 
 const AdminSettingsView = () => {
   const dispatch = useDispatch();
-  const { settings, loading, savingKey, error, saveError } = useSelector(
+  const { settings, loading, loadedRequestId, error, saveError } = useSelector(
     (state) => state.adminSettings,
   );
-
-  const [monthlyPrice, setMonthlyPrice] = useState(
-    DEFAULT_SUBSCRIPTION_PRICING.monthly,
-  );
-  const [yearlyPrice, setYearlyPrice] = useState(
-    DEFAULT_SUBSCRIPTION_PRICING.yearly,
-  );
-  const [sponsoredTiers, setSponsoredTiers] = useState(DEFAULT_SPONSORED_TIERS);
-  const [marketplaceCategories, setMarketplaceCategories] = useState(
-    DEFAULT_MARKETPLACE_CATEGORIES,
-  );
-  const [generalCategories, setGeneralCategories] = useState(
-    DEFAULT_GENERAL_CATEGORIES,
-  );
-  const [newMarketplaceCategory, setNewMarketplaceCategory] = useState("");
-  const [newGeneralCategory, setNewGeneralCategory] = useState("");
-  const [hydrated, setHydrated] = useState(false);
 
   const loadSettings = useCallback(() => {
     dispatch(clearSettingsError());
@@ -122,31 +102,108 @@ const AdminSettingsView = () => {
     loadSettings();
   }, [loadSettings]);
 
-  // Apply API (or empty) settings into local form once after first load
-  useEffect(() => {
-    if (loading || hydrated) return;
-    const next = hydrateForm(settings);
-    setMonthlyPrice(next.monthlyPrice);
-    setYearlyPrice(next.yearlyPrice);
-    setSponsoredTiers(next.sponsoredTiers);
-    setMarketplaceCategories(next.marketplaceCategories);
-    setGeneralCategories(next.generalCategories);
-    setHydrated(true);
-
-    if (error) {
-      toast.info("Using default settings until saved.");
-    }
-  }, [loading, settings, error, hydrated]);
-
   useEffect(() => {
     if (saveError) toast.error(saveError);
   }, [saveError]);
 
+  if (!loadedRequestId && error && !loading) {
+    return (
+      <PanelPage>
+        {PAGE_HEADER}
+        <Card className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+          <p className={panelPageTheme.cardBody}>{error}</p>
+          <button
+            type="button"
+            onClick={loadSettings}
+            className={panelSecondaryBtn}
+          >
+            <RefreshCw className="mr-1.5 inline h-4 w-4" />
+            Retry
+          </button>
+        </Card>
+      </PanelPage>
+    );
+  }
+
+  if (loading || !loadedRequestId) {
+    return (
+      <PanelPage>
+        {PAGE_HEADER}
+        <AdminSettingsSkeleton />
+      </PanelPage>
+    );
+  }
+
+  return <AdminSettingsForm key={loadedRequestId} settings={settings} />;
+};
+
+const AdminSettingsForm = ({ settings }) => {
+  const dispatch = useDispatch();
+  const savingKey = useSelector((state) => state.adminSettings.savingKey);
+
+  const subscription = settings[SETTINGS_KEYS.subscription];
+  const marketCats = settings[SETTINGS_KEYS.marketplaceCategories];
+  const generalCats = settings[SETTINGS_KEYS.generalCategories];
+
+  const [monthlyPrice, setMonthlyPrice] = useState(() =>
+    priceText(subscription?.monthly),
+  );
+  const [yearlyPrice, setYearlyPrice] = useState(() =>
+    priceText(subscription?.yearly),
+  );
+  const [sponsoredTiers, setSponsoredTiers] = useState(() =>
+    toTierForm(settings[SETTINGS_KEYS.sponsored]),
+  );
+  const [marketplaceCategories, setMarketplaceCategories] = useState(() =>
+    Array.isArray(marketCats) ? marketCats : DEFAULT_MARKETPLACE_CATEGORIES,
+  );
+  const [generalCategories, setGeneralCategories] = useState(() =>
+    Array.isArray(generalCats) ? generalCats : DEFAULT_GENERAL_CATEGORIES,
+  );
+  const [newMarketplaceCategory, setNewMarketplaceCategory] = useState("");
+  const [newGeneralCategory, setNewGeneralCategory] = useState("");
+
   const saveSetting = async (key, value, successMessage) => {
     const result = await dispatch(saveAdminSetting({ key, value }));
-    if (saveAdminSetting.fulfilled.match(result)) {
-      toast.success(successMessage);
+    if (!saveAdminSetting.fulfilled.match(result)) return null;
+    toast.success(successMessage);
+    return result.payload.value;
+  };
+
+  const saveSubscription = async () => {
+    const monthly = parsePrice(monthlyPrice);
+    const yearly = parsePrice(yearlyPrice);
+    if (monthly === null || yearly === null) {
+      toast.error("Enter a valid monthly and yearly price.");
+      return;
     }
+    const saved = await saveSetting(
+      SETTINGS_KEYS.subscription,
+      { monthly, yearly },
+      "Subscription pricing saved",
+    );
+    if (saved) {
+      setMonthlyPrice(priceText(saved.monthly));
+      setYearlyPrice(priceText(saved.yearly));
+    }
+  };
+
+  const saveSponsored = async () => {
+    const tiers = sponsoredTiers.map((tier) => ({
+      id: tier.id,
+      price: parsePrice(tier.price),
+    }));
+    const invalid = sponsoredTiers.find((_, index) => tiers[index].price === null);
+    if (invalid) {
+      toast.error(`Enter a valid price for ${invalid.label}.`);
+      return;
+    }
+    const saved = await saveSetting(
+      SETTINGS_KEYS.sponsored,
+      tiers,
+      "Sponsored pricing saved",
+    );
+    if (saved) setSponsoredTiers(toTierForm(saved));
   };
 
   const addCategory = (value, setter, listSetter) => {
@@ -156,24 +213,9 @@ const AdminSettingsView = () => {
     setter("");
   };
 
-  if (loading || !hydrated) {
-    return (
-      <PanelPage>
-        <PanelPageHeader
-          title="Settings"
-          subtitle="Manage your subscription and Sponsored Price"
-        />
-        <AdminSettingsSkeleton />
-      </PanelPage>
-    );
-  }
-
   return (
     <PanelPage>
-      <PanelPageHeader
-        title="Settings"
-        subtitle="Manage your subscription and Sponsored Price"
-      />
+      {PAGE_HEADER}
 
       <Card className="overflow-hidden">
         <div className="flex items-start gap-3 border-b border-[#E4E7EC] px-4 py-3.5 sm:px-5">
@@ -209,13 +251,7 @@ const AdminSettingsView = () => {
             <button
               type="button"
               disabled={savingKey === SETTINGS_KEYS.subscription}
-              onClick={() =>
-                saveSetting(
-                  SETTINGS_KEYS.subscription,
-                  { monthly: monthlyPrice, yearly: yearlyPrice },
-                  "Subscription pricing saved",
-                )
-              }
+              onClick={saveSubscription}
               className={`${panelPrimaryBtn} w-full lg:w-auto lg:shrink-0 disabled:opacity-60`}
             >
               {savingKey === SETTINGS_KEYS.subscription ? "Saving…" : "Save"}
@@ -295,13 +331,7 @@ const AdminSettingsView = () => {
               <button
                 type="button"
                 disabled={savingKey === SETTINGS_KEYS.sponsored}
-                onClick={() =>
-                  saveSetting(
-                    SETTINGS_KEYS.sponsored,
-                    sponsoredTiers,
-                    "Sponsored pricing saved",
-                  )
-                }
+                onClick={saveSponsored}
                 className={`${panelPrimaryBtn} w-full sm:w-auto sm:shrink-0 disabled:opacity-60`}
               >
                 {savingKey === SETTINGS_KEYS.sponsored ? "Saving…" : "Save"}

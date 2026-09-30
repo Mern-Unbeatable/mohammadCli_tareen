@@ -211,11 +211,15 @@ const CreatePostModal = ({
             className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10 sm:px-4 sm:py-3"
           />
 
-          <div className="mt-3 rounded-lg bg-[#F9FAFB] px-3 py-5 text-center text-[13px] text-[#98A2B3] sm:px-4 sm:py-6">
-            {content.trim()
-              ? content
-              : "Nothing written yet — your post will appear here as you type."}
-          </div>
+          {content.trim() ? (
+            <div className="mt-3 max-h-60 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-[#F9FAFB] px-3 py-3 text-[14px] leading-relaxed text-[#475467] sm:px-4">
+              {content.trim()}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-lg bg-[#F9FAFB] px-3 py-5 text-center text-[13px] text-[#98A2B3] sm:px-4 sm:py-6">
+              Nothing written yet — your post will appear here as you type.
+            </div>
+          )}
 
           {imagePreview ? (
             <div className="relative mt-3 overflow-hidden rounded-lg border border-[#E4E7EC]">
