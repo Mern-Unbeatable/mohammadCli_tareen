@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
 import { ProfilePageSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import ProfilePageContent from "@/components/data-display/ProfilePageContent/ProfilePageContent";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
 import {
@@ -15,12 +16,14 @@ import {
   clearProfileError,
   toProfilePageUser,
 } from "@/features/user/profile";
-import { fetchFeed, toFeedPostModel } from "@/features/user/feed";
+import { fetchFeed, removePost, toFeedPostModel } from "@/features/user/feed";
 import {
   fetchMyReports,
   clearReportsError,
   toMyReportModel,
 } from "@/features/user/reports";
+
+const MY_POSTS_QUERY = { page: 1, pageSize: 5, mine: true, sort: "desc" };
 
 const ProfileView = () => {
   const dispatch = useDispatch();
@@ -29,13 +32,16 @@ const ProfileView = () => {
     loading,
     error: profileError,
   } = useSelector((state) => state.userProfile);
-  const { posts, postsLoading } = useSelector((state) => state.userFeed);
+  const { posts, postsLoading, deleting } = useSelector(
+    (state) => state.userFeed,
+  );
   const {
     reports,
     reportsLoading,
     error: reportsError,
   } = useSelector((state) => state.userReports);
   const [reportPost, setReportPost] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const isPremium =
@@ -61,9 +67,27 @@ const ProfileView = () => {
     dispatch(clearProfileError());
     dispatch(clearReportsError());
     dispatch(fetchUserProfile());
-    dispatch(fetchFeed({ page: 1, pageSize: 5, mine: true, sort: "desc" }));
+    dispatch(fetchFeed(MY_POSTS_QUERY));
     dispatch(fetchMyReports({ page: 1, pageSize: 10, sort: "desc" }));
   }, [dispatch]);
+
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removePost(pendingDelete.id));
+    if (removePost.fulfilled.match(result)) {
+      toast.success("Post deleted");
+      setPendingDelete(null);
+      dispatch(fetchFeed(MY_POSTS_QUERY));
+      return;
+    }
+    toast.error(result.payload || "Failed to delete post");
+  };
 
   useEffect(() => {
     if (profileError) toast.error(profileError);
@@ -100,6 +124,7 @@ const ProfileView = () => {
             posts={activity}
             postsLoading={postsLoading && activity.length === 0}
             onReport={setReportPost}
+            onDelete={deleting ? undefined : setPendingDelete}
             isPremium={isPremium}
             subscriptionSlot={
               showSubscriptionCard ? (
@@ -132,6 +157,17 @@ const ProfileView = () => {
         open={Boolean(reportPost)}
         post={reportPost}
         onClose={() => setReportPost(null)}
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete post?"
+        description="This will permanently remove this post, including its comments and reactions. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

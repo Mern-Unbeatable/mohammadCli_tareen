@@ -1,10 +1,11 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MoreHorizontal, Tag } from 'lucide-react';
+import { MoreHorizontal, Tag, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
+import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
 import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
@@ -32,7 +33,69 @@ const REACTION_API = {
   curious: "angry",
 };
 
-const PostHeader = ({ post, onReport }) => {
+const OwnerPostMenu = ({ post, onDelete }) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleClickOutside = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="rounded-full p-1.5 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#64748B]"
+        aria-label="Post options"
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <MoreHorizontal className="h-5 w-5" />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+4px)] z-[20] w-[160px] overflow-hidden rounded-lg border border-[#E4E7EC] bg-white py-1 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onDelete(post);
+            }}
+            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+            Delete post
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PostHeader = ({ post, onReport, onDelete, isOwner }) => {
   const badge = badgeByType[post.type];
 
   return (
@@ -56,14 +119,18 @@ const PostHeader = ({ post, onReport }) => {
         <p className="text-[12px] text-[#64748B]">{post.author.subtitle}</p>
         <p className="text-[12px] text-[#98A2B3]">{post.author.meta}</p>
       </div>
-      <button
-        type="button"
-        onClick={() => onReport(post)}
-        className="rounded-full p-1.5 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#64748B]"
-        aria-label="Report post"
-      >
-        <MoreHorizontal className="h-5 w-5" />
-      </button>
+      {isOwner && onDelete ? (
+        <OwnerPostMenu post={post} onDelete={onDelete} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => onReport?.(post)}
+          className="rounded-full p-1.5 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#64748B]"
+          aria-label="Report post"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 };
@@ -89,13 +156,16 @@ const PromoPricing = ({ post }) => (
   </div>
 );
 
-const FeedPost = ({ post, onReport }) => {
+const FeedPost = ({ post, onReport, onDelete }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.userProfile);
   const likingCommentId = useSelector(
     (state) => state.userFeed.likingCommentId,
   );
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
+  const isOwner = Boolean(
+    profileUser?.id && post.author?.id && profileUser.id === post.author.id,
+  );
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -252,13 +322,22 @@ const FeedPost = ({ post, onReport }) => {
   return (
     <>
       <Card>
-        <PostHeader post={post} onReport={onReport} />
+        <PostHeader
+          post={post}
+          onReport={onReport}
+          onDelete={onDelete}
+          isOwner={isOwner}
+        />
 
         <div className="p-4">
           {post.title && (
             <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
           )}
-          <p className="text-base leading-relaxed text-[#475467]">{post.content}</p>
+          <ExpandableText
+            text={post.content}
+            lines={5}
+            className="text-base leading-relaxed text-[#475467]"
+          />
 
           {post.attachment && <AttachmentCard attachment={post.attachment} />}
 

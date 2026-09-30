@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
 import { CardSkeleton } from "@/components/common/Skeleton";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import LeftSidebar from "@/modules/user/components/shell/LeftSidebar";
 import RightSidebar from "@/modules/user/components/shell/RightSidebar";
 import FeedPost from "@/modules/user/components/feed/FeedPost";
@@ -16,6 +17,7 @@ import { useFeedActions } from "@/modules/user/context/FeedActionsContext";
 import {
   fetchFeed,
   createPost,
+  removePost,
   clearFeedError,
   toFeedPostModel,
 } from "@/features/user/feed";
@@ -37,7 +39,7 @@ const filterToApiType = {
 const FeedView = () => {
   const dispatch = useDispatch();
   const { registerOpenCreatePost } = useFeedActions();
-  const { posts, postsLoading, saving, error } = useSelector(
+  const { posts, postsLoading, saving, deleting, error } = useSelector(
     (state) => state.userFeed,
   );
   const { user } = useSelector((state) => state.userProfile);
@@ -46,6 +48,7 @@ const FeedView = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [reportPost, setReportPost] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     registerOpenCreatePost(() => setCreateOpen(true));
@@ -111,6 +114,23 @@ const FeedView = () => {
     }
   };
 
+  const handleCloseDeleteModal = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete?.id || deleting) return;
+
+    const result = await dispatch(removePost(pendingDelete.id));
+    if (removePost.fulfilled.match(result)) {
+      toast.success("Post deleted");
+      setPendingDelete(null);
+      return;
+    }
+    toast.error(result.payload || "Failed to delete post");
+  };
+
   return (
     <>
       <main className="py-4 sm:py-5">
@@ -148,6 +168,7 @@ const FeedView = () => {
                     key={post.id}
                     post={post}
                     onReport={setReportPost}
+                    onDelete={deleting ? undefined : setPendingDelete}
                   />
                 ))}
               </div>
@@ -169,6 +190,16 @@ const FeedView = () => {
         open={Boolean(reportPost)}
         post={reportPost}
         onClose={() => setReportPost(null)}
+      />
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete post?"
+        description="This will permanently remove this post, including its comments and reactions. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

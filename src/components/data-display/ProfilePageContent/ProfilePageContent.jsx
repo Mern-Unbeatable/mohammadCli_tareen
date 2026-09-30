@@ -17,6 +17,7 @@ const ProfilePageContent = ({
   posts = [],
   postsLoading = false,
   onReport,
+  onDelete,
   isPremium = user.membershipStatus === 'premium',
   editHref = '/profile/edit',
   showEdit = true,
@@ -41,6 +42,7 @@ const ProfilePageContent = ({
       posts={posts}
       loading={postsLoading}
       onReport={onReport}
+      onDelete={onDelete}
       emptyName={user.firstName || user.name}
       title={postsTitle}
       className={sidebarSlot ? 'order-3' : ''}

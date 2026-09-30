@@ -22,6 +22,7 @@ const ActivitySection = ({
   posts = [],
   loading = false,
   onReport,
+  onDelete,
   emptyName = 'This member',
   title = 'Activity',
   className = '',
@@ -32,7 +33,9 @@ const ActivitySection = ({
       {loading && !posts.length ? (
         <CardSkeleton variant="feedPost" count={2} className="space-y-4" />
       ) : posts.length > 0 ? (
-        posts.map((post) => <FeedPost key={post.id} post={post} onReport={onReport} />)
+        posts.map((post) => (
+          <FeedPost key={post.id} post={post} onReport={onReport} onDelete={onDelete} />
+        ))
       ) : (
         <EmptyActivity name={emptyName} />
       )}
