@@ -16,6 +16,8 @@ const initialState = {
   postsMeta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
   selectedPost: null,
   postsLoading: false,
+  postsRequestId: null,
+  postsError: null,
   selectedPostLoading: false,
   saving: false,
   deleting: false,
@@ -43,21 +45,37 @@ const feedSlice = createSlice({
     clearSelectedPost: (state) => {
       state.selectedPost = null;
     },
+    invalidateFeedPosts: (state) => {
+      state.postsLoading = true;
+      state.posts = [];
+      state.postsMeta = {
+        ...state.postsMeta,
+        total: 0,
+        totalPages: 1,
+      };
+      state.error = null;
+      state.postsError = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchFeed.pending, (state) => {
+      .addCase(fetchFeed.pending, (state, action) => {
         state.postsLoading = true;
+        state.postsRequestId = action.meta.requestId;
         state.error = null;
+        state.postsError = null;
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.postsRequestId) return;
         state.postsLoading = false;
         state.posts = action.payload.data;
         state.postsMeta = action.payload.meta;
       })
       .addCase(fetchFeed.rejected, (state, action) => {
+        if (action.meta.requestId !== state.postsRequestId) return;
         state.postsLoading = false;
         state.error = action.payload;
+        state.postsError = action.payload || "Failed to load feed";
       })
       .addCase(fetchPostDetails.pending, (state) => {
         state.selectedPostLoading = true;
@@ -344,5 +362,6 @@ const feedSlice = createSlice({
   },
 });
 
-export const { clearFeedError, clearSelectedPost } = feedSlice.actions;
+export const { clearFeedError, clearSelectedPost, invalidateFeedPosts } =
+  feedSlice.actions;
 export default feedSlice.reducer;

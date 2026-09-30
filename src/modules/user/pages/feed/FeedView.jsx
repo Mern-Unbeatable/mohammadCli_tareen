@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
@@ -18,7 +18,7 @@ import {
   fetchFeed,
   createPost,
   removePost,
-  clearFeedError,
+  invalidateFeedPosts,
   toFeedPostModel,
 } from "@/features/user/feed";
 import { fetchUserProfile, toProfilePageUser } from "@/features/user/profile";
@@ -39,9 +39,8 @@ const filterToApiType = {
 const FeedView = () => {
   const dispatch = useDispatch();
   const { registerOpenCreatePost } = useFeedActions();
-  const { posts, postsLoading, saving, deleting, error } = useSelector(
-    (state) => state.userFeed,
-  );
+  const { posts, postsLoading, postsError, saving, deleting, error } =
+    useSelector((state) => state.userFeed);
   const { user } = useSelector((state) => state.userProfile);
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
 
@@ -58,13 +57,17 @@ const FeedView = () => {
     if (!user) dispatch(fetchUserProfile());
   }, [dispatch, user]);
 
-  useEffect(() => {
-    dispatch(clearFeedError());
+  const loadFeed = useCallback(() => {
+    dispatch(invalidateFeedPosts());
     const params = { page: 1, pageSize: 20, sort: "desc" };
     const type = filterToApiType[activeFilter];
     if (type) params.type = type;
     dispatch(fetchFeed(params));
   }, [dispatch, activeFilter]);
+
+  useLayoutEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -156,6 +159,17 @@ const FeedView = () => {
                 count={3}
                 className="space-y-4"
               />
+            ) : postsError && mappedPosts.length === 0 ? (
+              <div className="rounded-xl border border-[#E4E7EC] bg-white px-4 py-10 text-center text-[14px] text-[#64748B]">
+                <p>Couldn&apos;t load posts.</p>
+                <button
+                  type="button"
+                  onClick={loadFeed}
+                  className="mt-2 font-semibold text-primary hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
             ) : mappedPosts.length === 0 ? (
               <p className="rounded-xl border border-[#E4E7EC] bg-white px-4 py-10 text-center text-[14px] text-[#64748B]">
                 No posts yet. Be the first to share something with the

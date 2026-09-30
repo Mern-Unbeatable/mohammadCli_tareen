@@ -16,7 +16,12 @@ import {
   clearProfileError,
   toProfilePageUser,
 } from "@/features/user/profile";
-import { fetchFeed, removePost, toFeedPostModel } from "@/features/user/feed";
+import {
+  fetchFeed,
+  invalidateFeedPosts,
+  removePost,
+  toFeedPostModel,
+} from "@/features/user/feed";
 import {
   fetchMyReports,
   clearReportsError,
@@ -67,6 +72,7 @@ const ProfileView = () => {
     dispatch(clearProfileError());
     dispatch(clearReportsError());
     dispatch(fetchUserProfile());
+    dispatch(invalidateFeedPosts());
     dispatch(fetchFeed(MY_POSTS_QUERY));
     dispatch(fetchMyReports({ page: 1, pageSize: 10, sort: "desc" }));
   }, [dispatch]);
