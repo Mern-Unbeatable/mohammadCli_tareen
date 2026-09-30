@@ -45,6 +45,7 @@ export function toContactCardModel(contact) {
     company: contact.company || "—",
     country: contact.country || "—",
     avatar: contact.avatar || null,
+    coverPhoto: contact.coverPhoto || null,
     avatarClass: "bg-[#E8F3FB] text-primary",
     connections: contact.connections ?? 0,
     about:
