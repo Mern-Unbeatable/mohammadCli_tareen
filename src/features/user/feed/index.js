@@ -15,6 +15,7 @@ export {
 } from "./feedSlice";
 export {
   fetchFeed,
+  fetchMyPosts,
   fetchPostDetails,
   createPost,
   updatePost,

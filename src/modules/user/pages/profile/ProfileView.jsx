@@ -17,8 +17,7 @@ import {
   toProfilePageUser,
 } from "@/features/user/profile";
 import {
-  fetchFeed,
-  invalidateFeedPosts,
+  fetchMyPosts,
   removePost,
   toFeedPostModel,
 } from "@/features/user/feed";
@@ -28,8 +27,6 @@ import {
   toMyReportModel,
 } from "@/features/user/reports";
 
-const MY_POSTS_QUERY = { page: 1, pageSize: 5, mine: true, sort: "desc" };
-
 const ProfileView = () => {
   const dispatch = useDispatch();
   const {
@@ -37,9 +34,8 @@ const ProfileView = () => {
     loading,
     error: profileError,
   } = useSelector((state) => state.userProfile);
-  const { posts, postsLoading, deleting } = useSelector(
-    (state) => state.userFeed,
-  );
+  const { myPosts, myPostsLoaded, myPostsStale, myPostsError, deleting } =
+    useSelector((state) => state.userFeed);
   const {
     reports,
     reportsLoading,
@@ -59,8 +55,8 @@ const ProfileView = () => {
     ["premium", "trial", "cancelled"].includes(profileUser?.membershipStatus);
 
   const activity = useMemo(
-    () => (posts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
-    [posts],
+    () => (myPosts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
+    [myPosts],
   );
 
   const myReports = useMemo(
@@ -72,10 +68,16 @@ const ProfileView = () => {
     dispatch(clearProfileError());
     dispatch(clearReportsError());
     dispatch(fetchUserProfile());
-    dispatch(invalidateFeedPosts());
-    dispatch(fetchFeed(MY_POSTS_QUERY));
     dispatch(fetchMyReports({ page: 1, pageSize: 10, sort: "desc" }));
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchMyPosts());
+  }, [dispatch, myPostsStale]);
+
+  useEffect(() => {
+    if (myPostsError) toast.error(myPostsError);
+  }, [myPostsError]);
 
   const handleCloseDeleteModal = () => {
     if (deleting) return;
@@ -89,7 +91,6 @@ const ProfileView = () => {
     if (removePost.fulfilled.match(result)) {
       toast.success("Post deleted");
       setPendingDelete(null);
-      dispatch(fetchFeed(MY_POSTS_QUERY));
       return;
     }
     toast.error(result.payload || "Failed to delete post");
@@ -128,7 +129,7 @@ const ProfileView = () => {
           <ProfilePageContent
             user={profileUser}
             posts={activity}
-            postsLoading={postsLoading && activity.length === 0}
+            postsLoading={!myPostsLoaded && !myPostsError}
             onReport={setReportPost}
             onDelete={deleting ? undefined : setPendingDelete}
             isPremium={isPremium}

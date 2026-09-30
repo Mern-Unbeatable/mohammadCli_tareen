@@ -1,6 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { loginUser, logoutUser, registerUser } from "@/features/auth/authThunks";
 import {
   fetchFeed,
+  fetchMyPosts,
   fetchPostDetails,
   createPost,
   updatePost,
@@ -18,6 +20,12 @@ const initialState = {
   postsLoading: false,
   postsRequestId: null,
   postsError: null,
+  myPosts: [],
+  myPostsMeta: { page: 1, pageSize: 5, total: 0, totalPages: 1 },
+  myPostsLoading: false,
+  myPostsLoaded: false,
+  myPostsStale: false,
+  myPostsError: null,
   selectedPostLoading: false,
   saving: false,
   deleting: false,
@@ -33,6 +41,17 @@ const upsertPost = (state, post) => {
   if (index >= 0) state.posts[index] = post;
   else state.posts = [post, ...state.posts];
   if (state.selectedPost?.id === post.id) state.selectedPost = post;
+  const mineIndex = state.myPosts.findIndex((row) => row.id === post.id);
+  if (mineIndex >= 0) state.myPosts[mineIndex] = post;
+};
+
+const resetMyPosts = (state) => {
+  state.myPosts = [];
+  state.myPostsMeta = initialState.myPostsMeta;
+  state.myPostsLoading = false;
+  state.myPostsLoaded = false;
+  state.myPostsStale = false;
+  state.myPostsError = null;
 };
 
 const feedSlice = createSlice({
@@ -77,6 +96,25 @@ const feedSlice = createSlice({
         state.error = action.payload;
         state.postsError = action.payload || "Failed to load feed";
       })
+      .addCase(fetchMyPosts.pending, (state) => {
+        state.myPostsLoading = true;
+        state.myPostsError = null;
+      })
+      .addCase(fetchMyPosts.fulfilled, (state, action) => {
+        state.myPostsLoading = false;
+        state.myPostsLoaded = true;
+        state.myPostsStale = false;
+        state.myPosts = action.payload.data;
+        state.myPostsMeta = action.payload.meta;
+      })
+      .addCase(fetchMyPosts.rejected, (state, action) => {
+        state.myPostsLoading = false;
+        state.myPostsError = action.payload || "Failed to load your posts";
+      })
+      .addCase(logoutUser.fulfilled, resetMyPosts)
+      .addCase(logoutUser.rejected, resetMyPosts)
+      .addCase(loginUser.fulfilled, resetMyPosts)
+      .addCase(registerUser.fulfilled, resetMyPosts)
       .addCase(fetchPostDetails.pending, (state) => {
         state.selectedPostLoading = true;
         state.error = null;
@@ -102,6 +140,13 @@ const feedSlice = createSlice({
             ...state.postsMeta,
             total: (state.postsMeta.total || 0) + 1,
           };
+          if (state.myPostsLoaded) {
+            state.myPosts = [
+              action.payload,
+              ...state.myPosts.filter((row) => row.id !== action.payload.id),
+            ];
+            state.myPostsStale = true;
+          }
         }
       })
       .addCase(createPost.rejected, (state, action) => {
@@ -129,6 +174,12 @@ const feedSlice = createSlice({
         state.posts = state.posts.filter(
           (post) => post.id !== action.payload.postId,
         );
+        if (state.myPosts.some((post) => post.id === action.payload.postId)) {
+          state.myPosts = state.myPosts.filter(
+            (post) => post.id !== action.payload.postId,
+          );
+          state.myPostsStale = true;
+        }
         if (state.selectedPost?.id === action.payload.postId) {
           state.selectedPost = null;
         }
@@ -198,6 +249,7 @@ const feedSlice = createSlice({
           };
         };
         state.posts = state.posts.map(insertComment);
+        state.myPosts = state.myPosts.map(insertComment);
         state.selectedPost = insertComment(state.selectedPost);
       })
       .addCase(addComment.rejected, (state, action) => {
@@ -257,6 +309,7 @@ const feedSlice = createSlice({
           };
         };
         state.posts = state.posts.map(stripComment);
+        state.myPosts = state.myPosts.map(stripComment);
         state.selectedPost = stripComment(state.selectedPost);
       })
       .addCase(removeComment.rejected, (state, action) => {
@@ -303,6 +356,7 @@ const feedSlice = createSlice({
           };
         };
         state.posts = state.posts.map(applyReaction);
+        state.myPosts = state.myPosts.map(applyReaction);
         state.selectedPost = applyReaction(state.selectedPost);
       })
       .addCase(reactToPost.rejected, (state, action) => {
@@ -353,6 +407,7 @@ const feedSlice = createSlice({
           };
         };
         state.posts = state.posts.map(applyLike);
+        state.myPosts = state.myPosts.map(applyLike);
         state.selectedPost = applyLike(state.selectedPost);
       })
       .addCase(likeComment.rejected, (state, action) => {

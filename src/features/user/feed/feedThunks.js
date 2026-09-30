@@ -18,6 +18,30 @@ export const fetchFeed = createAsyncThunk(
   },
 );
 
+export const MY_POSTS_QUERY = { page: 1, pageSize: 5, mine: true, sort: "desc" };
+
+/** Signed-in user's own posts; served from cache unless never loaded or marked stale. */
+export const fetchMyPosts = createAsyncThunk(
+  "userFeed/fetchMyPosts",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await feedApi.getFeed(MY_POSTS_QUERY);
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to load your posts"),
+      );
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const { myPostsLoading, myPostsLoaded, myPostsStale } =
+        getState().userFeed;
+      if (myPostsLoading) return false;
+      return !myPostsLoaded || myPostsStale;
+    },
+  },
+);
+
 export const fetchPostDetails = createAsyncThunk(
   "userFeed/fetchPostDetails",
   async (postId, { rejectWithValue }) => {
