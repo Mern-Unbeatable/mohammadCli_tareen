@@ -325,30 +325,59 @@ export const MyReportsCardSkeleton = () => (
 /**
  * Full own-profile page skeleton — mirrors ProfilePageContent premium layout.
  */
-export const ProfilePageSkeleton = ({ showSubscription = true }) => (
-  <div className="space-y-4" aria-busy="true" aria-live="polite">
-    <ProfileHeroSkeleton />
-    {showSubscription ? (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-        <SubscriptionDetailsCardSkeleton />
-        <ContactInfoCardSkeleton showProfessional />
+export const ProfilePageSkeleton = ({ showSubscription = true, sidebar = false }) =>
+  sidebar ? (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <ProfileHeroSkeleton />
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:items-start">
+        <div className="contents lg:flex lg:flex-col lg:gap-4">
+          {showSubscription && (
+            <div className="order-1">
+              <SubscriptionDetailsCardSkeleton />
+            </div>
+          )}
+          <div className="order-4">
+            <MyReportsCardSkeleton />
+          </div>
+        </div>
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+          <div className="order-2">
+            <ContactInfoCardSkeleton showProfessional={showSubscription} />
+          </div>
+          <section className="order-3">
+            <Skeleton className="mb-4 h-5 w-24" />
+            <div className="space-y-4">
+              <FeedPostCardSkeleton />
+              <FeedPostCardSkeleton />
+            </div>
+          </section>
+        </div>
       </div>
-    ) : (
-      <>
-        <ProfessionalInfoCardSkeleton />
-        <ContactInfoCardSkeleton />
-      </>
-    )}
-    <section>
-      <Skeleton className="mb-4 h-5 w-24" />
-      <div className="space-y-4">
-        <FeedPostCardSkeleton />
-        <FeedPostCardSkeleton />
-      </div>
-    </section>
-    <MyReportsCardSkeleton />
-  </div>
-);
+    </div>
+  ) : (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <ProfileHeroSkeleton />
+      {showSubscription ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+          <SubscriptionDetailsCardSkeleton />
+          <ContactInfoCardSkeleton showProfessional />
+        </div>
+      ) : (
+        <>
+          <ProfessionalInfoCardSkeleton />
+          <ContactInfoCardSkeleton />
+        </>
+      )}
+      <section>
+        <Skeleton className="mb-4 h-5 w-24" />
+        <div className="space-y-4">
+          <FeedPostCardSkeleton />
+          <FeedPostCardSkeleton />
+        </div>
+      </section>
+      <MyReportsCardSkeleton />
+    </div>
+  );
 
 /**
  * Contact profile page skeleton (hero + professional + contact + activity).

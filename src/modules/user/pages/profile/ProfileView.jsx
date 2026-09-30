@@ -76,8 +76,8 @@ const ProfileView = () => {
   if (loading && !profileUser) {
     return (
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
-          <ProfilePageSkeleton showSubscription />
+        <Container className="max-w-7xl">
+          <ProfilePageSkeleton showSubscription sidebar />
         </Container>
       </main>
     );
@@ -94,7 +94,7 @@ const ProfileView = () => {
   return (
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
+        <Container className="max-w-7xl">
           <ProfilePageContent
             user={profileUser}
             posts={activity}
@@ -108,11 +108,11 @@ const ProfileView = () => {
                 />
               ) : null
             }
+            sidebarSlot={
+              <MyReportsCard reports={myReports} loading={reportsLoading} />
+            }
+            postsTitle="My Posts"
           />
-
-          <div className="mt-4">
-            <MyReportsCard reports={myReports} loading={reportsLoading} />
-          </div>
 
           {!profileUser.isActive && (
             <p className="mt-6 text-center text-[13px] text-[#64748B]">
