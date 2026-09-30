@@ -12,6 +12,16 @@ const features = [
   'Built for the laboratory industry',
 ];
 
+const EXPLORE_SECTION_ID = 'community';
+
+const scrollToExploreSection = (event) => {
+  const section = document.getElementById(EXPLORE_SECTION_ID);
+  if (!section) return;
+  event.preventDefault();
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.history.replaceState(null, '', `#${EXPLORE_SECTION_ID}`);
+};
+
 const HeroSection = () => {
   const { isUser, homePath } = useAuth();
 
@@ -66,7 +76,8 @@ const HeroSection = () => {
                 </Link>
               )}
               <Link
-                to="/explore"
+                to={`/#${EXPLORE_SECTION_ID}`}
+                onClick={scrollToExploreSection}
                 className="rounded-full bg-secondary px-7 py-3 text-[15px] font-medium leading-none text-deep-blue transition-colors hover:bg-[#E3EEF8] lg:px-6 lg:py-2.5 lg:text-[14px] xl:px-9 xl:py-3.5 xl:text-[16px]"
               >
                 Explore Network
