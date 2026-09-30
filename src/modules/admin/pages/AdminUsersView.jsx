@@ -145,10 +145,8 @@ const AdminUsersView = () => {
   const handleStatusChange = async (userId, newStatus, reason = "") => {
     const apiStatus = newStatus === "Suspend" ? "SUSPENDED" : "ACTIVE";
     const statusReason =
-      reason ||
-      (apiStatus === "SUSPENDED"
-        ? "Violation of terms of service — spamming other users"
-        : "Account activated by admin");
+      reason?.trim() ||
+      (apiStatus === "SUSPENDED" ? undefined : "Account activated by admin");
 
     const resultAction = await dispatch(
       updateUserStatus({ userId, status: apiStatus, reason: statusReason }),

@@ -17,6 +17,11 @@ export const loginUser = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         authApi.getApiErrorMessage(err, "Invalid email or password"),
+        {
+          status: err?.status ?? null,
+          code: err?.code ?? null,
+          details: err?.details ?? null,
+        },
       );
     }
   },

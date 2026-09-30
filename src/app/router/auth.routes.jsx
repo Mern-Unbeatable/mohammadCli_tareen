@@ -4,6 +4,8 @@ import LoginView from '@/modules/auth/pages/LoginView';
 import RegisterView from '@/modules/auth/pages/RegisterView';
 import ForgotPasswordView from '@/modules/auth/pages/ForgotPasswordView';
 import ResetPasswordView from '@/modules/auth/pages/ResetPasswordView';
+import ContactSupportView from '@/modules/auth/pages/ContactSupportView';
+import { CONTACT_SUPPORT_PATH } from '@/shared/constants/support';
 
 export const authRoutes = [
   {
@@ -35,5 +37,11 @@ export const authRoutes = [
         children: [{ index: true, element: <ResetPasswordView /> }],
       },
     ],
+  },
+  {
+    path: CONTACT_SUPPORT_PATH,
+    element: <AuthLayout />,
+    handle: { title: 'Contact support' },
+    children: [{ index: true, element: <ContactSupportView /> }],
   },
 ];

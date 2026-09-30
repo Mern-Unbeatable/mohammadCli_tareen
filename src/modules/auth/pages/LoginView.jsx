@@ -1,10 +1,41 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Mail } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/shared/auth/useAuth';
 import { getSafeRedirectPath } from '@/shared/routing/safeRedirect';
 import { inputClass, labelClass } from '@/modules/auth/components/AuthFormFields';
+import { CONTACT_SUPPORT_PATH } from '@/shared/constants/support';
+
+const SuspensionNotice = ({ reason, email }) => (
+  <div
+    role="alert"
+    className="mb-6 flex gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-left"
+  >
+    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+    <div className="min-w-0 text-[14px] leading-[1.6] text-red-700">
+      <p className="font-semibold">Account suspended</p>
+      {reason ? (
+        <p className="mt-1 whitespace-pre-wrap break-words">
+          Your account has been suspended because: {reason}
+        </p>
+      ) : (
+        <p className="mt-1">Your account has been suspended.</p>
+      )}
+      <p className="mt-1 text-red-600">
+        If you think this is a mistake, please contact support.
+      </p>
+      <Link
+        to={CONTACT_SUPPORT_PATH}
+        state={{ suspended: true, email, reason }}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3.5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-red-700"
+      >
+        <Mail className="h-4 w-4" />
+        Contact support
+      </Link>
+    </div>
+  </div>
+);
 
 const LoginView = () => {
   const navigate = useNavigate();
@@ -15,11 +46,11 @@ const LoginView = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
-  const [error, setError] = useState('');
+  const [suspension, setSuspension] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setSuspension(null);
 
     const result = await login({
       email,
@@ -28,9 +59,8 @@ const LoginView = () => {
     });
 
     if (!result.ok) {
-      const errorMsg = result.error || 'Invalid email or password';
-      setError(errorMsg);
-      toast.error(errorMsg);
+      toast.error(result.error || 'Invalid email or password');
+      if (result.suspension) setSuspension({ ...result.suspension, email: email.trim() });
       return;
     }
 
@@ -42,6 +72,10 @@ const LoginView = () => {
   return (
     <section className="flex min-h-[calc(100vh-72px)] items-center justify-center px-4 py-12 sm:px-6">
       <div className="w-full max-w-[500px]">
+        {suspension ? (
+          <SuspensionNotice reason={suspension.reason} email={suspension.email} />
+        ) : null}
+
         <div className="mb-8 text-center">
           <h1 className="text-[32px] font-bold tracking-[-0.02em] text-deep-blue sm:text-[36px]">
             Welcome back
@@ -61,7 +95,10 @@ const LoginView = () => {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setSuspension(null);
+                }}
                 className={inputClass}
                 placeholder="Enter Your email"
                 disabled={loading}

@@ -41,9 +41,19 @@ export const useAuth = () => {
       };
     }
 
+    const details = resultAction.meta?.details;
+    const suspension =
+      details?.accountStatus === "SUSPENDED"
+        ? {
+            reason: details.suspensionReason || null,
+            suspendedAt: details.suspendedAt || null,
+          }
+        : null;
+
     return {
       ok: false,
       error: resultAction.payload || "Invalid email or password.",
+      suspension,
     };
   };
 
