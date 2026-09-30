@@ -614,7 +614,7 @@ export const COMPONENT_DOCS = [
     id: 'profile-setup-form',
     name: 'ProfileSetupForm',
     category: 'forms',
-    summary: 'Professional profile setup form with upload zones.',
+    summary: 'Professional profile setup form with profile-style cover and avatar uploads.',
     path: 'src/components/forms/ProfileSetupForm/',
     importExample:
       "import ProfileSetupForm from '@/components/forms/ProfileSetupForm/ProfileSetupForm'\nimport { DEMO_PROFILE_FORM } from '@/data/demoData'",
