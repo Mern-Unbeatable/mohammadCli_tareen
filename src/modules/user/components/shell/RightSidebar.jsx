@@ -27,7 +27,7 @@ const formatPrice = (price) => {
 };
 
 const SectionTitle = ({ icon: Icon, children }) => (
-  <h3 className="flex items-center gap-2 px-4 py-2 border-b border-[#E4E7EC] text-[15px] font-bold text-deep-blue">
+  <h3 className="flex items-center gap-2 px-4 py-3 border-b border-[#E4E7EC] text-[15px] font-bold text-deep-blue">
     {Icon ? (
       <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
     ) : null}
@@ -56,7 +56,7 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
           const isPending = person.pending || connectingId === person.id;
 
           return (
-            <li key={person.id} className="flex items-center gap-2 px-4 py-3">
+            <li key={person.id} className="flex items-center gap-2 px-4 py-2">
               <Link to={person.to} className="shrink-0">
                 <Avatar
                   src={person.avatar}
@@ -156,9 +156,9 @@ const JobsList = ({ items, loading }) => (
           <li key={id}>
             <Link
               to={to}
-              className="block px-4 py-3 transition-colors hover:bg-[#F9FAFB]"
+              className="block px-4 py-2 transition-colors hover:bg-[#F9FAFB]"
             >
-              <p className="text-[13px] font-semibold text-deep-blue hover:text-primary">
+              <p className="text-[13px] text-deep-blue hover:text-primary">
                 {title}
               </p>
               <p className="mt-0.5 text-[12px] text-[#64748B]">
