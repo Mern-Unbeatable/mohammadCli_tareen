@@ -136,6 +136,7 @@ export const API_ENDPOINTS = {
     ADVERTISEMENTS: {
       LIST: "/advertisements",
       CREATE: "/advertisements",
+      PRICING: "/advertisements/pricing",
       DETAILS: (adId) => `/advertisements/${adId}`,
       UPDATE: (adId) => `/advertisements/${adId}`,
       DELETE: (adId) => `/advertisements/${adId}`,

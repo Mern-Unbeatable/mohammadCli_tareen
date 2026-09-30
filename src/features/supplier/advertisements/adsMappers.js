@@ -29,19 +29,21 @@ const CATEGORY_API = {
   webinar: "WEBINAR",
 };
 
-const DURATION_DAYS = {
-  "7d": 7,
-  "14d": 14,
-  "30d": 30,
-};
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const statusFilterToApi = (value) => STATUS_FILTER_API[value];
 
 export const categoryIdToApi = (categoryId) =>
   CATEGORY_API[categoryId] || "PRODUCT";
 
-export const durationIdToDays = (durationId) =>
-  DURATION_DAYS[durationId] || 14;
+/** Tier ids follow the API's `sponsored_pricing` format: `7-days`, `14-days`, … */
+export const durationDaysToId = (days) =>
+  Number.isInteger(days) && days > 0 ? `${days}-days` : "";
+
+export const durationIdToDays = (durationId) => {
+  const match = /^(\d+)-days$/.exec(durationId || "");
+  return match ? Number(match[1]) : undefined;
+};
 
 const initialsFromName = (name = "") =>
   name
@@ -79,6 +81,41 @@ export function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(Number(price));
 }
+
+/** Advertising fee — whole euros stay compact (€35), cents are kept (€35.50). */
+export function formatAdFee(amount, currency = "EUR") {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return "—";
+  const digits = Number.isInteger(value) ? 0 : 2;
+  return new Intl.NumberFormat("en-BE", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+/**
+ * Map `GET /advertisements/pricing` onto Duration step tiers. Dates are
+ * estimates from `fromDate`; the real window starts when an admin approves.
+ */
+export function toDurationTiers(pricing, fromDate = new Date()) {
+  const tiers = Array.isArray(pricing?.tiers) ? pricing.tiers : [];
+  const currency = pricing?.currency || "EUR";
+  return tiers.map((tier) => ({
+    id: tier.id,
+    days: tier.days,
+    label: `${tier.days} days`,
+    price: Number(tier.price),
+    priceLabel: formatAdFee(tier.price, currency),
+    popular: Boolean(tier.popular),
+    startDate: formatDisplayDate(fromDate),
+    endDate: formatDisplayDate(new Date(fromDate.getTime() + tier.days * DAY_MS)),
+  }));
+}
+
+export const defaultDurationId = (pricing) =>
+  durationDaysToId(pricing?.defaultDurationDays);
 
 export function toAdRowModel(ad) {
   if (!ad) return null;
@@ -158,10 +195,7 @@ export function adToForm(ad) {
   const categoryId =
     Object.keys(CATEGORY_API).find((id) => CATEGORY_API[id] === ad?.category) ||
     "product";
-  const durationId =
-    Object.keys(DURATION_DAYS).find(
-      (id) => DURATION_DAYS[id] === ad?.durationDays,
-    ) || "14d";
+  const durationId = durationDaysToId(ad?.durationDays);
 
   return {
     categoryId,
@@ -189,9 +223,10 @@ export function formToCreatePayload(form) {
     title: String(form.title || "").trim(),
     category: categoryIdToApi(form.categoryId),
     description: String(form.description || "").trim(),
-    durationDays: durationIdToDays(form.durationId),
   };
 
+  const durationDays = durationIdToDays(form.durationId);
+  if (durationDays) payload.durationDays = durationDays;
   if (form.price !== "" && form.price != null) {
     const price = Number(form.price);
     if (!Number.isNaN(price)) payload.price = price;

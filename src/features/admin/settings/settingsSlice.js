@@ -4,6 +4,8 @@ import { fetchAdminSettings, saveAdminSetting } from "./settingsThunks";
 const initialState = {
   settings: {},
   loading: false,
+  /** requestId of the last successful load — keys the settings form remount. */
+  loadedRequestId: null,
   savingKey: null,
   error: null,
   saveError: null,
@@ -27,12 +29,11 @@ const settingsSlice = createSlice({
       .addCase(fetchAdminSettings.fulfilled, (state, action) => {
         state.loading = false;
         state.settings = action.payload || {};
+        state.loadedRequestId = action.meta.requestId;
       })
       .addCase(fetchAdminSettings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        // Keep empty map so the UI can fall back to defaults
-        state.settings = {};
       })
       .addCase(saveAdminSetting.pending, (state, action) => {
         state.savingKey = action.meta.arg?.key ?? null;

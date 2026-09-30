@@ -9,7 +9,9 @@ import {
   Clock,
   GraduationCap,
   ImageIcon,
+  Info,
   Microscope,
+  RefreshCw,
   Settings2,
   Tag,
   Video,
@@ -18,17 +20,15 @@ import {
 import { toast } from 'react-toastify';
 import StatusBadge from '@/components/data-display/DataTable/StatusBadge';
 import AdDetailCard from '@/modules/supplier/components/AdDetailCard';
-import {
-  AD_CATEGORIES,
-  DURATION_TIERS,
-  getCategoryById,
-  getDurationById,
-} from '@/modules/supplier/data/advertisements';
+import { AD_CATEGORIES, getCategoryById } from '@/modules/supplier/data/advertisements';
 import {
   createSupplierAd,
   updateSupplierAd,
+  fetchSupplierAdPricing,
   formToCreatePayload,
   adToForm,
+  toDurationTiers,
+  defaultDurationId,
 } from '@/features/supplier/advertisements';
 import { panelPrimaryBtn, panelSecondaryBtn } from '@/shared/layout/PanelLayout/panelPageTheme';
 
@@ -80,7 +80,7 @@ const defaultForm = {
   eventTime: '',
   location: '',
   organizer: '',
-  durationId: '14d',
+  durationId: '',
   imageName: '',
   videoName: '',
 };
@@ -88,7 +88,9 @@ const defaultForm = {
 const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = null }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { saving } = useSelector((state) => state.supplierAds);
+  const { saving, pricing, pricingLoading, pricingError } = useSelector(
+    (state) => state.supplierAds
+  );
   const dialogRef = useRef(null);
   const [step, setStep] = useState('type');
   const [form, setForm] = useState(() =>
@@ -96,6 +98,11 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
   );
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [estimateFrom] = useState(() => new Date());
+
+  useEffect(() => {
+    if (open) dispatch(fetchSupplierAdPricing());
+  }, [open, dispatch]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -117,7 +124,14 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
   }, [open, onClose]);
 
   const category = getCategoryById(form.categoryId);
-  const duration = getDurationById(form.durationId);
+  const tiers = useMemo(() => toDurationTiers(pricing, estimateFrom), [pricing, estimateFrom]);
+  const selectedDurationId = tiers.some((tier) => tier.id === form.durationId)
+    ? form.durationId
+    : defaultDurationId(pricing);
+  const duration = tiers.find((tier) => tier.id === selectedDurationId) || null;
+  const pricingUnavailable = pricingError
+    ? `${pricingError}. Please retry.`
+    : 'Advertisement pricing is still loading. Please wait a moment.';
 
   const previewAd = useMemo(
     () => ({
@@ -132,9 +146,9 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
       image:
         form.imageUrl ||
         'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop',
-      startDate: duration?.startDate || '18 Aug 2026',
-      expiryDate: duration?.endDate || '1 Sep 2026',
-      price: form.price ? `€${form.price}` : duration?.price || '€60',
+      startDate: duration ? `${duration.startDate} (est.)` : '—',
+      expiryDate: duration ? `${duration.endDate} (est.)` : '—',
+      price: form.price ? `€${form.price}` : 'Contact for pricing',
       stats: null,
     }),
     [category, duration, form]
@@ -165,6 +179,10 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
         setError('Please enter a description.');
         return false;
       }
+    }
+    if (step === 'duration' && !duration) {
+      setError(pricingUnavailable);
+      return false;
     }
     setError('');
     return true;
@@ -213,7 +231,11 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
 
   const handlePay = async () => {
     if (saving) return;
-    const payload = formToCreatePayload(form);
+    if (!duration) {
+      setError(pricingUnavailable);
+      return;
+    }
+    const payload = formToCreatePayload({ ...form, durationId: duration.id });
     if (!payload.title || !payload.description) {
       setError('Please complete the advertisement details before submitting.');
       return;
@@ -310,7 +332,11 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
               ) : null}
               {step === 'duration' ? (
                 <DurationStep
-                  durationId={form.durationId}
+                  tiers={tiers}
+                  selected={duration}
+                  loading={pricingLoading && !pricing}
+                  error={pricing ? null : pricingError}
+                  onRetry={() => dispatch(fetchSupplierAdPricing())}
                   onSelect={(id) => setField('durationId', id)}
                 />
               ) : null}
@@ -322,7 +348,7 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
                   <AdDetailCard ad={previewAd} showSocial={false} />
                 </div>
               ) : null}
-              {step === 'payment' ? <PaymentStep total={duration?.price || '€60'} /> : null}
+              {step === 'payment' ? <PaymentStep total={duration?.priceLabel || '—'} /> : null}
 
               {error ? (
                 <p className="mt-4 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[13px] text-[#DC2626]">
@@ -347,10 +373,10 @@ const CreateAdModal = ({ open, onClose, onCreated, editAdId = null, initialAd = 
                     <button
                       type="button"
                       onClick={handlePay}
-                      disabled={saving}
+                      disabled={saving || !duration}
                       className={`${panelPrimaryBtn} min-w-0 flex-1 disabled:opacity-60`}
                     >
-                      {saving ? 'Submitting…' : `Pay ${duration?.price || '€60'}`}
+                      {saving ? 'Submitting…' : duration ? `Pay ${duration.priceLabel}` : 'Pay'}
                     </button>
                   ) : (
                     <button type="button" onClick={goNext} className={`${panelPrimaryBtn} min-w-0 flex-1`}>
@@ -665,23 +691,55 @@ const MediaStep = ({ imageName, videoName, onImageSelect, onVideoSelect }) => (
   </div>
 );
 
-const DurationStep = ({ durationId, onSelect }) => {
-  const selected = getDurationById(durationId);
+const DurationStep = ({ tiers, selected, loading, error, onRetry, onSelect }) => {
+  const header = (
+    <div>
+      <h3 className="text-[15px] font-bold text-deep-blue sm:text-[16px] lg:text-[17px]">
+        Select Advertisement Duration
+      </h3>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B] sm:text-[14px] lg:text-[15px]">
+        Choose how long your advertisement will run. Payment is required to submit for review.
+      </p>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-5" aria-busy="true">
+        {header}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-[168px] animate-pulse rounded-xl bg-[#F3F4F6]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !tiers.length) {
+    return (
+      <div className="space-y-5">
+        {header}
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-6 text-center">
+          <p className="text-[13px] text-[#DC2626] sm:text-[14px]">
+            {error || 'No advertisement durations are available right now.'}
+          </p>
+          <button type="button" onClick={onRetry} className={panelSecondaryBtn}>
+            <RefreshCw className="mr-1.5 inline h-4 w-4" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
-      <div>
-        <h3 className="text-[15px] font-bold text-deep-blue sm:text-[16px] lg:text-[17px]">
-          Select Advertisement Duration
-        </h3>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B] sm:text-[14px] lg:text-[15px]">
-          Choose how long your advertisement will run. Payment is required to submit for review.
-        </p>
-      </div>
+      {header}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {DURATION_TIERS.map((tier) => {
-          const active = durationId === tier.id;
+        {tiers.map((tier) => {
+          const active = selected?.id === tier.id;
           return (
             <button
               key={tier.id}
@@ -718,14 +776,14 @@ const DurationStep = ({ durationId, onSelect }) => {
                   active ? 'text-green-primary' : 'text-deep-blue'
                 }`}
               >
-                {tier.price}
+                {tier.priceLabel}
               </p>
               <p
                 className={`mt-3 text-[11px] leading-snug sm:text-[12px] lg:text-[13px] ${
                   active ? 'text-green-primary/80' : 'text-[#98A2B3]'
                 }`}
               >
-                {tier.startDate} — {tier.endDate}
+                Est. {tier.startDate} — {tier.endDate}
               </p>
             </button>
           );
@@ -737,15 +795,24 @@ const DurationStep = ({ durationId, onSelect }) => {
           <p className="text-[14px] font-bold text-pink-light sm:text-[15px]">Selected Duration Summary</p>
           <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <DurationSummaryItem label="Duration" value={selected.label} />
-            <DurationSummaryItem label="Start Date" value={selected.startDate} />
-            <DurationSummaryItem label="End Date" value={selected.endDate} />
-            <DurationSummaryItem label="Total Price" value={selected.price} />
+            <DurationSummaryItem label="Est. Start Date" value={selected.startDate} />
+            <DurationSummaryItem label="Est. End Date" value={selected.endDate} />
+            <DurationSummaryItem label="Total Price" value={selected.priceLabel} />
           </div>
+          <EstimateNote days={selected.days} />
         </div>
       ) : null}
     </div>
   );
 };
+
+const EstimateNote = ({ days, className = 'mt-3 text-pink-light/80' }) => (
+  <p className={`flex items-start gap-1.5 text-[12px] leading-relaxed sm:text-[13px] ${className}`}>
+    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    Dates are estimates. Your advertisement goes live once an administrator approves it and
+    runs for {days} days from approval.
+  </p>
+);
 
 const DurationSummaryItem = ({ label, value }) => (
   <div>
@@ -809,9 +876,14 @@ const SuccessStep = ({ ad, category, duration, onFinish }) => (
         </div>
         <div className="grid grid-cols-3 gap-3 border-t border-[#E4E7EC] px-4 py-4 sm:px-5">
           <SuccessDetailItem label="Duration" value={duration?.label} />
-          <SuccessDetailItem label="Start Date" value={duration?.startDate} />
-          <SuccessDetailItem label="End Date" value={duration?.endDate} />
+          <SuccessDetailItem label="Est. Start" value={duration?.startDate} />
+          <SuccessDetailItem label="Est. End" value={duration?.endDate} />
         </div>
+        {duration ? (
+          <div className="border-t border-[#E4E7EC] px-4 py-3 sm:px-5">
+            <EstimateNote days={duration.days} className="text-[#64748B]" />
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-5 space-y-2">

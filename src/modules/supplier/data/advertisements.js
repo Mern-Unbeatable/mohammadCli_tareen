@@ -25,36 +25,6 @@ export const AD_CATEGORIES = [
   },
 ];
 
-export const DURATION_TIERS = [
-  {
-    id: '7d',
-    days: 7,
-    label: '7 days',
-    price: '€35',
-    startDate: '17 Aug 2026',
-    endDate: '24 Aug 2026',
-    popular: false,
-  },
-  {
-    id: '14d',
-    days: 14,
-    label: '14 days',
-    price: '€60',
-    startDate: '17 Aug 2026',
-    endDate: '31 Aug 2026',
-    popular: true,
-  },
-  {
-    id: '30d',
-    days: 30,
-    label: '30 days',
-    price: '€100',
-    startDate: '17 Aug 2026',
-    endDate: '16 Sep 2026',
-    popular: false,
-  },
-];
-
 export const REJECTION_MESSAGE =
   "The advertisement does not meet Lab Unity's advertising guidelines. Please review the product information and update the required details before resubmitting.";
 
@@ -224,5 +194,3 @@ export const getSupplierAdById = (id) => {
 };
 
 export const getCategoryById = (id) => AD_CATEGORIES.find((item) => item.id === id);
-
-export const getDurationById = (id) => DURATION_TIERS.find((item) => item.id === id);

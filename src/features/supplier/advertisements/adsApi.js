@@ -75,6 +75,16 @@ export async function getAdById(adId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// Sponsored duration pricing (admin `sponsored_pricing` setting)
+// ═══════════════════════════════════════════════════════════════════════
+export async function getAdPricing() {
+  const response = await crudService.get(
+    API_ENDPOINTS.SUPPLIER.ADVERTISEMENTS.PRICING,
+  );
+  return unwrapApiData(response) || response;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // Create ad
 // ═══════════════════════════════════════════════════════════════════════
 export async function createAd(payload) {

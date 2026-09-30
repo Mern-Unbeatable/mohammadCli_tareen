@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchSupplierAds,
   fetchSupplierAdDetails,
+  fetchSupplierAdPricing,
   createSupplierAd,
   updateSupplierAd,
   removeSupplierAd,
@@ -13,6 +14,9 @@ const initialState = {
   selectedAd: null,
   adsLoading: false,
   selectedAdLoading: false,
+  pricing: null,
+  pricingLoading: false,
+  pricingError: null,
   saving: false,
   deleting: false,
   error: null,
@@ -63,6 +67,18 @@ const adsSlice = createSlice({
       .addCase(fetchSupplierAdDetails.rejected, (state, action) => {
         state.selectedAdLoading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchSupplierAdPricing.pending, (state) => {
+        state.pricingLoading = true;
+        state.pricingError = null;
+      })
+      .addCase(fetchSupplierAdPricing.fulfilled, (state, action) => {
+        state.pricingLoading = false;
+        state.pricing = action.payload;
+      })
+      .addCase(fetchSupplierAdPricing.rejected, (state, action) => {
+        state.pricingLoading = false;
+        state.pricingError = action.payload;
       })
       .addCase(createSupplierAd.pending, (state) => {
         state.saving = true;
