@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useDispatch } from "react-redux";
-import { Check } from "lucide-react";
+import { Briefcase, Check, ShoppingBag, UserPlus } from "lucide-react";
 import { toast } from "react-toastify";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
@@ -26,8 +26,13 @@ const formatPrice = (price) => {
   return `€${num.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 };
 
-const SectionTitle = ({ children }) => (
-  <h3 className="px-4 pt-4 text-[14px] font-bold text-deep-blue">{children}</h3>
+const SectionTitle = ({ icon: Icon, children }) => (
+  <h3 className="flex items-center gap-2 px-4 py-2 border-b border-[#E4E7EC] text-[15px] font-bold text-deep-blue">
+    {Icon ? (
+      <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+    ) : null}
+    {children}
+  </h3>
 );
 
 const EmptyRow = ({ message }) => (
@@ -36,9 +41,14 @@ const EmptyRow = ({ message }) => (
 
 const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
   <Card>
-    <SectionTitle>People you may know</SectionTitle>
+    <SectionTitle icon={UserPlus}>People you may know</SectionTitle>
     {loading && !people.length ? (
-      <CardSkeleton variant="sidebarPerson" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
+      <CardSkeleton
+        variant="sidebarPerson"
+        count={SIDEBAR_LIMIT}
+        as="ul"
+        className="divide-y divide-[#E4E7EC]"
+      />
     ) : people.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {people.map((person) => {
@@ -46,7 +56,7 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
           const isPending = person.pending || connectingId === person.id;
 
           return (
-            <li key={person.id} className="flex items-center gap-3 px-4 py-3">
+            <li key={person.id} className="flex items-center gap-2 px-4 py-3">
               <Link to={person.to} className="shrink-0">
                 <Avatar
                   src={person.avatar}
@@ -99,18 +109,23 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
 
 const MarketplaceList = ({ items, loading }) => (
   <Card>
-    <SectionTitle>Latest in the marketplace</SectionTitle>
+    <SectionTitle icon={ShoppingBag}>Latest in the marketplace</SectionTitle>
     {loading && !items.length ? (
-      <CardSkeleton variant="sidebarListing" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
+      <CardSkeleton
+        variant="sidebarListing"
+        count={SIDEBAR_LIMIT}
+        as="ul"
+        className="divide-y divide-[#E4E7EC]"
+      />
     ) : items.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {items.map(({ id, title, meta, price, to }) => (
           <li key={id}>
             <Link
               to={to}
-              className="block px-4 py-3 transition-colors hover:bg-[#F9FAFB]"
+              className="block px-4 py-2 transition-colors hover:bg-[#F9FAFB]"
             >
-              <p className="text-[13px] font-semibold text-deep-blue hover:text-primary">
+              <p className="text-[13px] text-deep-blue hover:text-primary">
                 {title}
               </p>
               <p className="mt-0.5 text-[12px] text-[#64748B]">{meta}</p>
@@ -127,9 +142,14 @@ const MarketplaceList = ({ items, loading }) => (
 
 const JobsList = ({ items, loading }) => (
   <Card>
-    <SectionTitle>Jobs for you</SectionTitle>
+    <SectionTitle icon={Briefcase}>Jobs for you</SectionTitle>
     {loading && !items.length ? (
-      <CardSkeleton variant="sidebarJob" count={SIDEBAR_LIMIT} as="ul" className="divide-y divide-[#E4E7EC]" />
+      <CardSkeleton
+        variant="sidebarJob"
+        count={SIDEBAR_LIMIT}
+        as="ul"
+        className="divide-y divide-[#E4E7EC]"
+      />
     ) : items.length ? (
       <ul className="divide-y divide-[#E4E7EC]">
         {items.map(({ id, title, company, location, type, to }) => (
