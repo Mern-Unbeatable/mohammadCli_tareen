@@ -18,6 +18,6 @@ export const supplierNavItems = [
   { to: '/supplier/general', label: 'General', icon: Newspaper },
   { to: '/supplier/chat', label: 'Messages', icon: MessageSquare, badge: 'unreadMessages' },
   { to: '/supplier/blogs', label: 'Blogs', icon: FileText },
-  { to: '/supplier/notifications', label: 'Notifications', icon: Bell },
+  { to: '/supplier/notifications', label: 'Notifications', icon: Bell, badge: 'unreadNotifications' },
   { to: '/supplier/profile', label: 'Profile', icon: User },
 ];

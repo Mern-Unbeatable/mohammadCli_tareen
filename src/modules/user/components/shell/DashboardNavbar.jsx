@@ -31,7 +31,17 @@ import {
 } from "@/features/user/search";
 import { toProfilePageUser } from "@/features/user/profile";
 import { useUnreadMessages } from "@/features/messages";
+import {
+  fetchUserUnreadNotificationCount,
+  selectUserUnreadNotificationCount,
+} from "@/features/user/notifications";
+import { useNotificationBadge } from "@/shared/hooks/useNotificationBadge";
 import { CHAT_BASE_PATHS } from "@/shared/constants/chat";
+
+const userNotificationBadge = {
+  fetchCount: fetchUserUnreadNotificationCount,
+  selectCount: selectUserUnreadNotificationCount,
+};
 
 const iconMap = {
   home: Home,
@@ -120,8 +130,20 @@ const DashboardNavbar = () => {
   const { user } = useSelector((state) => state.userProfile);
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const { conversations: unreadChats } = useUnreadMessages();
-  const unreadLabel = `${unreadChats} unread ${unreadChats === 1 ? "conversation" : "conversations"}`;
-  const badgeFor = (id) => (id === "messages" ? unreadChats : 0);
+  const unreadNotifications = useNotificationBadge(userNotificationBadge);
+  const badges = {
+    messages: {
+      count: unreadChats,
+      label: `${unreadChats} unread ${unreadChats === 1 ? "conversation" : "conversations"}`,
+    },
+    notifications: {
+      count: unreadNotifications,
+      label: `${unreadNotifications} unread ${unreadNotifications === 1 ? "notification" : "notifications"}`,
+    },
+  };
+  const unreadLabel = badges.messages.label;
+  const badgeFor = (id) => badges[id]?.count ?? 0;
+  const badgeLabelFor = (id) => badges[id]?.label;
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -267,15 +289,24 @@ const DashboardNavbar = () => {
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={
+              menuOpen
+                ? "Close menu"
+                : unreadNotifications
+                  ? `Open menu, ${badges.notifications.label}`
+                  : "Open menu"
+            }
             aria-expanded={menuOpen}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-deep-blue hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
+            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-deep-blue hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
           >
             {menuOpen ? (
               <X className="h-5 w-5" />
             ) : (
               <Menu className="h-5 w-5" />
             )}
+            {!menuOpen && unreadNotifications ? (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#CC1016] ring-2 ring-white sm:right-2 sm:top-2" />
+            ) : null}
           </button>
         </div>
 
@@ -328,7 +359,7 @@ const DashboardNavbar = () => {
                     <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
                     <CountBadge
                       count={badgeFor(id)}
-                      label={unreadLabel}
+                      label={badgeLabelFor(id)}
                       className="absolute -right-2.5 -top-1.5"
                     />
                   </span>
@@ -397,7 +428,7 @@ const DashboardNavbar = () => {
                         {label}
                         <CountBadge
                           count={badgeFor(id)}
-                          label={unreadLabel}
+                          label={badgeLabelFor(id)}
                           className="ml-auto"
                         />
                       </Link>
