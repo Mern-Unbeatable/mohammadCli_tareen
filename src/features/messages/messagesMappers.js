@@ -79,6 +79,7 @@ export function toConversationModel(conversation, { onlineUserIds } = {}) {
     time: formatMessageTime(conversation.time),
     unread: conversation.unreadCount ?? 0,
     otherUserId: conversation.otherUserId || null,
+    isAdmin: !conversation.isGroup && conversation.otherUserRole === "ADMIN",
     myRole: conversation.myRole || null,
     participants: Array.isArray(conversation.participants)
       ? conversation.participants

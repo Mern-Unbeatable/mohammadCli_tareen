@@ -4,6 +4,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import Avatar from '@/components/ui/Avatar';
 import { useAuth } from '@/shared/auth/useAuth';
+import { toAccountIdentity } from '@/shared/auth/accountIdentity';
 import { roleLabel as formatRoleLabel } from '@/shared/constants/roles';
 import ScrollToTop from '@/shared/routing/ScrollToTop';
 
@@ -16,6 +17,7 @@ const PanelLayout = ({ navItems, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const roleLabel = formatRoleLabel(role || user?.role);
+  const identity = toAccountIdentity(user);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -83,9 +85,14 @@ const PanelLayout = ({ navItems, children }) => {
 
       <div className="shrink-0 border-t border-[#E4E7EC] p-4">
         <div className="mb-3 flex items-center gap-3 rounded-lg border border-[#E4E7EC] p-3">
-          <Avatar src={user?.avatar} alt={user?.name} initials={user?.initials} size="sm" />
+          <Avatar
+            src={identity.avatar}
+            alt={identity.name}
+            initials={identity.initials}
+            size="sm"
+          />
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-deep-blue">{user?.name}</p>
+            <p className="truncate text-[13px] font-semibold text-deep-blue">{identity.name}</p>
             <p className="text-[11px] text-[#64748B]">{roleLabel}</p>
           </div>
         </div>

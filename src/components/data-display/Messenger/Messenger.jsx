@@ -34,6 +34,17 @@ const ChatAvatar = ({ chat, size = 'md' }) =>
     <Avatar initials={chat.initials} size={size} className={chat.avatarClass} />
   );
 
+const ChatName = ({ chat, className }) => (
+  <span className="flex min-w-0 items-center gap-1.5">
+    <span className={`truncate ${className}`}>{chat.name}</span>
+    {chat.isAdmin ? (
+      <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-primary">
+        Admin
+      </span>
+    ) : null}
+  </span>
+);
+
 const ConversationItem = ({ chat, active, onClick, showOnline = false }) => (
   <button
     type="button"
@@ -54,7 +65,7 @@ const ConversationItem = ({ chat, active, onClick, showOnline = false }) => (
 
     <div className="min-w-0 flex-1">
       <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-[14px] font-semibold text-deep-blue">{chat.name}</p>
+        <ChatName chat={chat} className="text-[14px] font-semibold text-deep-blue" />
         <span className="shrink-0 text-[11px] text-[#98A2B3]">{chat.time}</span>
       </div>
       <p
@@ -412,9 +423,10 @@ const Messenger = ({
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-[14px] font-semibold text-deep-blue sm:text-[15px]">
-                    {displayChat.name}
-                  </p>
+                  <ChatName
+                    chat={displayChat}
+                    className="text-[14px] font-semibold text-deep-blue sm:text-[15px]"
+                  />
                   <p className="truncate text-[11px] text-[#64748B] sm:text-[12px]">
                     {!displayChat.isGroup && displayChat.online
                       ? 'Online'

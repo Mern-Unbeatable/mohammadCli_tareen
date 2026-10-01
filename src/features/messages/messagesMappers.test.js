@@ -62,6 +62,14 @@ describe("toConversationModel", () => {
     expect(toConversationModel(group, { onlineUserIds: new Set(["u2"]) }).online).toBe(false);
   });
 
+  it("flags direct chats with an admin", () => {
+    expect(toConversationModel({ ...base, otherUserRole: "ADMIN" }).isAdmin).toBe(true);
+    expect(toConversationModel({ ...base, otherUserRole: "USER" }).isAdmin).toBe(false);
+    expect(
+      toConversationModel({ ...base, isGroup: true, otherUserRole: "ADMIN" }).isAdmin,
+    ).toBe(false);
+  });
+
   it("maps unread count and falls back for missing fields", () => {
     const model = toConversationModel({ id: "c2" });
     expect(model).toMatchObject({ name: "Conversation", initials: "?", unread: 0 });

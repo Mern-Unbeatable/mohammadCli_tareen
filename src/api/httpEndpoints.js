@@ -127,6 +127,10 @@ export const API_ENDPOINTS = {
       UPDATE: "/users/me",
       CHANGE_PASSWORD: "/users/me/password",
     },
+
+    UPLOADS: {
+      SINGLE: "/uploads",
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════════════
