@@ -54,6 +54,14 @@ export async function markRead(conversationId) {
   return unwrapApiData(await crudService.post(E.READ(conversationId)));
 }
 
+export async function getUnreadSummary() {
+  const data = unwrapApiData(await crudService.get(E.UNREAD));
+  return {
+    messages: Number(data?.messages) || 0,
+    conversations: Number(data?.conversations) || 0,
+  };
+}
+
 export async function getRecipients(params = {}) {
   const response = await crudService.get(E.RECIPIENTS, dropEmpty(params));
   return listOf(response);

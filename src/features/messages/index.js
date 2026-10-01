@@ -34,6 +34,7 @@ export {
   renameGroup,
   addParticipants,
   removeParticipant,
+  fetchUnreadSummary,
 } from "./messagesThunks";
 export {
   toConversationModel,
@@ -45,4 +46,5 @@ export {
   isSeenByOther,
 } from "./messagesMappers";
 export { useMessagesSocket, queryPresence } from "./realtime";
+export { useUnreadMessages } from "./useUnreadMessages";
 export * as messagesApi from "./messagesApi";

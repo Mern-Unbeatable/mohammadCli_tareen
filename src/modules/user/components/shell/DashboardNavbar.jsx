@@ -19,6 +19,7 @@ import { toast } from "react-toastify";
 import logo from "@/assets/logo.png";
 import Avatar from "@/components/ui/Avatar";
 import Container from "@/components/ui/Container";
+import CountBadge from "@/components/ui/CountBadge";
 import { useAuth } from "@/shared/auth/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
 import { navItems } from "@/modules/user/data/dashboard";
@@ -29,6 +30,7 @@ import {
   toSearchResultsModel,
 } from "@/features/user/search";
 import { toProfilePageUser } from "@/features/user/profile";
+import { useUnreadMessages } from "@/features/messages";
 
 const iconMap = {
   home: Home,
@@ -116,6 +118,9 @@ const DashboardNavbar = () => {
   const { results, loading, error } = useSelector((state) => state.userSearch);
   const { user } = useSelector((state) => state.userProfile);
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
+  const { conversations: unreadChats } = useUnreadMessages();
+  const unreadLabel = `${unreadChats} unread ${unreadChats === 1 ? "conversation" : "conversations"}`;
+  const badgeFor = (id) => (id === "messages" ? unreadChats : 0);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -248,10 +253,14 @@ const DashboardNavbar = () => {
 
           <Link
             to="/messages"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#64748B] hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
-            aria-label="Messages"
+            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#64748B] hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
+            aria-label={unreadChats ? `Messages, ${unreadLabel}` : "Messages"}
           >
             <MessageSquare className="h-5 w-5" />
+            <CountBadge
+              count={unreadChats}
+              className="absolute right-0.5 top-0.5 sm:right-1 sm:top-1"
+            />
           </Link>
 
           <button
@@ -314,7 +323,14 @@ const DashboardNavbar = () => {
                       : "text-[#64748B] hover:bg-[#F9FAFB] hover:text-deep-blue"
                   }`}
                 >
-                  <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
+                  <span className="relative">
+                    <Icon className="h-5 w-5" strokeWidth={active ? 2.2 : 1.8} />
+                    <CountBadge
+                      count={badgeFor(id)}
+                      label={unreadLabel}
+                      className="absolute -right-2.5 -top-1.5"
+                    />
+                  </span>
                   <span>{label}</span>
                 </Link>
               );
@@ -378,6 +394,11 @@ const DashboardNavbar = () => {
                       >
                         <Icon className="h-5 w-5 shrink-0" />
                         {label}
+                        <CountBadge
+                          count={badgeFor(id)}
+                          label={unreadLabel}
+                          className="ml-auto"
+                        />
                       </Link>
                     </li>
                   );

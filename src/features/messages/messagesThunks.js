@@ -50,6 +50,12 @@ export const markConversationRead = createAsyncThunk(
   ),
 );
 
+/** Background badge refresh: failures are ignored, not surfaced as `state.error`. */
+export const fetchUnreadSummary = createAsyncThunk(
+  "messages/fetchUnreadSummary",
+  withError("Failed to load unread messages", () => messagesApi.getUnreadSummary()),
+);
+
 export const fetchRecipients = createAsyncThunk(
   "messages/fetchRecipients",
   withError("Failed to load contacts", (params = {}) =>

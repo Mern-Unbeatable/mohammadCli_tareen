@@ -13,10 +13,16 @@ import {
   renameGroup,
   addParticipants,
   removeParticipant,
+  fetchUnreadSummary,
 } from "./messagesThunks";
+import { logoutUser } from "../auth/authThunks";
 import { attachmentSummary } from "./messagesMappers";
 
+const initialUnread = { messages: 0, conversations: 0, loaded: false, requestId: null };
+
 export const initialState = {
+  /** Account-wide unread totals for the nav badge; survives `resetMessages`. */
+  unread: initialUnread,
   /** "direct" | "group" — the tab the loaded list belongs to. */
   listType: "direct",
   conversations: [],
@@ -80,6 +86,15 @@ const bumpConversation = (state, conversationId, message) => {
   return conversation;
 };
 
+/** Zeroes a conversation's unread count and removes it from the nav totals. */
+const clearUnread = (state, conversation) => {
+  const count = conversation?.unreadCount ?? 0;
+  if (count <= 0) return;
+  conversation.unreadCount = 0;
+  state.unread.messages = Math.max(0, state.unread.messages - count);
+  state.unread.conversations = Math.max(0, state.unread.conversations - 1);
+};
+
 const setPending = (key) => (state) => {
   state[key] = true;
   state.error = null;
@@ -105,10 +120,10 @@ const messagesSlice = createSlice({
       }
       state.activeConversationId = id;
       const conversation = state.conversations.find((c) => c.id === id);
-      if (conversation) conversation.unreadCount = 0;
+      clearUnread(state, conversation);
       if (state.activeDetail?.id !== id) state.activeDetail = conversation || null;
     },
-    resetMessages: () => initialState,
+    resetMessages: (state) => ({ ...initialState, unread: state.unread }),
 
     /** Realtime: `message:new`. Payload carries the current user id for unread math. */
     messageReceived: (state, action) => {
@@ -117,7 +132,9 @@ const messagesSlice = createSlice({
       const isActive = state.activeConversationId === conversationId;
       if (isActive) appendMessage(state, message);
       if (conversation && !isActive && message.senderId !== currentUserId) {
+        if (!conversation.unreadCount) state.unread.conversations += 1;
         conversation.unreadCount = (conversation.unreadCount ?? 0) + 1;
+        state.unread.messages += 1;
       }
     },
     messageRemoved: (state, action) => {
@@ -209,8 +226,9 @@ const messagesSlice = createSlice({
           state.messages = [...data, ...newerLocal];
         }
         state.messagesHasMore = hasMore;
-        const conversation = state.conversations.find((c) => c.id === conversationId);
-        if (conversation && !before) conversation.unreadCount = 0;
+        if (!before) {
+          clearUnread(state, state.conversations.find((c) => c.id === conversationId));
+        }
       })
       .addCase(fetchThread.rejected, (state, action) => {
         state.olderLoading = false;
@@ -218,10 +236,21 @@ const messagesSlice = createSlice({
       })
 
       .addCase(markConversationRead.fulfilled, (state, action) => {
-        const conversation = state.conversations.find(
-          (c) => c.id === action.payload?.conversationId,
+        clearUnread(
+          state,
+          state.conversations.find((c) => c.id === action.payload?.conversationId),
         );
-        if (conversation) conversation.unreadCount = 0;
+      })
+
+      .addCase(fetchUnreadSummary.pending, (state, action) => {
+        state.unread.requestId = action.meta.requestId;
+      })
+      .addCase(fetchUnreadSummary.fulfilled, (state, action) => {
+        // Only the latest request may overwrite locally adjusted totals.
+        if (state.unread.requestId !== action.meta.requestId) return;
+        state.unread.messages = action.payload.messages;
+        state.unread.conversations = action.payload.conversations;
+        state.unread.loaded = true;
       })
 
       .addCase(fetchRecipients.pending, setPending("recipientsLoading"))
@@ -286,7 +315,9 @@ const messagesSlice = createSlice({
 
     builder
       .addCase(leaveConversation.pending, setPending("actionLoading"))
-      .addCase(leaveConversation.rejected, setRejected("actionLoading"));
+      .addCase(leaveConversation.rejected, setRejected("actionLoading"))
+      .addCase(logoutUser.fulfilled, () => initialState)
+      .addCase(logoutUser.rejected, () => initialState);
   },
 });
 
