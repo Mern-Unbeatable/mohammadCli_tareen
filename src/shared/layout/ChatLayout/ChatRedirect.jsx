@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { toast } from 'react-toastify';
-import { messagesApi } from '@/features/messages';
-import { CHAT_SECTIONS, chatPath, chatTargetFor } from '@/shared/constants/chat';
+import { parseLegacyChatLink, resolveLegacyChatLink } from '@/features/messages';
+import { chatPath } from '@/shared/constants/chat';
+import PageLoadingFallback from '@/shared/routing/PageLoadingFallback';
 import { useChatRoute } from './useChatRoute';
 
 /**
@@ -11,35 +12,30 @@ import { useChatRoute } from './useChatRoute';
  */
 const ChatRedirect = () => {
   const { basePath } = useChatRoute();
-  const [searchParams] = useSearchParams();
-  const userId = searchParams.get('user');
-  const conversationId = userId ? null : searchParams.get('conversation');
+  const { search } = useLocation();
+  const link = search ? `${basePath}${search}` : null;
+  const isLegacy = Boolean(parseLegacyChatLink(link));
   const [resolved, setResolved] = useState(null);
 
   useEffect(() => {
-    if (!conversationId) return undefined;
+    if (!isLegacy) return undefined;
     let cancelled = false;
-    messagesApi
-      .getConversation(conversationId)
-      .then((conversation) => chatTargetFor(conversation))
+    resolveLegacyChatLink(link, basePath)
       .catch(() => {
         toast.error('That conversation is no longer available');
-        return null;
+        return chatPath(basePath);
       })
-      .then((target) => {
-        if (!cancelled) setResolved({ conversationId, target });
+      .then((to) => {
+        if (!cancelled) setResolved({ link, to });
       });
     return () => {
       cancelled = true;
     };
-  }, [conversationId]);
+  }, [isLegacy, link, basePath]);
 
-  if (userId) {
-    return <Navigate to={chatPath(basePath, { section: CHAT_SECTIONS.DIRECT, id: userId })} replace />;
-  }
-  if (conversationId) {
-    if (resolved?.conversationId !== conversationId) return null;
-    return <Navigate to={chatPath(basePath, resolved.target ?? undefined)} replace />;
+  if (isLegacy) {
+    if (resolved?.link !== link) return <PageLoadingFallback label="Opening conversation" />;
+    return <Navigate to={resolved.to} replace />;
   }
   return <Navigate to={chatPath(basePath)} replace />;
 };

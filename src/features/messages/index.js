@@ -48,4 +48,9 @@ export {
 } from "./messagesMappers";
 export { useMessagesSocket, queryPresence } from "./realtime";
 export { useUnreadMessages } from "./useUnreadMessages";
+export {
+  parseLegacyChatLink,
+  resolveLegacyChatLink,
+  resolveNotificationLink,
+} from "./chatLinks";
 export * as messagesApi from "./messagesApi";
