@@ -3,6 +3,8 @@ import {
   attachmentSummary,
   formatMessageTime,
   isSeenByOther,
+  messagePreview,
+  toChatListingModel,
   toConversationModel,
   toMessageModel,
 } from "./messagesMappers";
@@ -101,6 +103,48 @@ describe("toMessageModel", () => {
     expect(model.attachments).toEqual([]);
     expect(model.text).toBe("Hello");
     expect(model.createdAt).toBe(message.time);
+    expect(model.listing).toBeNull();
+  });
+
+  it("maps a shared listing onto a card model", () => {
+    const model = toMessageModel(
+      {
+        ...message,
+        listing: { id: "l1", title: "HPLC", price: 12500, image: "x.png", status: "ACTIVE" },
+      },
+      "u1",
+    );
+    expect(model.listing).toMatchObject({ id: "l1", title: "HPLC", image: "x.png", available: true });
+  });
+});
+
+describe("toChatListingModel", () => {
+  it("formats the price and flags unavailable listings", () => {
+    const sold = toChatListingModel({ id: "l1", title: "HPLC", price: 12500, status: "SOLD" });
+    expect(sold.price).toMatch(/12[.,\s\u202f]?500/);
+    expect(sold).toMatchObject({ available: false, statusLabel: "Sold", image: null });
+  });
+
+  it("accepts marketplace API listings (images array, no status)", () => {
+    expect(
+      toChatListingModel({ id: "l2", title: "Scale", price: 90, images: ["a.png", "b.png"] }),
+    ).toMatchObject({ image: "a.png", available: true, statusLabel: null });
+  });
+
+  it("returns null without an id", () => {
+    expect(toChatListingModel(null)).toBeNull();
+    expect(toChatListingModel({ title: "x" })).toBeNull();
+  });
+});
+
+describe("messagePreview", () => {
+  it("prefers text, then attachments, then a shared listing", () => {
+    expect(messagePreview({ body: "Hi", listing: { id: "l1" } })).toBe("Hi");
+    expect(messagePreview({ body: "", attachments: [{}] })).toBe("Sent an attachment");
+    expect(messagePreview({ body: "", attachments: [], listing: { id: "l1" } })).toBe(
+      "Shared a listing",
+    );
+    expect(messagePreview(null)).toBe("");
   });
 });
 

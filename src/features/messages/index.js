@@ -43,6 +43,8 @@ export {
   formatMessageTime,
   formatBubbleTime,
   attachmentSummary,
+  messagePreview,
+  toChatListingModel,
   isImageAttachment,
   isSeenByOther,
 } from "./messagesMappers";

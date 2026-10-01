@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import ChatListingCard from './ChatListingCard';
 
 const FILE_ACCEPT =
   'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,video/mp4,video/quicktime';
@@ -139,9 +140,17 @@ const AttachmentList = ({ attachments, isMe }) => {
   );
 };
 
-const MessageBubble = ({ message, showAvatar, chat, onDeleteMessage }) => {
+const MessageBubble = ({ message, showAvatar, chat, onDeleteMessage, getListingHref }) => {
   const isMe = message.from === 'me';
   const text = message.text || message.body || '';
+  const listingCard = message.listing ? (
+    <ChatListingCard
+      listing={message.listing}
+      href={getListingHref?.(message.listing.id)}
+      tone={isMe ? 'me' : 'them'}
+      className={text ? 'mb-1' : ''}
+    />
+  ) : null;
   const senderChat = {
     name: message.sender || chat.name,
     avatar: chat.isGroup ? message.senderAvatar : chat.avatar,
@@ -153,6 +162,7 @@ const MessageBubble = ({ message, showAvatar, chat, onDeleteMessage }) => {
     return (
       <div className="group flex flex-col items-end">
         <div className="relative max-w-[min(85%,420px)] sm:max-w-[min(100%,420px)]">
+          {listingCard ? <div className="flex justify-end">{listingCard}</div> : null}
           {text ? (
             <div className="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words text-white">
               {text}
@@ -186,6 +196,7 @@ const MessageBubble = ({ message, showAvatar, chat, onDeleteMessage }) => {
         {chat.isGroup && message.sender && showAvatar ? (
           <p className="mb-1 text-[11px] font-medium text-[#64748B]">{message.sender}</p>
         ) : null}
+        {listingCard}
         {text ? (
           <div className="rounded-2xl rounded-bl-sm bg-[#E8ECF0] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words text-[#334155]">
             {text}
@@ -259,6 +270,9 @@ const Messenger = ({
   attachments = [],
   onAddFiles,
   onRemoveAttachment,
+  pendingListing = null,
+  onRemovePendingListing,
+  getListingHref,
   seen = false,
   mobilePanel = 'list',
   onMobileBack,
@@ -273,11 +287,13 @@ const Messenger = ({
   const imageInputRef = useRef(null);
 
   const uploading = attachments.some((a) => a.uploading);
+  const listingLoading = Boolean(pendingListing?.loading);
   const canSend =
     Boolean(displayChat) &&
     !sending &&
     !uploading &&
-    (draft.trim().length > 0 || attachments.some((a) => a.url));
+    !listingLoading &&
+    (draft.trim().length > 0 || attachments.some((a) => a.url) || Boolean(pendingListing));
 
   const handleFiles = (event) => {
     if (event.target.files?.length) onAddFiles?.(Array.from(event.target.files));
@@ -499,6 +515,7 @@ const Messenger = ({
                         showAvatar={showAvatar}
                         chat={displayChat}
                         onDeleteMessage={onDeleteMessage}
+                        getListingHref={getListingHref}
                       />
                       {seen && index === lastMineIndex ? (
                         <p className="mt-0.5 px-1 text-right text-[10px] font-medium text-[#98A2B3]">
@@ -512,6 +529,13 @@ const Messenger = ({
             </div>
 
             <div className="shrink-0 border-t border-[#E4E7EC] bg-white px-3 pb-3 pt-2.5 sm:px-5 sm:py-4">
+              {pendingListing ? (
+                <ChatListingCard
+                  listing={pendingListing}
+                  onRemove={onRemovePendingListing}
+                  className="mb-2"
+                />
+              ) : null}
               {attachments.length > 0 ? (
                 <div className="mb-2 flex flex-wrap gap-2">
                   {attachments.map((attachment, index) => (
@@ -588,7 +612,9 @@ const Messenger = ({
                     }
                   }}
                   maxLength={5000}
-                  placeholder="Write a message..."
+                  placeholder={
+                    pendingListing ? 'Ask the seller about this listing...' : 'Write a message...'
+                  }
                   className="min-w-0 flex-1 bg-transparent py-2 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3]"
                 />
                 <button

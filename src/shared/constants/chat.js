@@ -23,6 +23,15 @@ export function chatPath(basePath, { section = CHAT_SECTIONS.DIRECT, id } = {}) 
   return id ? `${basePath}/${section}/${encodeURIComponent(id)}` : `${basePath}/${section}`;
 }
 
+/** Query param that attaches a marketplace listing to the direct-chat composer. */
+export const CHAT_LISTING_PARAM = 'listing';
+
+/** Direct chat with a listing's seller, with the listing preloaded in the composer. */
+export function listingChatPath(basePath, sellerId, listingId) {
+  const path = chatPath(basePath, { section: CHAT_SECTIONS.DIRECT, id: sellerId });
+  return `${path}?${CHAT_LISTING_PARAM}=${encodeURIComponent(listingId)}`;
+}
+
 /** Route target for an API conversation; null when a direct chat has no other member left. */
 export function chatTargetFor(conversation) {
   if (!conversation?.id) return null;

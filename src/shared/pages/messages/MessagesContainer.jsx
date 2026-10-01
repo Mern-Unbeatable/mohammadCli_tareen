@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'react-toastify';
 import ConfirmModal from '@/components/common/ConfirmModal/ConfirmModal';
 import MessagesPageContent from '@/shared/pages/messages/MessagesPageContent';
@@ -35,16 +35,20 @@ import {
   sendMessage,
   setActiveConversation,
   startDirect,
+  toChatListingModel,
   toConversationModel,
   toMessageModel,
   useMessagesSocket,
 } from '@/features/messages';
+import { marketplaceApi } from '@/features/user/marketplace';
 import {
   CHAT_BASE_PATHS,
+  CHAT_LISTING_PARAM,
   CHAT_SECTIONS,
   chatPath,
   chatTargetFor,
 } from '@/shared/constants/chat';
+import { marketplaceListingPath } from '@/shared/constants/marketplace';
 
 const SEARCH_DEBOUNCE_MS = 300;
 /** Fallback refresh while the realtime connection is down. */
@@ -60,7 +64,8 @@ const typeForTab = (tab) => (tab === 'groups' ? 'group' : 'direct');
  * The URL is the source of truth (see `ChatLayout`): `section` picks the
  * tab and `targetId` the open conversation — the other user's id for direct
  * chats (opens the composer when no thread exists yet), the conversation id
- * for groups.
+ * for groups. `?listing=<id>` on a direct chat preloads that marketplace
+ * listing into the composer (see `listingChatPath`).
  */
 const MessagesContainer = ({
   variant = 'dashboard',
@@ -70,8 +75,10 @@ const MessagesContainer = ({
 }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const currentRole = user?.role;
 
   const {
     conversations,
@@ -127,6 +134,59 @@ const MessagesContainer = ({
   const goTo = useCallback(
     (target, options) => navigate(chatPath(basePath, target), options),
     [navigate, basePath],
+  );
+
+  const listingParam =
+    section === CHAT_SECTIONS.DIRECT && targetId ? searchParams.get(CHAT_LISTING_PARAM) : null;
+  /** `{ id, listing }` from the marketplace API for `listingParam`. */
+  const [loadedListing, setLoadedListing] = useState(null);
+
+  const dropListingParam = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(CHAT_LISTING_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    if (!listingParam) return undefined;
+    let cancelled = false;
+    marketplaceApi
+      .getListingById(listingParam)
+      .then((listing) => {
+        if (cancelled) return;
+        const unavailable =
+          listing?.status && listing.status !== 'ACTIVE' && listing.seller?.id !== currentUserId;
+        if (!listing?.id || unavailable) {
+          toast.error('That listing is no longer available');
+          dropListingParam();
+          return;
+        }
+        setLoadedListing({ id: listingParam, listing });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(marketplaceApi.getApiErrorMessage(err, 'That listing is no longer available'));
+        dropListingParam();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [listingParam, currentUserId, dropListingParam]);
+
+  const pendingListing = useMemo(() => {
+    if (!listingParam) return null;
+    if (loadedListing?.id !== listingParam) return { id: listingParam, loading: true };
+    return toChatListingModel(loadedListing.listing);
+  }, [listingParam, loadedListing]);
+
+  const getListingHref = useCallback(
+    (listingId) => marketplaceListingPath(currentRole, listingId),
+    [currentRole],
   );
 
   const conversationsRef = useRef(conversations);
@@ -333,12 +393,14 @@ const MessagesContainer = ({
     goTo({ section: sectionForTab(nextTab) });
   };
 
-  const handleSend = async ({ body, attachments }) => {
+  const handleSend = async ({ body, attachments, listingId }) => {
     if (!activeConversationId) return false;
     const result = await dispatch(
-      sendMessage({ conversationId: activeConversationId, body, attachments }),
+      sendMessage({ conversationId: activeConversationId, body, attachments, listingId }),
     );
-    return sendMessage.fulfilled.match(result);
+    const ok = sendMessage.fulfilled.match(result);
+    if (ok && listingId) dropListingParam();
+    return ok;
   };
 
   const handleUploadFile = async (file) => {
@@ -366,8 +428,10 @@ const MessagesContainer = ({
     setMissingDirectId(null);
   };
 
-  const handleStartDirect = async ({ recipientId, message }) => {
-    const result = await dispatch(startDirect({ participantId: recipientId, message }));
+  const handleStartDirect = async ({ recipientId, message, listingId }) => {
+    const result = await dispatch(
+      startDirect({ participantId: recipientId, message, listingId }),
+    );
     if (!startDirect.fulfilled.match(result)) return false;
     startedDirectRef.current = true;
     openFreshThread(result.payload, { replace: Boolean(composeUserId) });
@@ -453,6 +517,9 @@ const MessagesContainer = ({
           )
         }
         seen={seen}
+        pendingListing={composeUserId ? null : pendingListing}
+        onRemovePendingListing={dropListingParam}
+        getListingHref={getListingHref}
         mobilePanel={mobilePanel}
         onMobileBack={() => goTo({ section }, { replace: true })}
       />
@@ -465,6 +532,8 @@ const MessagesContainer = ({
         recipientsLoading={recipientsLoading}
         onSearchRecipients={handleSearchRecipients}
         initialRecipientId={composeUserId}
+        listing={composeUserId ? pendingListing : null}
+        onRemoveListing={dropListingParam}
         submitting={actionLoading}
       />
 

@@ -84,13 +84,17 @@ export const createGroup = createAsyncThunk(
 
 export const sendMessage = createAsyncThunk(
   "messages/sendMessage",
-  withError("Failed to send message", async ({ conversationId, body, attachments }) => {
-    const message = await messagesApi.sendMessage(conversationId, {
-      body,
-      attachments,
-    });
-    return { conversationId, message };
-  }),
+  withError(
+    "Failed to send message",
+    async ({ conversationId, body, attachments, listingId }) => {
+      const message = await messagesApi.sendMessage(conversationId, {
+        body,
+        attachments,
+        listingId,
+      });
+      return { conversationId, message };
+    },
+  ),
 );
 
 export const deleteMessage = createAsyncThunk(

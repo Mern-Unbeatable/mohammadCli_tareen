@@ -72,17 +72,24 @@ export async function getRecipients(params = {}) {
   return listOf(response);
 }
 
+/** `{ participantId, message, listingId? }` */
 export async function startDirect(payload) {
-  return unwrapApiData(await crudService.post(E.DIRECT, payload));
+  return unwrapApiData(await crudService.post(E.DIRECT, dropEmpty(payload)));
 }
 
 export async function createGroup(payload) {
   return unwrapApiData(await crudService.post(E.GROUP, payload));
 }
 
-export async function sendMessage(conversationId, { body = "", attachments = [] }) {
+export async function sendMessage(
+  conversationId,
+  { body = "", attachments = [], listingId },
+) {
   return unwrapApiData(
-    await crudService.post(E.SEND(conversationId), { body, attachments }),
+    await crudService.post(
+      E.SEND(conversationId),
+      dropEmpty({ body, attachments, listingId }),
+    ),
   );
 }
 

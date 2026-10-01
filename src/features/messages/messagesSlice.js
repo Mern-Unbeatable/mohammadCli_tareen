@@ -17,7 +17,7 @@ import {
   fetchUnreadSummary,
 } from "./messagesThunks";
 import { logoutUser } from "../auth/authThunks";
-import { attachmentSummary } from "./messagesMappers";
+import { messagePreview } from "./messagesMappers";
 
 const initialUnread = { messages: 0, conversations: 0, loaded: false, requestId: null };
 
@@ -81,7 +81,7 @@ const appendMessage = (state, message) => {
 const bumpConversation = (state, conversationId, message) => {
   const conversation = state.conversations.find((c) => c.id === conversationId);
   if (!conversation) return null;
-  conversation.preview = message.body || attachmentSummary(message.attachments);
+  conversation.preview = messagePreview(message);
   conversation.time = message.time;
   state.conversations.sort(byTimeDesc);
   return conversation;

@@ -5,8 +5,26 @@ import {
   chatBaseForRole,
   chatPath,
   chatTargetFor,
+  listingChatPath,
   toRoleChatPath,
 } from "./chat";
+import { marketplaceListingPath } from "./marketplace";
+
+describe("marketplace links", () => {
+  it("opens the seller chat with the listing in the composer", () => {
+    expect(listingChatPath(CHAT_BASE_PATHS.USER, "s1", "l1")).toBe("/chat/messages/s1?listing=l1");
+    expect(listingChatPath(CHAT_BASE_PATHS.ADMIN, "s1", "l1")).toBe(
+      "/admin/chat/messages/s1?listing=l1",
+    );
+  });
+
+  it("points each role at its own listing page", () => {
+    expect(marketplaceListingPath("USER", "l1")).toBe("/marketplace/l1");
+    expect(marketplaceListingPath("admin", "l1")).toBe("/admin/marketplace/l1");
+    expect(marketplaceListingPath("SUPPLIER", "l1")).toBeNull();
+    expect(marketplaceListingPath("USER", null)).toBeNull();
+  });
+});
 
 describe("chat route helpers", () => {
   it("builds section and conversation paths", () => {
