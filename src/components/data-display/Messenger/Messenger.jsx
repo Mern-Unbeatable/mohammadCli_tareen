@@ -371,7 +371,7 @@ const Messenger = ({
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide xl:divide-y xl:divide-[#E4E7EC]">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin xl:divide-y xl:divide-[#E4E7EC]">
           {loading && chats.length === 0 ? (
             <ConversationListSkeleton />
           ) : chats.length > 0 ? (
