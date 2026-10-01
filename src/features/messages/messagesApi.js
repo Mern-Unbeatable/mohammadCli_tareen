@@ -41,6 +41,11 @@ export async function getConversation(conversationId) {
   return unwrapApiData(await crudService.get(E.DETAILS(conversationId)));
 }
 
+/** The caller's existing 1:1 conversation with `userId`, or null. */
+export async function getDirectConversation(userId) {
+  return unwrapApiData(await crudService.get(E.DIRECT_WITH(userId))) ?? null;
+}
+
 export async function getThread(conversationId, params = {}) {
   const query = dropEmpty({ pageSize: 30, ...params });
   const response = await crudService.get(E.THREAD(conversationId), query);

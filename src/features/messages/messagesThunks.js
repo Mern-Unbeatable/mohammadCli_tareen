@@ -34,6 +34,13 @@ export const fetchConversation = createAsyncThunk(
   ),
 );
 
+export const fetchDirectConversation = createAsyncThunk(
+  "messages/fetchDirectConversation",
+  withError("Failed to open conversation", (userId) =>
+    messagesApi.getDirectConversation(userId),
+  ),
+);
+
 export const fetchThread = createAsyncThunk(
   "messages/fetchThread",
   withError("Failed to load messages", async (arg) => {

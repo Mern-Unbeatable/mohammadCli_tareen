@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchConversations,
   fetchConversation,
+  fetchDirectConversation,
   fetchThread,
   markConversationRead,
   fetchRecipients,
@@ -197,6 +198,9 @@ const messagesSlice = createSlice({
 
       .addCase(fetchConversation.fulfilled, (state, action) => {
         upsertConversation(state, action.payload);
+      })
+      .addCase(fetchDirectConversation.fulfilled, (state, action) => {
+        if (action.payload) upsertConversation(state, action.payload);
       })
 
       .addCase(fetchThread.pending, (state, action) => {

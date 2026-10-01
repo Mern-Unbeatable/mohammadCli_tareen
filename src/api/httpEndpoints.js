@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     RECIPIENTS: "/messages/recipients",
     UNREAD: "/messages/unread",
     DIRECT: "/messages/direct",
+    DIRECT_WITH: (userId) => `/messages/direct/${userId}`,
     GROUP: "/messages/group",
     DETAILS: (conversationId) => `/messages/${conversationId}`,
     RENAME: (conversationId) => `/messages/${conversationId}`,

@@ -31,6 +31,7 @@ import {
 } from "@/features/user/search";
 import { toProfilePageUser } from "@/features/user/profile";
 import { useUnreadMessages } from "@/features/messages";
+import { CHAT_BASE_PATHS } from "@/shared/constants/chat";
 
 const iconMap = {
   home: Home,
@@ -136,7 +137,7 @@ const DashboardNavbar = () => {
     if (item.id === "marketplace") return pathname.startsWith("/marketplace");
     if (item.id === "recruitment") return pathname.startsWith("/recruitment");
     if (item.id === "general") return pathname.startsWith("/general");
-    if (item.id === "messages") return pathname.startsWith("/messages");
+    if (item.id === "messages") return pathname.startsWith(CHAT_BASE_PATHS.USER);
     if (item.id === "blogs") return pathname.startsWith("/blogs");
     if (item.id === "notifications")
       return pathname.startsWith("/notifications");
@@ -252,7 +253,7 @@ const DashboardNavbar = () => {
           </div>
 
           <Link
-            to="/messages"
+            to={CHAT_BASE_PATHS.USER}
             className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#64748B] hover:bg-[#F9FAFB] sm:h-10 sm:w-10"
             aria-label={unreadChats ? `Messages, ${unreadLabel}` : "Messages"}
           >

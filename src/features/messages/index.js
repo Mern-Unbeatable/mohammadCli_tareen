@@ -23,6 +23,7 @@ export {
 export {
   fetchConversations,
   fetchConversation,
+  fetchDirectConversation,
   fetchThread,
   markConversationRead,
   fetchRecipients,
