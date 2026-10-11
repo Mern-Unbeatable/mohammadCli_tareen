@@ -1,25 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Check,
   Link2,
-  MessageCircle,
+  Loader2,
   Repeat2,
   Send,
   X,
 } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
-import { suggestedPeople } from '@/modules/user/data/dashboard';
+import { toast } from 'react-toastify';
+import { messagesApi } from '@/features/messages';
+import RecipientPicker from '@/shared/pages/messages/RecipientPicker';
 
 const shareOptions = [
   { id: 'repost', label: 'Repost to your feed', icon: Repeat2, color: 'text-primary' },
-  { id: 'message', label: 'Send in a message', icon: Send, color: 'text-[#475467]' },
   { id: 'copy', label: 'Copy link to post', icon: Link2, color: 'text-[#475467]' },
 ];
 
 const SharePostModal = ({ open, post, onClose, onShare }) => {
   const [copied, setCopied] = useState(false);
   const [sentTo, setSentTo] = useState(null);
+  const [recipients, setRecipients] = useState([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sending, setSending] = useState(false);
+  const latestSearch = useRef(0);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -31,9 +36,26 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
     };
   }, [open]);
 
+  const loadRecipients = useCallback(async (search) => {
+    const requestId = ++latestSearch.current;
+    setRecipientsLoading(true);
+    try {
+      const data = await messagesApi.getRecipients({ search });
+      if (requestId === latestSearch.current) setRecipients(data);
+    } catch (error) {
+      if (requestId === latestSearch.current) {
+        setRecipients([]);
+        toast.error(messagesApi.getApiErrorMessage(error, 'Failed to load contacts'));
+      }
+    } finally {
+      if (requestId === latestSearch.current) setRecipientsLoading(false);
+    }
+  }, []);
+
   if (!open || !post) return null;
 
   const postUrl = `${window.location.origin}/feed?post=${post.id}`;
+  const selectedRecipient = recipients.find((r) => r.id === selectedIds[0]) || null;
 
   const handleCopy = async () => {
     try {
@@ -51,16 +73,28 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
     onClose();
   };
 
-  const handleSend = (person) => {
-    setSentTo(person.name);
-    onShare('message');
-    setTimeout(onClose, 1400);
+  const handleSend = async () => {
+    if (!selectedRecipient || sending) return;
+    setSending(true);
+    try {
+      await messagesApi.startDirect({
+        participantId: selectedRecipient.id,
+        message: `Shared a post with you: ${postUrl}`,
+      });
+      setSentTo(selectedRecipient.name);
+      onShare('message');
+      setTimeout(onClose, 1400);
+    } catch (error) {
+      toast.error(messagesApi.getApiErrorMessage(error, 'Failed to send post'));
+    } finally {
+      setSending(false);
+    }
   };
 
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={onClose}
+      onClick={sending ? undefined : onClose}
       role="presentation"
     >
       <div
@@ -77,7 +111,8 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-[#64748B] hover:bg-[#F9FAFB]"
+            disabled={sending}
+            className="rounded-md p-1.5 text-[#64748B] hover:bg-[#F9FAFB] disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -111,9 +146,7 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
               <button
                 key={id}
                 type="button"
-                onClick={
-                  id === 'copy' ? handleCopy : id === 'repost' ? handleRepost : undefined
-                }
+                onClick={id === 'copy' ? handleCopy : handleRepost}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-[#F9FAFB]"
               >
                 <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6] ${color}`}>
@@ -127,40 +160,32 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
           <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#98A2B3]">
             Send to connections
           </p>
-          <ul className="space-y-1">
-            {suggestedPeople.map((person) => (
-              <li key={person.id}>
-                <button
-                  type="button"
-                  onClick={() => handleSend(person)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-[#F9FAFB]"
-                >
-                  <Avatar
-                    src={person.avatar}
-                    alt={person.name}
-                    initials={person.initials}
-                    size="sm"
-                  />
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-[13px] font-semibold text-deep-blue">
-                      {person.name}
-                    </p>
-                    <p className="truncate text-[12px] text-[#64748B]">{person.company}</p>
-                  </div>
-                  <MessageCircle className="h-4 w-4 shrink-0 text-[#98A2B3]" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <RecipientPicker
+            recipients={recipients}
+            loading={recipientsLoading}
+            selected={selectedIds}
+            onChange={setSelectedIds}
+            onSearch={loadRecipients}
+          />
         </div>
 
-        <div className="shrink-0 border-t border-[#E4E7EC] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-4 sm:pb-4">
+        <div className="flex shrink-0 gap-3 border-t border-[#E4E7EC] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-4 sm:pb-4">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-md border border-[#E4E7EC] py-2.5 text-[14px] font-semibold text-[#475467] hover:bg-[#F9FAFB]"
+            disabled={sending}
+            className="flex-1 rounded-md border border-[#E4E7EC] py-2.5 text-[14px] font-semibold text-[#475467] hover:bg-[#F9FAFB] disabled:opacity-60"
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!selectedRecipient || sending || Boolean(sentTo)}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
       </div>

@@ -404,12 +404,14 @@ const FeedPost = ({ post, onReport, onDelete }) => {
         )}
       </Card>
 
-      <SharePostModal
-        open={shareOpen}
-        post={post}
-        onClose={() => setShareOpen(false)}
-        onShare={handleShareComplete}
-      />
+      {shareOpen ? (
+        <SharePostModal
+          open
+          post={post}
+          onClose={() => setShareOpen(false)}
+          onShare={handleShareComplete}
+        />
+      ) : null}
     </>
   );
 };
