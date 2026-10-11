@@ -3,12 +3,11 @@ import { X, Image, FileText, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Avatar from "@/components/ui/Avatar";
 import { feedApi, getApiErrorMessage } from "@/features/user/feed";
-
-const postTypes = [
-  { id: "information", label: "Create Post" },
-  { id: "question", label: "Ask a Question" },
-  { id: "suppliers", label: "Share Information" },
-];
+import {
+  DEFAULT_POST_OPTION,
+  POST_TYPE_OPTIONS,
+  getPostTypeOption,
+} from "./postTypeOptions";
 
 const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 const DOCUMENT_ACCEPT =
@@ -33,8 +32,9 @@ const CreatePostModal = ({
   user,
   onPublish,
   submitting = false,
+  initialOption = DEFAULT_POST_OPTION,
 }) => {
-  const [postType, setPostType] = useState("information");
+  const [postOption, setPostOption] = useState(initialOption);
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -47,7 +47,7 @@ const CreatePostModal = ({
   useEffect(() => {
     if (!open) {
       setContent("");
-      setPostType("information");
+      setPostOption(initialOption);
       setImageFile(null);
       setImagePreview(null);
       setDocumentFile(null);
@@ -58,7 +58,7 @@ const CreatePostModal = ({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open]);
+  }, [open, initialOption]);
 
   useEffect(() => {
     if (!imageFile) {
@@ -125,7 +125,7 @@ const CreatePostModal = ({
       }
 
       await onPublish({
-        type: postType,
+        type: getPostTypeOption(postOption).type,
         content: content.trim(),
         imageUrl,
         documentUrl,
@@ -185,14 +185,15 @@ const CreatePostModal = ({
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
-            {postTypes.map(({ id, label }) => (
+            {POST_TYPE_OPTIONS.map(({ id, label }) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => setPostType(id)}
+                onClick={() => setPostOption(id)}
                 disabled={busy}
+                aria-pressed={postOption === id}
                 className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:px-3.5 sm:text-[12px] ${
-                  postType === id
+                  postOption === id
                     ? "border-primary bg-secondary text-primary"
                     : "border-[#E4E7EC] text-[#475467] hover:border-primary/40"
                 }`}

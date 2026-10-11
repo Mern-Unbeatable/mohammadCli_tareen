@@ -8,6 +8,7 @@ import LeftSidebar from "@/modules/user/components/shell/LeftSidebar";
 import RightSidebar from "@/modules/user/components/shell/RightSidebar";
 import FeedPost from "@/modules/user/components/feed/FeedPost";
 import CreatePostModal from "@/modules/user/components/feed/CreatePostModal";
+import { DEFAULT_POST_OPTION } from "@/modules/user/components/feed/postTypeOptions";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
 import {
   FeedComposer,
@@ -46,12 +47,18 @@ const FeedView = () => {
 
   const [activeFilter, setActiveFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [createPostOption, setCreatePostOption] = useState(DEFAULT_POST_OPTION);
   const [reportPost, setReportPost] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
+  const openCreatePost = useCallback((option = DEFAULT_POST_OPTION) => {
+    setCreatePostOption(option);
+    setCreateOpen(true);
+  }, []);
+
   useEffect(() => {
-    registerOpenCreatePost(() => setCreateOpen(true));
-  }, [registerOpenCreatePost]);
+    registerOpenCreatePost(() => openCreatePost());
+  }, [registerOpenCreatePost, openCreatePost]);
 
   useEffect(() => {
     if (!user) dispatch(fetchUserProfile());
@@ -144,7 +151,7 @@ const FeedView = () => {
             <div className="hidden sm:block">
               <FeedComposer
                 user={profileUser}
-                onCreatePost={() => setCreateOpen(true)}
+                onCreatePost={openCreatePost}
               />
             </div>
             <FeedFilters
@@ -193,13 +200,16 @@ const FeedView = () => {
         </Container>
       </main>
 
-      <CreatePostModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        user={profileUser}
-        submitting={saving}
-        onPublish={handlePublish}
-      />
+      {createOpen ? (
+        <CreatePostModal
+          open
+          onClose={() => setCreateOpen(false)}
+          user={profileUser}
+          submitting={saving}
+          onPublish={handlePublish}
+          initialOption={createPostOption}
+        />
+      ) : null}
       <ReportPostModal
         open={Boolean(reportPost)}
         post={reportPost}
