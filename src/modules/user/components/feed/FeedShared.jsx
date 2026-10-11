@@ -1,5 +1,6 @@
 import { FileText } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import { POST_TYPE_OPTIONS } from './postTypeOptions';
 
 export { PostStats, PostActions } from './PostActionsBar';
 
@@ -51,11 +52,11 @@ export const FeedComposer = ({ onCreatePost, user }) => (
       </button>
     </div>
     <div className="mt-3 flex flex-wrap gap-2 border-t border-[#E4E7EC] pt-3">
-      {['Create Post', 'Ask a Question', 'Share Information'].map((label) => (
+      {POST_TYPE_OPTIONS.map(({ id, label }) => (
         <button
-          key={label}
+          key={id}
           type="button"
-          onClick={onCreatePost}
+          onClick={() => onCreatePost(id)}
           className="rounded-full border border-[#E4E7EC] px-3.5 py-1.5 text-[12px] font-semibold text-[#475467] transition-colors hover:border-primary hover:text-primary"
         >
           {label}
