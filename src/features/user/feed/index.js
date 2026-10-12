@@ -23,6 +23,8 @@ export {
   addComment,
   removeComment,
   reactToPost,
+  repostPost,
+  undoRepost,
   likeComment,
 } from "./feedThunks";
 export {

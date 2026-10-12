@@ -10,6 +10,8 @@ import {
   addComment,
   removeComment,
   reactToPost,
+  repostPost,
+  undoRepost,
   likeComment,
 } from "./feedThunks";
 
@@ -31,6 +33,7 @@ const initialState = {
   deleting: false,
   commenting: false,
   reactingId: null,
+  repostingId: null,
   likingCommentId: null,
   error: null,
 };
@@ -43,6 +46,47 @@ const upsertPost = (state, post) => {
   if (state.selectedPost?.id === post.id) state.selectedPost = post;
   const mineIndex = state.myPosts.findIndex((row) => row.id === post.id);
   if (mineIndex >= 0) state.myPosts[mineIndex] = post;
+};
+
+const mapAllPosts = (state, mapper) => {
+  state.posts = state.posts.map(mapper);
+  state.myPosts = state.myPosts.map(mapper);
+  state.selectedPost = state.selectedPost ? mapper(state.selectedPost) : null;
+};
+
+/** Sync the original's share count and every card's "Shared" state for it. */
+const applyRepostStatus = (state, originalPostId, { shares, sharedByMe }) => {
+  if (!originalPostId) return;
+  mapAllPosts(state, (post) => {
+    if (post.id === originalPostId) {
+      return {
+        ...post,
+        sharedByMe,
+        stats: {
+          ...(post.stats || {}),
+          shares: shares ?? post.stats?.shares ?? 0,
+        },
+      };
+    }
+    if (post.sharedPostId === originalPostId) return { ...post, sharedByMe };
+    return post;
+  });
+};
+
+const removePostFromLists = (state, postId) => {
+  const before = state.posts.length;
+  state.posts = state.posts.filter((post) => post.id !== postId);
+  if (state.posts.length < before) {
+    state.postsMeta = {
+      ...state.postsMeta,
+      total: Math.max(0, (state.postsMeta.total || 0) - 1),
+    };
+  }
+  if (state.myPosts.some((post) => post.id === postId)) {
+    state.myPosts = state.myPosts.filter((post) => post.id !== postId);
+    state.myPostsStale = true;
+  }
+  if (state.selectedPost?.id === postId) state.selectedPost = null;
 };
 
 const resetMyPosts = (state) => {
@@ -171,6 +215,24 @@ const feedSlice = createSlice({
       })
       .addCase(removePost.fulfilled, (state, action) => {
         state.deleting = false;
+        const removedId = action.payload.postId;
+        const removed = [...state.posts, ...state.myPosts].find(
+          (post) => post.id === removedId,
+        );
+        if (removed?.isRepost && removed.sharedPostId) {
+          const original = [...state.posts, ...state.myPosts].find(
+            (post) => post.id === removed.sharedPostId,
+          );
+          applyRepostStatus(state, removed.sharedPostId, {
+            shares: Math.max(0, (original?.stats?.shares ?? 1) - 1),
+            sharedByMe: false,
+          });
+        }
+        mapAllPosts(state, (post) =>
+          post.sharedPostId === removedId
+            ? { ...post, sharedPostId: null, sharedPost: null }
+            : post,
+        );
         state.posts = state.posts.filter(
           (post) => post.id !== action.payload.postId,
         );
@@ -362,6 +424,44 @@ const feedSlice = createSlice({
       .addCase(reactToPost.rejected, (state, action) => {
         state.reactingId = null;
         state.error = action.payload;
+      })
+      .addCase(repostPost.pending, (state, action) => {
+        state.repostingId = action.meta.arg?.postId || null;
+      })
+      .addCase(repostPost.fulfilled, (state, action) => {
+        state.repostingId = null;
+        const { post, originalPostId, shares } = action.payload || {};
+        if (post?.id && !state.posts.some((row) => row.id === post.id)) {
+          state.posts = [post, ...state.posts];
+          state.postsMeta = {
+            ...state.postsMeta,
+            total: (state.postsMeta.total || 0) + 1,
+          };
+        }
+        if (
+          post?.id &&
+          state.myPostsLoaded &&
+          !state.myPosts.some((row) => row.id === post.id)
+        ) {
+          state.myPosts = [post, ...state.myPosts];
+          state.myPostsStale = true;
+        }
+        applyRepostStatus(state, originalPostId, { shares, sharedByMe: true });
+      })
+      .addCase(repostPost.rejected, (state) => {
+        state.repostingId = null;
+      })
+      .addCase(undoRepost.pending, (state, action) => {
+        state.repostingId = action.meta.arg?.postId || null;
+      })
+      .addCase(undoRepost.fulfilled, (state, action) => {
+        state.repostingId = null;
+        const { repostId, originalPostId, shares } = action.payload || {};
+        if (repostId) removePostFromLists(state, repostId);
+        applyRepostStatus(state, originalPostId, { shares, sharedByMe: false });
+      })
+      .addCase(undoRepost.rejected, (state) => {
+        state.repostingId = null;
       })
       .addCase(likeComment.pending, (state, action) => {
         state.likingCommentId = action.meta.arg?.commentId || null;

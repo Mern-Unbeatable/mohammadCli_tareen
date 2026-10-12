@@ -17,13 +17,26 @@ const shareOptions = [
   { id: 'copy', label: 'Copy link to post', icon: Link2, color: 'text-[#475467]' },
 ];
 
-const SharePostModal = ({ open, post, onClose, onShare }) => {
+const CAPTION_MAX = 5000;
+
+const SharePostModal = ({
+  open,
+  post,
+  onClose,
+  shared = false,
+  reposting = false,
+  repostUnavailableReason = null,
+  onRepost,
+  onUndoRepost,
+}) => {
   const [copied, setCopied] = useState(false);
   const [sentTo, setSentTo] = useState(null);
   const [recipients, setRecipients] = useState([]);
   const [recipientsLoading, setRecipientsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [sending, setSending] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [caption, setCaption] = useState('');
   const latestSearch = useRef(0);
 
   useEffect(() => {
@@ -56,6 +69,8 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
 
   const postUrl = `${window.location.origin}/feed?post=${post.id}`;
   const selectedRecipient = recipients.find((r) => r.id === selectedIds[0]) || null;
+  const busy = sending || reposting;
+  const preview = post.isRepost && post.sharedPost ? post.sharedPost : post;
 
   const handleCopy = async () => {
     try {
@@ -64,13 +79,21 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
       // fallback for non-secure contexts
     }
     setCopied(true);
-    onShare('copy');
     setTimeout(onClose, 1200);
   };
 
-  const handleRepost = () => {
-    onShare('repost');
-    onClose();
+  const handleRepostOption = async () => {
+    if (busy) return;
+    if (shared) {
+      if (await onUndoRepost?.()) onClose();
+      return;
+    }
+    setComposing((prev) => !prev);
+  };
+
+  const handleSubmitRepost = async () => {
+    if (busy) return;
+    if (await onRepost?.(caption.trim())) onClose();
   };
 
   const handleSend = async () => {
@@ -82,7 +105,6 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
         message: `Shared a post with you: ${postUrl}`,
       });
       setSentTo(selectedRecipient.name);
-      onShare('message');
       setTimeout(onClose, 1400);
     } catch (error) {
       toast.error(messagesApi.getApiErrorMessage(error, 'Failed to send post'));
@@ -94,7 +116,7 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={sending ? undefined : onClose}
+      onClick={busy ? undefined : onClose}
       role="presentation"
     >
       <div
@@ -111,7 +133,7 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
           <button
             type="button"
             onClick={onClose}
-            disabled={sending}
+            disabled={busy}
             className="rounded-md p-1.5 text-[#64748B] hover:bg-[#F9FAFB] disabled:opacity-50"
             aria-label="Close"
           >
@@ -135,27 +157,76 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
           )}
 
           <p className="mb-3 line-clamp-2 text-[13px] text-[#64748B]">
-            <span className="font-semibold text-deep-blue">{post.author.name}</span>
+            <span className="font-semibold text-deep-blue">{preview.author.name}</span>
             {' · '}
-            {post.content.slice(0, 80)}
-            {post.content.length > 80 ? '…' : ''}
+            {preview.content.slice(0, 80)}
+            {preview.content.length > 80 ? '…' : ''}
           </p>
 
           <div className="mb-4 space-y-1">
-            {shareOptions.map(({ id, label, icon: Icon, color }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={id === 'copy' ? handleCopy : handleRepost}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-[#F9FAFB]"
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6] ${color}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="text-[14px] font-medium text-deep-blue">{label}</span>
-              </button>
-            ))}
+            {shareOptions.map(({ id, label, icon: Icon, color }) => {
+              const isRepost = id === 'repost';
+              const unavailable = isRepost && !shared ? repostUnavailableReason : null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={isRepost ? handleRepostOption : handleCopy}
+                  disabled={(isRepost && busy) || Boolean(unavailable)}
+                  aria-expanded={isRepost && !shared ? composing : undefined}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+                >
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] ${color}`}>
+                    {isRepost && reposting ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Icon className="h-5 w-5" />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[14px] font-medium text-deep-blue">
+                      {isRepost && shared ? 'Undo repost' : label}
+                    </span>
+                    {unavailable ? (
+                      <span className="block text-[12px] text-[#98A2B3]">{unavailable}</span>
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
+          {composing && !shared && !repostUnavailableReason ? (
+            <div className="mb-5 rounded-lg border border-[#E4E7EC] p-3">
+              <label htmlFor="repost-caption" className="sr-only">
+                Repost caption
+              </label>
+              <textarea
+                id="repost-caption"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                maxLength={CAPTION_MAX}
+                rows={3}
+                disabled={reposting}
+                placeholder="Say something about this (optional)"
+                className="w-full resize-none rounded-md border border-[#E4E7EC] px-3 py-2 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary disabled:bg-[#F9FAFB]"
+              />
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <span className="text-[12px] text-[#98A2B3]">
+                  {caption.length}/{CAPTION_MAX}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSubmitRepost}
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {reposting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Repeat2 className="h-4 w-4" />}
+                  {reposting ? 'Reposting…' : 'Repost now'}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#98A2B3]">
             Send to connections
@@ -173,7 +244,7 @@ const SharePostModal = ({ open, post, onClose, onShare }) => {
           <button
             type="button"
             onClick={onClose}
-            disabled={sending}
+            disabled={busy}
             className="flex-1 rounded-md border border-[#E4E7EC] py-2.5 text-[14px] font-semibold text-[#475467] hover:bg-[#F9FAFB] disabled:opacity-60"
           >
             Cancel
