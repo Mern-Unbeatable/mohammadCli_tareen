@@ -8,13 +8,12 @@ import {
   LogOut,
   Menu,
   MessageSquare,
-  Newspaper,
   Search,
   Store,
   Users,
   X,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import logo from "@/assets/logo.png";
@@ -24,7 +23,14 @@ import CountBadge from "@/components/ui/CountBadge";
 import { useAuth } from "@/shared/auth/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
 import { navItems } from "@/modules/user/data/dashboard";
-import { formatPrice } from "@/modules/user/data/marketplace";
+import SearchTabs from "@/modules/user/components/search/SearchTabs";
+import SearchResultsList from "@/modules/user/components/search/SearchResultsList";
+import {
+  DEFAULT_SEARCH_TAB,
+  SEARCH_PATH,
+  buildSearchPath,
+  toSearchGroups,
+} from "@/modules/user/components/search/searchResults";
 import {
   fetchGlobalSearch,
   clearSearchResults,
@@ -56,88 +62,6 @@ const iconMap = {
   notifications: Bell,
 };
 
-const joinDetails = (...parts) => parts.filter(Boolean).join(" · ");
-
-const personName = (person) =>
-  person?.name ||
-  [person?.firstName, person?.lastName].filter(Boolean).join(" ") ||
-  person?.email ||
-  "Member";
-
-/** Title, one-line details and (for people/posts) the avatar to show in a search row. */
-const resultDisplay = (item, type) => {
-  if (type === "users") {
-    const name = personName(item);
-    return {
-      title: name,
-      subtitle: joinDetails(item.title, item.company) || item.country,
-      avatar: { src: item.avatar, name, initials: item.initials },
-    };
-  }
-  if (type === "posts") {
-    const name = personName(item.author);
-    return {
-      title: name,
-      subtitle: item.content,
-      avatar: { src: item.author?.avatar, name, initials: item.author?.initials },
-    };
-  }
-  if (type === "jobs") {
-    return {
-      title: item.title || "Job",
-      subtitle: joinDetails(item.company, item.location),
-    };
-  }
-  if (type === "listings") {
-    const price = Number(item.price);
-    return {
-      title: item.title || "Listing",
-      subtitle: joinDetails(
-        Number.isFinite(price) ? formatPrice(price) : null,
-        item.location,
-      ),
-    };
-  }
-  if (type === "blogs") {
-    return {
-      title: item.title || item.slug || "Blog",
-      subtitle: item.category || item.excerpt,
-    };
-  }
-  return { title: item.title || item.name || "Result" };
-};
-
-const SEARCH_TYPE_ICONS = {
-  all: LayoutGrid,
-  users: Users,
-  jobs: Briefcase,
-  listings: Store,
-  posts: Newspaper,
-  blogs: BookOpen,
-};
-
-const SEARCH_TILE_STYLES = {
-  jobs: "bg-amber-50 text-amber-600",
-  listings: "bg-emerald-50 text-emerald-600",
-  blogs: "bg-violet-50 text-violet-600",
-};
-
-const resultHref = (item, type) => {
-  if (type === "users") return `/contacts/${item.id}`;
-  if (type === "jobs") return `/recruitment/${item.id}`;
-  if (type === "listings") return `/marketplace/${item.id}`;
-  if (type === "posts") return "/feed";
-  if (type === "blogs") return `/blogs/${item.slug || item.id}`;
-  return "#";
-};
-
-const SEARCH_TABS = [
-  { id: "all", label: "All" },
-  { id: "users", label: "People" },
-  { id: "jobs", label: "Jobs" },
-  { id: "blogs", label: "Blogs" },
-  { id: "listings", label: "Listings" },
-];
 const SEARCH_FETCH_LIMIT = 10;
 const ALL_TAB_GROUP_LIMIT = 5;
 
@@ -148,129 +72,60 @@ const SearchDropdown = ({
   activeTab,
   onTabChange,
   onSelect,
+  onSeeAll,
 }) => {
   if (!open) return null;
 
-  const isAll = activeTab === "all";
-  const visibleGroups = isAll
-    ? groups.map((group) => ({
-        ...group,
-        items: group.items.slice(0, ALL_TAB_GROUP_LIMIT),
-      }))
-    : groups.filter((group) => group.type === activeTab);
-  const activeLabel = SEARCH_TABS.find((tab) => tab.id === activeTab)?.label;
-
   return (
     <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] flex flex-col overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-lg sm:left-auto sm:w-[max(100%,32rem)] sm:max-w-[calc(100vw-1rem)] xl:left-0 xl:right-auto">
-      <div
-        role="tablist"
-        aria-label="Search categories"
-        className="flex shrink-0 overflow-x-auto border-b border-gray-200 px-2 [scrollbar-width:none]"
-      >
-        {SEARCH_TABS.map((tab) => {
-          const active = tab.id === activeTab;
-          const TabIcon = SEARCH_TYPE_ICONS[tab.id];
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onTabChange(tab.id)}
-              className={`-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2.5 text-[13px] transition-colors ${
-                active
-                  ? "border-blue-600 font-semibold text-blue-600"
-                  : "border-transparent font-medium text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <TabIcon aria-hidden="true" className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      <SearchTabs
+        activeTab={activeTab}
+        onChange={onTabChange}
+        className="px-2"
+      />
 
       <div role="tabpanel" className="max-h-[400px] overflow-y-auto py-2">
-        {loading && !visibleGroups.length ? (
-          <p className="px-4 py-3 text-[13px] text-[#64748B]">Searching…</p>
-        ) : visibleGroups.length ? (
-          visibleGroups.map((group) => {
-            const GroupIcon = SEARCH_TYPE_ICONS[group.type];
-            return (
-              <div key={group.type} className="py-1">
-                {isAll ? (
-                  <p className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                    <GroupIcon aria-hidden="true" className="h-3.5 w-3.5" />
-                    {group.label}
-                  </p>
-                ) : null}
-                {group.items.map((item) => {
-                  const href = resultHref(item, group.type);
-                  const { title, subtitle, avatar } = resultDisplay(
-                    item,
-                    group.type,
-                  );
-                  return (
-                    <button
-                      key={`${group.type}-${item.id || item.slug || title}`}
-                      type="button"
-                      onClick={() => onSelect(href)}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-[#F9FAFB]"
-                    >
-                      {avatar ? (
-                        <Avatar
-                          src={avatar.src}
-                          alt={avatar.name}
-                          initials={avatar.initials}
-                          size="sm"
-                        />
-                      ) : (
-                        <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            SEARCH_TILE_STYLES[group.type] ||
-                            "bg-[#F2F4F7] text-[#475467]"
-                          }`}
-                        >
-                          <GroupIcon aria-hidden="true" className="h-[18px] w-[18px]" />
-                        </span>
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold text-deep-blue">
-                          {title}
-                        </span>
-                        {subtitle ? (
-                          <span className="block truncate text-[12px] text-[#64748B]">
-                            {subtitle}
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })
-        ) : (
-          <p className="px-4 py-3 text-[13px] text-[#64748B]">
-            {isAll
-              ? "No results found"
-              : `No ${activeLabel.toLowerCase()} found`}
-          </p>
-        )}
+        <SearchResultsList
+          groups={groups}
+          activeTab={activeTab}
+          loading={loading}
+          allTabLimit={ALL_TAB_GROUP_LIMIT}
+          onSelect={onSelect}
+          onShowAll={onTabChange}
+        />
       </div>
+
+      <button
+        type="button"
+        onClick={onSeeAll}
+        className="flex shrink-0 items-center justify-center gap-2 border-t border-gray-200 px-4 py-2.5 text-[13px] font-semibold text-blue-600 hover:bg-[#F9FAFB]"
+      >
+        <Search aria-hidden="true" className="h-4 w-4" />
+        See all results
+      </button>
     </div>
   );
 };
 
 const DashboardNavbar = () => {
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  const urlQuery =
+    pathname === SEARCH_PATH ? (searchParams.get("q") ?? "") : null;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery ?? "");
+  const [syncedUrlQuery, setSyncedUrlQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState(DEFAULT_SEARCH_TAB);
   const mobileSearchRef = useRef(null);
   const desktopSearchRef = useRef(null);
-  const { pathname } = useLocation();
+
+  // Mirror the /search page's ?q= into the input; clear it when leaving that page.
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    setQuery(urlQuery ?? "");
+  }
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { logout } = useAuth();
@@ -353,31 +208,31 @@ const DashboardNavbar = () => {
 
   const model = useMemo(() => toSearchResultsModel(results), [results]);
 
-  const groups = useMemo(() => {
-    const entries = [
-      ["users", "People", model.users],
-      ["jobs", "Jobs", model.jobs],
-      ["listings", "Listings", model.listings],
-      ["posts", "Posts", model.posts],
-      ["blogs", "Blogs", model.blogs],
-    ];
-    return entries
-      .map(([type, label, items]) => ({
-        type,
-        label,
-        items: items || [],
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [model]);
+  const groups = useMemo(() => toSearchGroups(model), [model]);
 
   const showDropdown = searchOpen && Boolean(debouncedQuery);
 
   const handleSelect = (href) => {
     setSearchOpen(false);
     setQuery("");
-    setActiveTab("all");
+    setActiveTab(DEFAULT_SEARCH_TAB);
     dispatch(clearSearchResults());
     if (href && href !== "#") navigate(href);
+  };
+
+  const submitSearch = () => {
+    const q = query.trim();
+    if (!q) return;
+    setSearchOpen(false);
+    navigate(buildSearchPath(q, activeTab));
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (!query.trim()) return;
+    submitSearch();
+    e.currentTarget.blur();
   };
 
   const onQueryChange = (value) => {
@@ -412,6 +267,7 @@ const DashboardNavbar = () => {
               type="search"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search..."
               aria-label="Search professionals, products, jobs"
@@ -424,6 +280,7 @@ const DashboardNavbar = () => {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               onSelect={handleSelect}
+              onSeeAll={submitSearch}
             />
           </div>
 
@@ -481,6 +338,7 @@ const DashboardNavbar = () => {
               type="search"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search professionals, products, jobs..."
               aria-label="Search professionals, products, jobs"
@@ -493,6 +351,7 @@ const DashboardNavbar = () => {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               onSelect={handleSelect}
+              onSeeAll={submitSearch}
             />
           </div>
 
