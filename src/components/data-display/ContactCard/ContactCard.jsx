@@ -1,11 +1,11 @@
-import { Link } from 'react-router';
-import { Check, Clock, UserPlus } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
+import { Link } from "react-router";
+import { Check, Clock, UserPlus, UserRound } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Avatar from "@/components/ui/Avatar";
 
 const ContactCard = ({
   contact,
-  profileBasePath = '/contacts',
+  profileBasePath = "/contacts",
   connected = false,
   pending = false,
   incoming = false,
@@ -22,7 +22,7 @@ const ContactCard = ({
         alt={contact.name}
         initials={contact.initials}
         size="lg"
-        className={`mx-auto ${contact.avatarClass || ''}`}
+        className={`mx-auto ${contact.avatarClass || ""}`}
       />
       <Link
         to={`${profileBasePath}/${contact.id}`}
@@ -36,37 +36,28 @@ const ContactCard = ({
       </p>
       <p className="text-[13px] text-[#64748B]">{contact.country}</p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div
+        className={`mt-4 grid gap-2 ${connected ? "grid-cols-1" : "grid-cols-2"}`}
+      >
         <Link
           to={`${profileBasePath}/${contact.id}`}
-          className="rounded-md bg-pink-secondary px-3 py-2 text-[13px] font-semibold text-pink-light transition-opacity hover:opacity-90"
+          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-secondary px-3 py-2 text-[13px] hover:bg-sky-100 font-semibold text-primary transition-opacity hover:opacity-90"
         >
-          Profile
+          <UserRound aria-hidden="true" className="h-3.5 w-3.5" />
+          View Profile
         </Link>
-        {showConfirm ? (
-          <button
-            type="button"
-            onClick={() => onAccept?.(contact.connectionId, contact.id)}
-            disabled={accepting || !contact.connectionId}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Check className="h-3.5 w-3.5" />
-            {accepting ? 'Confirming…' : 'Confirm'}
-          </button>
-        ) : (
+        {connected ? null : (
           <button
             type="button"
             onClick={() => onConnect?.(contact.id)}
-            disabled={connected || pending}
+            disabled={pending}
             className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
-              connected || pending
-                ? 'bg-green-secondary text-green-primary'
-                : 'bg-primary text-white hover:opacity-90'
+              pending
+                ? "bg-green-secondary text-green-primary"
+                : "bg-primary text-white hover:opacity-90"
             }`}
           >
-            {connected ? (
-              'Connected'
-            ) : pending ? (
+            {pending ? (
               <>
                 <Clock className="h-3.5 w-3.5" />
                 Pending

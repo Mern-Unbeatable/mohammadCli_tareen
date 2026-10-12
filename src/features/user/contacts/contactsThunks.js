@@ -18,6 +18,20 @@ export const fetchContactsList = createAsyncThunk(
   },
 );
 
+/** Background badge refresh; touches only `pendingRequestCount`. */
+export const fetchPendingRequestCount = createAsyncThunk(
+  "userContacts/fetchPendingRequestCount",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await contactsApi.getPendingRequestCount();
+    } catch (err) {
+      return rejectWithValue(
+        contactsApi.getApiErrorMessage(err, "Failed to load requests"),
+      );
+    }
+  },
+);
+
 export const fetchContactDetails = createAsyncThunk(
   "userContacts/fetchContactDetails",
   async (contactId, { rejectWithValue }) => {

@@ -1,14 +1,25 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchContactsList,
+  fetchPendingRequestCount,
   fetchContactDetails,
   requestContactConnection,
   acceptConnection,
   declineConnection,
   removeConnection,
 } from "./contactsThunks";
+import { logoutUser } from "../../auth/authThunks";
+
+const isIncomingRequestsQuery = (params) =>
+  params?.status === "pending" && params?.direction === "incoming";
+
+const decrementPendingRequests = (state) => {
+  state.pendingRequestCount = Math.max(0, state.pendingRequestCount - 1);
+};
 
 const initialState = {
+  pendingRequestCount: 0,
+  pendingCountRequestId: null,
   contacts: [],
   contactsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 },
   selectedContact: null,
@@ -89,6 +100,16 @@ const contactsSlice = createSlice({
         state.contactsLoading = false;
         state.contacts = action.payload.data;
         state.contactsMeta = action.payload.meta;
+        if (isIncomingRequestsQuery(action.meta.arg)) {
+          state.pendingRequestCount = Number(action.payload.meta?.total) || 0;
+        }
+      })
+      .addCase(fetchPendingRequestCount.pending, (state, action) => {
+        state.pendingCountRequestId = action.meta.requestId;
+      })
+      .addCase(fetchPendingRequestCount.fulfilled, (state, action) => {
+        if (state.pendingCountRequestId !== action.meta.requestId) return;
+        state.pendingRequestCount = action.payload;
       })
       .addCase(fetchContactsList.rejected, (state, action) => {
         if (action.meta.requestId !== state.contactsRequestId) return;
@@ -135,6 +156,7 @@ const contactsSlice = createSlice({
       .addCase(acceptConnection.fulfilled, (state, action) => {
         state.actionLoading = false;
         state.acceptingId = null;
+        decrementPendingRequests(state);
         const { connectionId } = action.payload;
         // Drop from Requests inbox; directory refetch will show Connected
         state.contacts = state.contacts.filter(
@@ -164,6 +186,7 @@ const contactsSlice = createSlice({
       })
       .addCase(declineConnection.fulfilled, (state, action) => {
         state.actionLoading = false;
+        decrementPendingRequests(state);
         const { connectionId } = action.payload;
         state.contacts = state.contacts.filter(
           (c) =>
@@ -201,10 +224,19 @@ const contactsSlice = createSlice({
       .addCase(removeConnection.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.pendingRequestCount = 0;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        state.pendingRequestCount = 0;
       });
   },
 });
 
 export const { clearContactsError, clearSelectedContact, invalidateContactsList } =
   contactsSlice.actions;
+
+export const selectPendingRequestCount = (state) =>
+  state.userContacts.pendingRequestCount ?? 0;
 export default contactsSlice.reducer;
