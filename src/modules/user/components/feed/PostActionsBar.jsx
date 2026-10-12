@@ -1,12 +1,10 @@
-import { MessageCircle, Share2 } from 'lucide-react';
-import { getReaction } from '@/modules/user/data/reactions';
-import ReactionButton from './ReactionButton';
+import { MessageCircle, Share2 } from "lucide-react";
+import { getReaction } from "@/modules/user/data/reactions";
+import ReactionButton from "./ReactionButton";
 
 export const PostStats = ({ stats, reactionId, reactionCounts }) => {
   const selected = getReaction(reactionId);
-  const reactionLabel = selected
-    ? ` · You reacted with ${selected.emoji}`
-    : '';
+  const reactionLabel = selected ? ` · You reacted with ${selected.emoji}` : "";
 
   const topEmojis = reactionCounts
     ? Object.entries(reactionCounts)
@@ -30,7 +28,7 @@ export const PostStats = ({ stats, reactionId, reactionCounts }) => {
           </span>
         ) : null}
         <span>
-          {stats.reactions} reactions · {stats.comments} comments{reactionLabel}
+          {stats.reactions} reactions • {stats.comments} comments
         </span>
       </span>
       <span>{stats.shares} shares</span>
@@ -54,7 +52,7 @@ export const PostActions = ({
       type="button"
       onClick={onToggleComments}
       className={`flex items-center justify-center gap-2 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] ${
-        commentsOpen ? 'text-primary' : 'text-[#475467]'
+        commentsOpen ? "text-primary" : "text-[#475467]"
       }`}
     >
       <MessageCircle className="h-4 w-4" />
@@ -68,11 +66,11 @@ export const PostActions = ({
       type="button"
       onClick={onShare}
       className={`flex items-center justify-center gap-2 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] ${
-        shared ? 'text-primary' : 'text-[#475467]'
+        shared ? "text-primary" : "text-[#475467]"
       }`}
     >
       <Share2 className="h-4 w-4" />
-      {shared ? 'Shared' : 'Share'}
+      {shared ? "Shared" : "Share"}
     </button>
   </div>
 );
