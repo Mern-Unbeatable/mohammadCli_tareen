@@ -8,6 +8,7 @@ import {
   updatePost,
   removePost,
   addComment,
+  editComment,
   removeComment,
   reactToPost,
   repostPost,
@@ -336,13 +337,34 @@ const feedSlice = createSlice({
         state.commenting = false;
         state.error = action.payload;
       })
+      .addCase(editComment.fulfilled, (state, action) => {
+        const { postId, commentId, comment } = action.payload;
+        const content = comment?.content;
+        if (typeof content !== "string") return;
+
+        const patchTree = (list = []) =>
+          list.map((row) => {
+            const next = row.id === commentId ? { ...row, content } : row;
+            if (!Array.isArray(row.replies) || row.replies.length === 0) {
+              return next;
+            }
+            return { ...next, replies: patchTree(row.replies) };
+          });
+
+        mapAllPosts(state, (post) =>
+          post?.id === postId
+            ? { ...post, comments: patchTree(post.comments) }
+            : post,
+        );
+      })
       .addCase(removeComment.pending, (state) => {
         state.commenting = true;
-        state.error = null;
       })
       .addCase(removeComment.fulfilled, (state, action) => {
         state.commenting = false;
-        const { postId, commentId } = action.payload;
+        const { postId, commentId, data } = action.payload;
+        const serverCount =
+          typeof data?.commentCount === "number" ? data.commentCount : null;
         const stripComment = (post) => {
           if (!post || post.id !== postId) return post;
           let removed = 0;
@@ -374,10 +396,12 @@ const feedSlice = createSlice({
               .filter(Boolean);
 
           const nextComments = stripTree(post.comments);
-          const nextCount = Math.max(
-            0,
-            (post.stats?.comments ?? post.commentCount ?? 0) - removed,
-          );
+          const nextCount =
+            serverCount ??
+            Math.max(
+              0,
+              (post.stats?.comments ?? post.commentCount ?? 0) - removed,
+            );
           return {
             ...post,
             comments: nextComments,
@@ -392,9 +416,8 @@ const feedSlice = createSlice({
         state.myPosts = state.myPosts.map(stripComment);
         state.selectedPost = stripComment(state.selectedPost);
       })
-      .addCase(removeComment.rejected, (state, action) => {
+      .addCase(removeComment.rejected, (state) => {
         state.commenting = false;
-        state.error = action.payload;
       })
       .addCase(reactToPost.pending, (state, action) => {
         state.reactingId = action.meta.arg?.postId || null;

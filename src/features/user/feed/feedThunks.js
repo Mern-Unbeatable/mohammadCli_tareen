@@ -111,6 +111,20 @@ export const addComment = createAsyncThunk(
   },
 );
 
+export const editComment = createAsyncThunk(
+  "userFeed/editComment",
+  async ({ postId, commentId, body }, { rejectWithValue }) => {
+    try {
+      const comment = await feedApi.updateComment(postId, commentId, body);
+      return { postId, commentId, comment };
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to update comment"),
+      );
+    }
+  },
+);
+
 export const removeComment = createAsyncThunk(
   "userFeed/removeComment",
   async ({ postId, commentId }, { rejectWithValue }) => {

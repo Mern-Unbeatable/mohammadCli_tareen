@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, ThumbsUp } from "lucide-react";
+import { Send } from "lucide-react";
+import { MdThumbUpAlt, MdThumbUpOffAlt } from "react-icons/md";
 import Avatar from "@/components/ui/Avatar";
 import ExpandableText from "@/components/common/ExpandableText/ExpandableText";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import { MENTION_HIGHLIGHT } from "./mentions";
+import OwnerActionsMenu from "./OwnerActionsMenu";
 
 const LINE = "bg-[#D0D5DD]";
 const SPINE_X = 18;
@@ -11,6 +14,8 @@ const BRANCH_W = 30;
 const THREAD_GAP = 12;
 const VISIBLE_REPLIES = 3;
 const COMMENT_LINES = 3;
+/** Matches the server's comment length limit. */
+const MAX_COMMENT_LENGTH = 2000;
 
 const mentionFromName = (name = "") => {
   const first = String(name).trim().split(/\s+/)[0];
@@ -89,6 +94,82 @@ const InlineReplyBox = ({
   );
 };
 
+const CommentEditForm = ({ initialValue, saving, onSave, onCancel }) => {
+  const [draft, setDraft] = useState(initialValue);
+  const inputRef = useRef(null);
+  const empty = !draft.trim();
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, []);
+
+  const handleSave = () => {
+    if (empty || saving) return;
+    onSave(draft.trim());
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape" && !saving) {
+      event.preventDefault();
+      onCancel();
+    } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      handleSave();
+    }
+  };
+
+  return (
+    <div>
+      <textarea
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={3}
+        maxLength={MAX_COMMENT_LENGTH}
+        disabled={saving}
+        aria-label="Edit comment"
+        aria-invalid={empty}
+        className={`w-full resize-none rounded-lg border bg-white px-3 py-2 text-[16px] text-deep-blue outline-none focus:ring-2 disabled:opacity-60 sm:text-[13px] ${
+          empty
+            ? "border-[#FDA29B] focus:border-[#F04438] focus:ring-[#F04438]/10"
+            : "border-[#E4E7EC] focus:border-primary focus:ring-primary/10"
+        }`}
+      />
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className="min-w-0 text-[11px] text-[#98A2B3]">
+          {empty ? (
+            <span className="text-[#D92D20]">Comment can&apos;t be empty</span>
+          ) : (
+            <span className="hidden sm:inline">Esc to cancel</span>
+          )}
+        </p>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="rounded-md px-3 py-1.5 text-[12px] font-semibold text-[#64748B] hover:bg-[#F9FAFB] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={empty || saving}
+            className="rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CommentBody = ({
   comment,
   onLike,
@@ -100,72 +181,111 @@ const CommentBody = ({
   replySubmitting,
   onSubmitReply,
   onCancelReply,
-}) => (
-  <div className="min-w-0 flex-1">
-    <div className="rounded-lg bg-[#F3F4F6] px-3 py-2.5">
-      <p className="break-words text-[13px] font-semibold text-deep-blue">
-        {comment.author?.name}
-      </p>
-      {comment.author?.subtitle ? (
-        <p className="truncate text-[11px] text-[#64748B]">
-          {comment.author.subtitle}
-        </p>
-      ) : null}
-      <ExpandableText
-        text={comment.content}
-        lines={COMMENT_LINES}
-        highlight={MENTION_HIGHLIGHT}
-        className="mt-1.5 text-[13px] leading-relaxed text-[#475467]"
-      />
-    </div>
-    <div className="mt-1 flex flex-wrap items-center gap-2 px-1 text-[12px] font-semibold text-[#64748B]">
-      <button
-        type="button"
-        onClick={() => onLike(comment.id)}
-        disabled={liking}
-        aria-pressed={Boolean(comment.liked)}
-        className={`group flex gap-1 items-center hover:text-primary disabled:opacity-60 ${
-          comment.liked ? "text-primary" : ""
-        }`}
-      >
-        <ThumbsUp
-          aria-hidden="true"
-          strokeWidth={2}
-          className={`h-4 w-4 transition-colors ${
-            comment.liked
-              ? "fill-primary text-primary"
-              : "text-gray-500 group-hover:text-primary"
-          }`}
-        />
-        {/* {comment.liked ? "Liked" : "Like"} */}
-        {comment.likeCount > 0 ? (
-          <span className="tabular-nums font-normal">
-            ({comment.likeCount})
-          </span>
-        ) : null}
-      </button>
-      •
-      <button
-        type="button"
-        onClick={() => onReply(comment)}
-        className="hover:text-primary"
-      >
-        Reply
-      </button>
-      •<span className="font-normal text-[#98A2B3]">{comment.time}</span>
-    </div>
+  manage,
+}) => {
+  const isOwner = Boolean(
+    currentUser?.id && comment.author?.id === currentUser.id,
+  );
+  const canEdit = isOwner && Boolean(manage?.onSaveEdit);
+  const canDelete = isOwner && Boolean(manage?.onRequestDelete);
+  const editing = manage?.editingId === comment.id;
 
-    {showInlineReply ? (
-      <InlineReplyBox
-        currentUser={currentUser}
-        initialValue={replyInitialValue}
-        submitting={replySubmitting}
-        onSubmit={onSubmitReply}
-        onCancel={onCancelReply}
-      />
-    ) : null}
-  </div>
-);
+  if (editing) {
+    return (
+      <div className="min-w-0 flex-1">
+        <CommentEditForm
+          initialValue={comment.content}
+          saving={manage.editSaving}
+          onSave={(text) => manage.onSaveEdit(comment, text)}
+          onCancel={manage.onCancelEdit}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="rounded-lg bg-[#F3F4F6] px-3 py-2.5">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-[13px] font-semibold text-deep-blue">
+              {comment.author?.name}
+            </p>
+            {comment.author?.subtitle ? (
+              <p className="truncate text-[11px] text-[#64748B]">
+                {comment.author.subtitle}
+              </p>
+            ) : null}
+          </div>
+          {canEdit || canDelete ? (
+            <OwnerActionsMenu
+              size="sm"
+              label="Comment options"
+              editLabel="Edit comment"
+              deleteLabel="Delete comment"
+              className="-mr-1.5 -mt-1"
+              onEdit={canEdit ? () => manage.onStartEdit(comment) : undefined}
+              onDelete={
+                canDelete ? () => manage.onRequestDelete(comment) : undefined
+              }
+            />
+          ) : null}
+        </div>
+        <ExpandableText
+          text={comment.content}
+          lines={COMMENT_LINES}
+          highlight={MENTION_HIGHLIGHT}
+          className="mt-1.5 text-[13px] leading-relaxed text-[#475467]"
+        />
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2 px-1 text-[12px] font-semibold text-[#64748B]">
+        <span className="font-normal text-[#98A2B3]">{comment.time}</span>•
+        <button
+          type="button"
+          onClick={() => onLike(comment.id)}
+          disabled={liking}
+          aria-pressed={Boolean(comment.liked)}
+          className={`group flex gap-1 items-center hover:text-primary disabled:opacity-60 ${
+            comment.liked ? "text-primary" : ""
+          }`}
+        >
+          {comment.liked ? (
+            <MdThumbUpAlt aria-hidden="true" className="h-4 w-4 text-primary" />
+          ) : (
+            <MdThumbUpOffAlt
+              aria-hidden="true"
+              className="h-4 w-4 text-gray-500 transition-colors group-hover:text-primary"
+            />
+          )}
+          {/* {comment.liked ? "Liked" : "Like"} */}
+          {comment.likeCount > 0 ? (
+            <span className="tabular-nums font-normal">
+              ({comment.likeCount})
+            </span>
+          ) : null}
+        </button>
+        •
+        <button
+          type="button"
+          onClick={() => onReply(comment)}
+          className="hover:text-primary"
+        >
+          Reply
+        </button>
+      </div>
+
+      {showInlineReply ? (
+        <InlineReplyBox
+          currentUser={currentUser}
+          initialValue={replyInitialValue}
+          submitting={replySubmitting}
+          onSubmit={onSubmitReply}
+          onCancel={onCancelReply}
+        />
+      ) : null}
+    </div>
+  );
+};
 
 const CommentItem = ({
   comment,
@@ -180,6 +300,7 @@ const CommentItem = ({
   replySubmitting,
   onSubmitReply,
   onCancelReply,
+  manage,
 }) => {
   const nested = Array.isArray(comment.replies) ? comment.replies : [];
   const hasMore = nested.length > VISIBLE_REPLIES;
@@ -219,6 +340,7 @@ const CommentItem = ({
           replySubmitting={replySubmitting}
           onSubmitReply={onSubmitReply}
           onCancelReply={onCancelReply}
+          manage={manage}
         />
       </div>
 
@@ -266,6 +388,7 @@ const CommentItem = ({
                     replySubmitting={replySubmitting}
                     onSubmitReply={onSubmitReply}
                     onCancelReply={onCancelReply}
+                    manage={manage}
                   />
                 </div>
               </div>
@@ -320,9 +443,15 @@ const PostComments = ({
   currentUser,
   onAddComment,
   onLikeComment,
+  onEditComment,
+  onDeleteComment,
   likingCommentId,
 }) => {
   const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyRootId, setReplyRootId] = useState(null);
@@ -395,6 +524,50 @@ const PostComments = ({
     }
   };
 
+  const handleSaveEdit = async (comment, text) => {
+    if (editSaving) return;
+    if (text === comment.content.trim()) {
+      setEditingId(null);
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const ok = await onEditComment(comment.id, text);
+      if (ok !== false) setEditingId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    try {
+      const ok = await onDeleteComment(target.id);
+      if (ok === false) return;
+      setPendingDelete(null);
+      if (editingId === target.id) setEditingId(null);
+      if (replyTargetId === target.id || replyRootId === target.id) {
+        handleCancelReply();
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const manage = {
+    editingId,
+    editSaving,
+    onStartEdit: (comment) => {
+      handleCancelReply();
+      setEditingId(comment.id);
+    },
+    onCancelEdit: () => setEditingId(null),
+    onSaveEdit: onEditComment ? handleSaveEdit : undefined,
+    onRequestDelete: onDeleteComment ? setPendingDelete : undefined,
+  };
+
   const handleToggleMoreReplies = (commentId) => {
     setShowAllByRoot((prev) => {
       const next = new Set(prev);
@@ -457,9 +630,27 @@ const PostComments = ({
             replySubmitting={replySubmitting}
             onSubmitReply={handleSubmitReply}
             onCancelReply={handleCancelReply}
+            manage={manage}
           />
         ))}
       </div>
+
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete comment?"
+        description={
+          pendingDelete?.replies?.length
+            ? "This comment and its replies will be permanently removed. This action cannot be undone."
+            : "This comment will be permanently removed. This action cannot be undone."
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirming={deleting}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

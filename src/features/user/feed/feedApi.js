@@ -157,6 +157,14 @@ export async function addComment(postId, payload) {
   return unwrapApiData(response) || response;
 }
 
+export async function updateComment(postId, commentId, content) {
+  const response = await crudService.patch(
+    API_ENDPOINTS.USER.FEED.COMMENT(postId, commentId),
+    { content: String(content ?? "").trim() },
+  );
+  return unwrapApiData(response) || response;
+}
+
 export async function deleteComment(postId, commentId) {
   const response = await crudService.del(
     API_ENDPOINTS.USER.FEED.COMMENT(postId, commentId),

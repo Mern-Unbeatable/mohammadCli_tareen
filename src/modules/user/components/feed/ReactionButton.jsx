@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ThumbsUp } from "lucide-react";
+import { MdThumbUpOffAlt } from "react-icons/md";
 import { getReaction, reactions } from "@/modules/user/data/reactions";
 
 const OPEN_DELAY_MS = 200;
@@ -143,7 +143,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
         className={`flex w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-1 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] sm:gap-2 ${buttonColor}`}
       >
         {!selected ? (
-          <ThumbsUp aria-hidden="true" className="h-4 w-4" />
+          <MdThumbUpOffAlt aria-hidden="true" className="h-[18px] w-[18px]" />
         ) : (
           <span aria-hidden="true" className="text-[16px] leading-none">
             {selected.emoji}

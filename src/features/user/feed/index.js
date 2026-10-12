@@ -21,6 +21,7 @@ export {
   updatePost,
   removePost,
   addComment,
+  editComment,
   removeComment,
   reactToPost,
   repostPost,

@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MoreHorizontal, Pencil, Repeat2, Tag, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Repeat2, Tag } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
@@ -11,8 +11,11 @@ import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
 import RepostedPostCard from './RepostedPostCard';
 import PostImageGallery from './PostImageGallery';
+import OwnerActionsMenu from './OwnerActionsMenu';
 import {
   addComment,
+  editComment,
+  removeComment,
   likeComment,
   reactToPost,
   repostPost,
@@ -39,84 +42,6 @@ const REACTION_API = {
   support: "wow",
   insightful: "sad",
   curious: "angry",
-};
-
-const OwnerPostMenu = ({ post, onEdit, onDelete }) => {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleClickOutside = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [open]);
-
-  return (
-    <div ref={rootRef} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="rounded-full p-1.5 text-[#98A2B3] hover:bg-[#F9FAFB] hover:text-[#64748B]"
-        aria-label="Post options"
-        aria-expanded={open}
-        aria-haspopup="true"
-      >
-        <MoreHorizontal className="h-5 w-5" />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-[calc(100%+4px)] z-[20] w-[160px] overflow-hidden rounded-lg border border-[#E4E7EC] bg-white py-1 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
-        >
-          {onEdit ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onEdit(post);
-              }}
-              className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-deep-blue transition-colors hover:bg-[#F9FAFB]"
-            >
-              <Pencil className="h-4 w-4" strokeWidth={1.8} />
-              Edit post
-            </button>
-          ) : null}
-          {onDelete ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onDelete(post);
-              }}
-              className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
-            >
-              <Trash2 className="h-4 w-4" strokeWidth={1.8} />
-              Delete post
-            </button>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
 };
 
 const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
@@ -159,7 +84,13 @@ const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
         {meta ? <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p> : null}
       </div>
       {isOwner && (onEdit || onDelete) ? (
-        <OwnerPostMenu post={post} onEdit={onEdit} onDelete={onDelete} />
+        <OwnerActionsMenu
+          label="Post options"
+          editLabel="Edit post"
+          deleteLabel="Delete post"
+          onEdit={onEdit ? () => onEdit(post) : undefined}
+          onDelete={onDelete ? () => onDelete(post) : undefined}
+        />
       ) : (
         <button
           type="button"
@@ -356,6 +287,53 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
     }
   };
 
+  const handleEditComment = async (commentId, text) => {
+    const result = await dispatch(
+      editComment({ postId: post.id, commentId, body: text }),
+    );
+    if (editComment.rejected.match(result)) {
+      toast.error(result.payload || 'Failed to update comment');
+      return false;
+    }
+    const content = result.payload?.comment?.content ?? text.trim();
+    setComments((prev) =>
+      mapComments(prev, commentId, (c) => ({ ...c, content })),
+    );
+    return true;
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    const result = await dispatch(
+      removeComment({ postId: post.id, commentId }),
+    );
+    if (removeComment.rejected.match(result)) {
+      toast.error(result.payload || 'Failed to delete comment');
+      return false;
+    }
+
+    const target = findComment(comments, commentId);
+    const removed = target ? 1 + (target.replies?.length ?? 0) : 0;
+    setComments((prev) =>
+      prev
+        .filter((c) => c.id !== commentId)
+        .map((c) => {
+          if (!c.replies?.some((r) => r.id === commentId)) return c;
+          const replies = c.replies.filter((r) => r.id !== commentId);
+          return { ...c, replies, replyCount: replies.length };
+        }),
+    );
+    const serverCount = result.payload?.data?.commentCount;
+    setStats((prev) => ({
+      ...prev,
+      comments:
+        typeof serverCount === 'number'
+          ? serverCount
+          : Math.max(0, (prev?.comments ?? 0) - removed),
+    }));
+    toast.success('Comment deleted');
+    return true;
+  };
+
   const handleShare = () => {
     setShareOpen(true);
   };
@@ -482,6 +460,8 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
             currentUser={profileUser}
             onAddComment={handleAddComment}
             onLikeComment={handleLikeComment}
+            onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
             likingCommentId={likingCommentId}
           />
         )}
