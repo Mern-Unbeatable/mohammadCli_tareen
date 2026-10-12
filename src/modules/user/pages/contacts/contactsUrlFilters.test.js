@@ -13,6 +13,7 @@ const params = (query) => new URLSearchParams(query);
 describe("contacts URL filters", () => {
   it("reads valid values and falls back to defaults", () => {
     expect(parseFilterParam("requests")).toBe("requests");
+    expect(parseFilterParam("pending")).toBe("pending");
     expect(parseFilterParam("admins")).toBe("people");
     expect(parseFilterParam(null)).toBe("people");
     expect(parseCountryParam("France")).toBe("France");
@@ -59,10 +60,17 @@ describe("buildContactsQuery", () => {
     });
   });
 
-  it("requests incoming pending connections for the Requests filter", () => {
+  it("requests incoming pending connections for the Confirm tab", () => {
     expect(buildContactsQuery({ ...base, filter: "requests" })).toMatchObject({
       status: "pending",
       direction: "incoming",
+    });
+  });
+
+  it("requests outgoing pending connections for the Pending tab", () => {
+    expect(buildContactsQuery({ ...base, filter: "pending" })).toMatchObject({
+      status: "pending",
+      direction: "outgoing",
     });
   });
 
@@ -72,7 +80,7 @@ describe("buildContactsQuery", () => {
     expect(query).not.toHaveProperty("direction");
   });
 
-  it.each(["people", "requests", "connected"])(
+  it.each(["people", "connected", "pending", "requests"])(
     "keeps search and country for %s",
     (filter) => {
       expect(

@@ -19,9 +19,12 @@ import {
   acceptConnection,
   clearContactsError,
   invalidateContactsList,
+  selectPendingRequestCount,
   COUNTRY_OPTIONS,
   toContactCardModel,
 } from "@/features/user/contacts";
+import SegmentedTabs from "@/components/common/SegmentedTabs/SegmentedTabs";
+import CountBadge from "@/components/ui/CountBadge";
 import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 import { usePageParam } from "@/shared/hooks/usePageParam";
 import {
@@ -40,32 +43,34 @@ import {
 
 const PROFILE_BASE = "/contacts";
 
-const FILTER_OPTIONS = [
+const FILTER_TABS = [
   { id: "people", label: "People" },
-  { id: "requests", label: "Requests" },
+  { id: "pending", label: "Pending" },
+  { id: "requests", label: "Confirm" },
   { id: "connected", label: "Connected" },
 ];
 
 const EMPTY_MESSAGES = {
   people: "No members match your search.",
-  requests: "No pending connection requests.",
   connected: "You have no connections yet.",
+  pending: "You have no pending sent requests.",
+  requests: "No requests waiting for you to confirm.",
 };
 
 const FILTERED_EMPTY_MESSAGES = {
   ...EMPTY_MESSAGES,
-  requests: "No requests match your search.",
   connected: "No connections match your search.",
+  pending: "No sent requests match your search.",
+  requests: "No requests match your search.",
 };
 
+const plural = (total, word) => `${total} ${word}${total === 1 ? "" : "s"}`;
+
 const countLabel = (filter, total) => {
-  if (filter === "requests") {
-    return `${total} request${total === 1 ? "" : "s"}`;
-  }
-  if (filter === "connected") {
-    return `${total} connection${total === 1 ? "" : "s"}`;
-  }
-  return `${total} member${total === 1 ? "" : "s"} found`;
+  if (filter === "requests") return `${plural(total, "request")} to confirm`;
+  if (filter === "pending") return `${plural(total, "request")} sent`;
+  if (filter === "connected") return plural(total, "connection");
+  return `${plural(total, "member")} found`;
 };
 
 const ContactsView = () => {
@@ -79,6 +84,27 @@ const ContactsView = () => {
     acceptingId,
     error,
   } = useSelector((state) => state.userContacts);
+  const pendingRequests = useSelector(selectPendingRequestCount);
+  const filterTabs = useMemo(
+    () =>
+      FILTER_TABS.map((tab) =>
+        tab.id === "requests" && pendingRequests > 0
+          ? {
+              ...tab,
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  {tab.label}
+                  <CountBadge
+                    count={pendingRequests}
+                    label={`${plural(pendingRequests, "request")} to confirm`}
+                  />
+                </span>
+              ),
+            }
+          : tab,
+      ),
+    [pendingRequests],
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = parseFilterParam(searchParams.get(FILTER_PARAM));
@@ -222,41 +248,39 @@ const ContactsView = () => {
           </p>
         </div>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            maxLength={SEARCH_MAX_LENGTH}
-            placeholder="Search by name, laboratory or position..."
-            className="flex-1 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row-reverse lg:items-center lg:justify-between">
+          <SegmentedTabs
+            tabs={filterTabs}
+            activeTab={filter}
+            onTabChange={handleFilterChange}
+            standalone
+            ariaLabel="Filter contacts"
+            className="border border-[#E4E7EC]"
           />
 
-          <select
-            value={country}
-            onChange={(e) => handleCountryChange(e.target.value)}
-            aria-label="Filter by country"
-            className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[180px]"
-          >
-            {COUNTRY_OPTIONS.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-1">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              maxLength={SEARCH_MAX_LENGTH}
+              placeholder="Search by name, laboratory or position..."
+              className="w-full min-w-0 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] sm:max-w-[440px] sm:flex-1 lg:max-w-none text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+            />
 
-          <select
-            value={filter}
-            onChange={(e) => handleFilterChange(e.target.value)}
-            aria-label="Filter contacts"
-            className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[160px]"
-          >
-            {FILTER_OPTIONS.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={country}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              aria-label="Filter by country"
+              className="rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 sm:min-w-[180px]"
+            >
+              {COUNTRY_OPTIONS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <p className="mb-5 text-[13px] text-[#64748B]">
