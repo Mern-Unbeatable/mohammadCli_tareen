@@ -43,12 +43,22 @@ import {
   fetchUserUnreadNotificationCount,
   selectUserUnreadNotificationCount,
 } from "@/features/user/notifications";
+import {
+  fetchPendingRequestCount,
+  selectPendingRequestCount,
+} from "@/features/user/contacts";
 import { useNotificationBadge } from "@/shared/hooks/useNotificationBadge";
 import { CHAT_BASE_PATHS } from "@/shared/constants/chat";
 
 const userNotificationBadge = {
   fetchCount: fetchUserUnreadNotificationCount,
   selectCount: selectUserUnreadNotificationCount,
+};
+
+// Connection requests create a notification, so the same realtime events apply.
+const pendingRequestsBadge = {
+  fetchCount: fetchPendingRequestCount,
+  selectCount: selectPendingRequestCount,
 };
 
 const iconMap = {
@@ -137,7 +147,12 @@ const DashboardNavbar = () => {
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const { conversations: unreadChats } = useUnreadMessages();
   const unreadNotifications = useNotificationBadge(userNotificationBadge);
+  const pendingRequests = useNotificationBadge(pendingRequestsBadge);
   const badges = {
+    contacts: {
+      count: pendingRequests,
+      label: `${pendingRequests} pending connection ${pendingRequests === 1 ? "request" : "requests"}`,
+    },
     messages: {
       count: unreadChats,
       label: `${unreadChats} unread ${unreadChats === 1 ? "conversation" : "conversations"}`,
@@ -305,8 +320,13 @@ const DashboardNavbar = () => {
             aria-label={
               menuOpen
                 ? "Close menu"
-                : unreadNotifications
-                  ? `Open menu, ${badges.notifications.label}`
+                : unreadNotifications || pendingRequests
+                  ? `Open menu, ${[
+                      unreadNotifications && badges.notifications.label,
+                      pendingRequests && badges.contacts.label,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}`
                   : "Open menu"
             }
             aria-expanded={menuOpen}
@@ -317,7 +337,7 @@ const DashboardNavbar = () => {
             ) : (
               <Menu className="h-5 w-5" />
             )}
-            {!menuOpen && unreadNotifications ? (
+            {!menuOpen && (unreadNotifications || pendingRequests) ? (
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#CC1016] ring-2 ring-white sm:right-2 sm:top-2" />
             ) : null}
           </button>

@@ -12,7 +12,8 @@ export { SEARCH_MAX_LENGTH, SEARCH_PARAM, parseSearchParam };
 export const FILTER_PARAM = "filter";
 export const COUNTRY_PARAM = "country";
 
-export const FILTER_IDS = ["people", "requests", "connected"];
+/** `pending` = requests I sent; `requests` = requests to me (Confirm tab). */
+export const FILTER_IDS = ["people", "connected", "pending", "requests"];
 export const DEFAULT_FILTER = "people";
 export const DEFAULT_COUNTRY = COUNTRY_OPTIONS[0];
 
@@ -30,3 +31,23 @@ const contactsFilters = createUrlFilters({
 
 export const applyFilterChanges = contactsFilters.apply;
 export const withoutInvalidFilters = contactsFilters.normalize;
+
+/** List API params; search and country narrow every filter, not just People. */
+export const buildContactsQuery = ({ page, search, country, filter, pageSize }) => {
+  const params = { page, pageSize, sort: "desc" };
+
+  const q = search?.trim();
+  if (q) params.search = q;
+  if (country && country !== DEFAULT_COUNTRY) params.country = country;
+
+  if (filter === "requests") {
+    params.status = "pending";
+    params.direction = "incoming";
+  } else if (filter === "pending") {
+    params.status = "pending";
+    params.direction = "outgoing";
+  } else if (filter === "connected") {
+    params.status = "accepted";
+  }
+  return params;
+};

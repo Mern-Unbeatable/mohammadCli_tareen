@@ -27,6 +27,17 @@ const render = (url, contactsState = {}) => {
   );
 };
 
+const tabs = (html) =>
+  [...html.matchAll(/<button[^>]*role="tab"[^>]*aria-selected="(true|false)"[^>]*>(.*?)<\/button>/g)].map(
+    ([, selected, inner]) => ({
+      label: inner.replace(/<[^>]+>/g, "").replace(/\d+$/, ""),
+      selected: selected === "true",
+    }),
+  );
+
+/** Markup after the filter toolbar, so tab icons don't count as card content. */
+const cardsOf = (html) => html.slice(html.indexOf("</select>"));
+
 const loadedPage = (page, totalPages = 3) => ({
   contacts: [contact(`p${page}-a`), contact(`p${page}-b`)],
   contactsMeta: { page, pageSize: 8, total: totalPages * 8, totalPages },
@@ -90,21 +101,94 @@ describe("ContactsView pagination", () => {
     expect(html).toContain('aria-label="Page 2" aria-current="page"');
   });
 
-  it("restores the Requests filter from the URL", () => {
-    const html = render("/contacts?filter=requests&page=1", {
+  it("renders People, Pending, Confirm and Connected tabs in order", () => {
+    const html = render("/contacts?page=1", loadedPage(1));
+
+    expect(html).toContain('role="tablist" aria-label="Filter contacts"');
+    expect(tabs(html)).toEqual([
+      { label: "People", selected: true },
+      { label: "Pending", selected: false },
+      { label: "Confirm", selected: false },
+      { label: "Connected", selected: false },
+    ]);
+    const icons = [...html.matchAll(/role="tab"[^>]*>.*?<svg[^>]*class="lucide (lucide-[\w-]+)/g)].map(
+      ([, icon]) => icon,
+    );
+    expect(icons).toEqual(["lucide-users", "lucide-clock", "lucide-user-check", "lucide-handshake"]);
+    // Only the country dropdown remains.
+    expect(html.match(/<select/g)).toHaveLength(1);
+    expect(html).toContain('<select aria-label="Filter by country"');
+  });
+
+  it.each([
+    ["connected", "Connected", "You have no connections yet.", "0 connections"],
+    ["pending", "Pending", "You have no pending sent requests.", "0 requests sent"],
+    ["requests", "Confirm", "No requests waiting for you to confirm.", "0 requests to confirm"],
+  ])("restores the %s filter from the URL as the %s tab", (id, label, emptyText, count) => {
+    const html = render(`/contacts?filter=${id}&page=1`, {
       contacts: [],
       contactsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 },
     });
 
-    expect(html).toContain('<option value="requests" selected="">');
-    expect(html).toContain("0 requests");
-    expect(html).toContain("No pending connection requests.");
+    expect(tabs(html).find((t) => t.selected)?.label).toBe(label);
+    expect(html).toContain(count);
+    expect(html).toContain(emptyText);
+  });
+
+  it("shows the number of requests to confirm on the Confirm tab", () => {
+    const html = render("/contacts?page=1", { ...loadedPage(1), pendingRequestCount: 3 });
+    expect(html).toContain('aria-label="3 requests to confirm"');
+
+    const none = render("/contacts?page=1", { ...loadedPage(1), pendingRequestCount: 0 });
+    expect(none).not.toContain("to confirm");
+  });
+
+  it("shows Pending on cards in the Pending tab and Confirm in the Confirm tab", () => {
+    const sent = render("/contacts?filter=pending&page=1", {
+      contacts: [{ ...contact("s1"), connectionId: "c1", connectionStatus: "PENDING", connectionDirection: "outgoing" }],
+      contactsMeta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
+    });
+    expect(cardsOf(sent)).toContain("lucide-clock");
+    expect(cardsOf(sent)).not.toContain("bg-green-primary");
+
+    const received = render("/contacts?filter=requests&page=1", {
+      contacts: [{ ...contact("r1"), connectionId: "c2", connectionStatus: "PENDING", connectionDirection: "incoming" }],
+      contactsMeta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
+    });
+    expect(cardsOf(received)).toContain("bg-green-primary");
+    expect(cardsOf(received)).not.toContain("lucide-clock");
+  });
+
+  it("shows the Connected total and pagination from the filtered result", () => {
+    const html = render("/contacts?filter=connected&page=2", {
+      contacts: [contact("c9"), contact("c10")],
+      contactsMeta: { page: 2, pageSize: 8, total: 10, totalPages: 2 },
+    });
+
+    expect(tabs(html).find((t) => t.selected)?.label).toBe("Connected");
+    expect(html).toContain("10 connections");
+    expect(html).toContain('aria-label="Page 2" aria-current="page"');
+    expect(html).toMatch(/aria-label="Next page"[^>]*disabled/);
+  });
+
+  it("explains an empty Connected list differently when a search is active", () => {
+    const empty = { contacts: [], contactsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 } };
+
+    expect(render("/contacts?filter=connected&page=1", empty)).toContain(
+      "You have no connections yet.",
+    );
+    expect(render("/contacts?filter=connected&page=1&q=zed", empty)).toContain(
+      "No connections match your search.",
+    );
+    expect(render("/contacts?filter=connected&page=1&country=Italy", empty)).toContain(
+      "No connections match your search.",
+    );
   });
 
   it("falls back to People for an unknown filter", () => {
     const html = render("/contacts?filter=admins&country=Atlantis", loadedPage(1));
 
-    expect(html).toContain('<option value="people" selected="">');
+    expect(tabs(html).find((t) => t.selected)?.label).toBe("People");
     expect(html).toContain('<option value="All countries" selected="">');
   });
 

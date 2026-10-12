@@ -100,8 +100,8 @@ const ContactProfileView = () => {
             posts={[]}
             onReport={handleReport}
             connected={contact.connected}
-            pending={contact.pending || connectingId === contact.id}
             onConnect={handleConnect}
+            pending={contact.pending || connectingId === contact.id}
             messageHref={chatPath(CHAT_BASE_PATHS.USER, { id: contact.id })}
           />
         </Container>
