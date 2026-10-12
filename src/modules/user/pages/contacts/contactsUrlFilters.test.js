@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyFilterChanges,
+  buildContactsQuery,
   parseCountryParam,
   parseFilterParam,
   parseSearchParam,
@@ -43,5 +44,46 @@ describe("contacts URL filters", () => {
 
     const fixed = withoutInvalidFilters(params("page=2&filter=admins&country=Atlantis"));
     expect(fixed.toString()).toBe("page=2");
+  });
+});
+
+describe("buildContactsQuery", () => {
+  const base = { page: 2, pageSize: 8, search: "", country: "All countries" };
+
+  it("requests accepted connections for the Connected filter", () => {
+    expect(buildContactsQuery({ ...base, filter: "connected" })).toEqual({
+      page: 2,
+      pageSize: 8,
+      sort: "desc",
+      status: "accepted",
+    });
+  });
+
+  it("requests incoming pending connections for the Requests filter", () => {
+    expect(buildContactsQuery({ ...base, filter: "requests" })).toMatchObject({
+      status: "pending",
+      direction: "incoming",
+    });
+  });
+
+  it("sends no status for People", () => {
+    const query = buildContactsQuery({ ...base, filter: "people" });
+    expect(query).not.toHaveProperty("status");
+    expect(query).not.toHaveProperty("direction");
+  });
+
+  it.each(["people", "requests", "connected"])(
+    "keeps search and country for %s",
+    (filter) => {
+      expect(
+        buildContactsQuery({ ...base, filter, search: "  anna ", country: "France" }),
+      ).toMatchObject({ search: "anna", country: "France" });
+    },
+  );
+
+  it("omits a blank search and the All countries default", () => {
+    const query = buildContactsQuery({ ...base, filter: "connected", search: "   " });
+    expect(query).not.toHaveProperty("search");
+    expect(query).not.toHaveProperty("country");
   });
 });

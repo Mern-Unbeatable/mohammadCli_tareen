@@ -46,7 +46,17 @@ const ContactCard = ({
           <UserRound aria-hidden="true" className="h-3.5 w-3.5" />
           View Profile
         </Link>
-        {connected ? null : (
+        {connected ? null : showConfirm ? (
+          <button
+            type="button"
+            onClick={() => onAccept?.(contact.connectionId, contact.id)}
+            disabled={accepting || !contact.connectionId}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-green-primary px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Check className="h-3.5 w-3.5" />
+            {accepting ? "Confirming…" : "Confirm"}
+          </button>
+        ) : (
           <button
             type="button"
             onClick={() => onConnect?.(contact.id)}

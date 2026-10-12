@@ -5,9 +5,14 @@ import * as contactsApi from "./contactsApi";
  * User contacts async thunks — orchestration only; HTTP in contactsApi.
  */
 
+/**
+ * `background: true` refreshes the current page without clearing the cards
+ * (e.g. after a confirm shifts later members onto this page).
+ */
 export const fetchContactsList = createAsyncThunk(
   "userContacts/fetchContactsList",
-  async (params = {}, { rejectWithValue }) => {
+  async (args = {}, { rejectWithValue }) => {
+    const { background: _background, ...params } = args;
     try {
       return await contactsApi.getContactsList(params);
     } catch (err) {

@@ -44,9 +44,11 @@ describe("ContactCard actions", () => {
     expect(buttons(html)).toBe(1);
   });
 
-  it("shows Confirm for an incoming request", () => {
+  it("shows an enabled Confirm for an incoming request", () => {
     const html = render({ pending: true, incoming: true });
     expect(html).toContain("Confirm");
     expect(html).toContain("bg-green-primary");
+    expect(html).not.toContain("Pending");
+    expect(html).not.toContain('disabled=""');
   });
 });

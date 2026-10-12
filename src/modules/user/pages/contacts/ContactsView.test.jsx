@@ -101,6 +101,32 @@ describe("ContactsView pagination", () => {
     expect(html).toContain("No pending connection requests.");
   });
 
+  it("shows the Connected total and pagination from the filtered result", () => {
+    const html = render("/contacts?filter=connected&page=2", {
+      contacts: [contact("c9"), contact("c10")],
+      contactsMeta: { page: 2, pageSize: 8, total: 10, totalPages: 2 },
+    });
+
+    expect(html).toContain('<option value="connected" selected="">');
+    expect(html).toContain("10 connections");
+    expect(html).toContain('aria-label="Page 2" aria-current="page"');
+    expect(html).toMatch(/aria-label="Next page"[^>]*disabled/);
+  });
+
+  it("explains an empty Connected list differently when a search is active", () => {
+    const empty = { contacts: [], contactsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 } };
+
+    expect(render("/contacts?filter=connected&page=1", empty)).toContain(
+      "You have no connections yet.",
+    );
+    expect(render("/contacts?filter=connected&page=1&q=zed", empty)).toContain(
+      "No connections match your search.",
+    );
+    expect(render("/contacts?filter=connected&page=1&country=Italy", empty)).toContain(
+      "No connections match your search.",
+    );
+  });
+
   it("falls back to People for an unknown filter", () => {
     const html = render("/contacts?filter=admins&country=Atlantis", loadedPage(1));
 

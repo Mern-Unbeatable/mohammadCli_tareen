@@ -133,6 +133,18 @@ describe("pending request badge count", () => {
     state = reducer(state, fetchContactsList.pending("r2", { page: 1 }));
     state = reducer(state, fetchContactsList.fulfilled(page(1), "r2", { page: 1 }));
     expect(state.pendingRequestCount).toBe(5);
+
+    const searched = { ...requestsArgs, search: "anna" };
+    state = reducer(state, fetchContactsList.pending("r3", searched));
+    state = reducer(
+      state,
+      fetchContactsList.fulfilled(
+        { data: [], meta: { page: 1, pageSize: 8, total: 1, totalPages: 1 } },
+        "r3",
+        searched,
+      ),
+    );
+    expect(state.pendingRequestCount).toBe(5);
   });
 
   it("resets on logout", () => {
@@ -140,3 +152,79 @@ describe("pending request badge count", () => {
     expect(state.pendingRequestCount).toBe(0);
   });
 });
+
+describe("confirming a request from the list", () => {
+  const people = (rows, total = rows.length) => ({
+    data: rows,
+    meta: { page: 1, pageSize: 8, total, totalPages: Math.ceil(total / 8) || 1 },
+  });
+  const loaded = (payload, args = { page: 1 }) => {
+    const state = reducer(initial, fetchContactsList.pending("load", args));
+    return reducer(state, fetchContactsList.fulfilled(payload, "load", args));
+  };
+  const pendingIn = (id) => ({
+    id,
+    connectionId: `conn-${id}`,
+    connectionStatus: "PENDING",
+    connectionDirection: "incoming",
+  });
+
+  it("removes the confirmed member from People at once and fixes the page count", () => {
+    let state = loaded(
+      people([pendingIn("anna"), { id: "bob", connectionStatus: null }], 9),
+    );
+    expect(state.contactsMeta.totalPages).toBe(2);
+
+    state = reducer(
+      state,
+      acceptConnection.fulfilled({ connectionId: "conn-anna" }, "a", "conn-anna"),
+    );
+
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
+    expect(state.contactsMeta).toMatchObject({ total: 8, totalPages: 1 });
+  });
+
+  it("refreshes the page in the background without clearing cards", () => {
+    let state = loaded(people([{ id: "bob" }], 9));
+    const args = { page: 1, background: true };
+
+    state = reducer(state, fetchContactsList.pending("bg", args));
+    expect(state.contactsLoading).toBe(false);
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
+
+    state = reducer(
+      state,
+      fetchContactsList.fulfilled(people([{ id: "bob" }, { id: "cara" }], 9), "bg", args),
+    );
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob", "cara"]);
+  });
+
+  it("lets a page or filter load in flight win over a background refresh", () => {
+    let state = loaded(people([{ id: "bob" }]));
+    state = reducer(state, fetchContactsList.pending("page-2", { page: 2 }));
+    state = reducer(state, fetchContactsList.pending("bg", { page: 1, background: true }));
+    state = reducer(
+      state,
+      fetchContactsList.fulfilled(people([{ id: "stale" }]), "bg", { page: 1, background: true }),
+    );
+    expect(state.contactsLoading).toBe(true);
+
+    state = reducer(
+      state,
+      fetchContactsList.fulfilled(people([{ id: "page-2-row" }]), "page-2", { page: 2 }),
+    );
+    expect(state.contacts.map((c) => c.id)).toEqual(["page-2-row"]);
+  });
+
+  it("keeps the visible cards when a background refresh fails", () => {
+    let state = loaded(people([{ id: "bob" }]));
+    const args = { page: 1, background: true };
+    state = reducer(state, fetchContactsList.pending("bg", args));
+    state = reducer(state, fetchContactsList.rejected(null, "bg", args, "Network Error"));
+
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
+    expect(state.contactsError).toBeNull();
+    expect(state.error).toBeNull();
+  });
+});
+

@@ -10,8 +10,12 @@ import {
 } from "./contactsThunks";
 import { logoutUser } from "../../auth/authThunks";
 
+/** Unfiltered Requests list, whose total is the badge count. */
 const isIncomingRequestsQuery = (params) =>
-  params?.status === "pending" && params?.direction === "incoming";
+  params?.status === "pending" &&
+  params?.direction === "incoming" &&
+  !params.search &&
+  !params.country;
 
 const decrementPendingRequests = (state) => {
   state.pendingRequestCount = Math.max(0, state.pendingRequestCount - 1);
@@ -81,8 +85,15 @@ const contactsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchContactsList.pending, (state, action) => {
-        state.contactsLoading = true;
+        if (action.meta.arg?.background) {
+          // A page/filter load already in flight wins over a refresh.
+          if (!state.contactsLoading) {
+            state.contactsRequestId = action.meta.requestId;
+          }
+          return;
+        }
         state.contactsRequestId = action.meta.requestId;
+        state.contactsLoading = true;
         state.error = null;
         state.contactsError = null;
         // Drop previous tab/page results so the UI can show skeletons
@@ -113,6 +124,8 @@ const contactsSlice = createSlice({
       })
       .addCase(fetchContactsList.rejected, (state, action) => {
         if (action.meta.requestId !== state.contactsRequestId) return;
+        // Keep the visible page if only a background refresh failed.
+        if (action.meta.arg?.background) return;
         state.contactsLoading = false;
         state.error = action.payload;
         state.contactsError = action.payload || "Failed to load contacts";
@@ -164,9 +177,14 @@ const contactsSlice = createSlice({
             c.connectionId !== connectionId && c.id !== connectionId,
         );
         if (state.contactsMeta?.total > 0) {
+          const total = state.contactsMeta.total - 1;
           state.contactsMeta = {
             ...state.contactsMeta,
-            total: Math.max(0, state.contactsMeta.total - 1),
+            total,
+            totalPages: Math.max(
+              1,
+              Math.ceil(total / (state.contactsMeta.pageSize || 1)),
+            ),
           };
         }
         state.selectedContact = applyConnectionStatus(

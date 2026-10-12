@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router";
 import { toast } from "react-toastify";
@@ -19,10 +26,12 @@ import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 import { usePageParam } from "@/shared/hooks/usePageParam";
 import {
   COUNTRY_PARAM,
+  DEFAULT_COUNTRY,
   FILTER_PARAM,
   SEARCH_MAX_LENGTH,
   SEARCH_PARAM,
   applyFilterChanges,
+  buildContactsQuery,
   parseCountryParam,
   parseFilterParam,
   parseSearchParam,
@@ -43,28 +52,10 @@ const EMPTY_MESSAGES = {
   connected: "You have no connections yet.",
 };
 
-const buildContactsQuery = ({ page, search, country, filter }) => {
-  const params = {
-    page,
-    pageSize: GRID_PAGE_SIZE,
-    sort: "desc",
-  };
-
-  if (filter === "requests") {
-    params.status = "pending";
-    params.direction = "incoming";
-    return params;
-  }
-
-  if (filter === "connected") {
-    params.status = "accepted";
-    return params;
-  }
-
-  const q = search?.trim();
-  if (q) params.search = q;
-  if (country && country !== "All countries") params.country = country;
-  return params;
+const FILTERED_EMPTY_MESSAGES = {
+  ...EMPTY_MESSAGES,
+  requests: "No requests match your search.",
+  connected: "No connections match your search.",
 };
 
 const countLabel = (filter, total) => {
@@ -127,19 +118,27 @@ const ContactsView = () => {
     return () => clearTimeout(timer);
   }, [query, search, updateFilters]);
 
+  const contactsQuery = useMemo(
+    () =>
+      buildContactsQuery({
+        page,
+        search,
+        country,
+        filter,
+        pageSize: GRID_PAGE_SIZE,
+      }),
+    [page, search, country, filter],
+  );
+
+  const latestQueryRef = useRef(contactsQuery);
+  useEffect(() => {
+    latestQueryRef.current = contactsQuery;
+  }, [contactsQuery]);
+
   const loadContacts = useCallback(() => {
     dispatch(clearContactsError());
-    dispatch(
-      fetchContactsList(
-        buildContactsQuery({
-          page,
-          search,
-          country,
-          filter,
-        }),
-      ),
-    );
-  }, [dispatch, page, search, country, filter]);
+    dispatch(fetchContactsList(contactsQuery));
+  }, [dispatch, contactsQuery]);
 
   // Run before paint so skeletons replace stale cards immediately on filter/page change
   useLayoutEffect(() => {
@@ -203,6 +202,10 @@ const ContactsView = () => {
     const result = await dispatch(acceptConnection(connectionId));
     if (acceptConnection.fulfilled.match(result)) {
       toast.success("Connection confirmed");
+      // The card is already gone; refetch so the next member fills this page.
+      dispatch(
+        fetchContactsList({ ...latestQueryRef.current, background: true }),
+      );
     }
   };
 
@@ -300,7 +303,9 @@ const ContactsView = () => {
         ) : (
           <div className="rounded-xl border border-dashed border-[#D0D5DD] bg-white px-6 py-10 text-center">
             <p className="text-[14px] text-[#64748B]">
-              {EMPTY_MESSAGES[filter]}
+              {(search.trim() || country !== DEFAULT_COUNTRY
+                ? FILTERED_EMPTY_MESSAGES
+                : EMPTY_MESSAGES)[filter]}
             </p>
           </div>
         )}
