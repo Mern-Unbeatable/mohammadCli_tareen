@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { splitHighlights } from './splitHighlights';
 
 const ELLIPSIS = '\u2026';
 /** How far back (in characters) the cut may move to land on a word boundary. */
@@ -19,6 +20,10 @@ const clampStyle = (lines) => ({
  * with a binary search on an invisible copy of the paragraph (same width and
  * classes) and recomputed whenever the width changes. Until the first
  * measurement, CSS line-clamp keeps the text at `lines` lines.
+ *
+ * `highlight` ({ pattern, className }) wraps matching parts (e.g. @mentions) in a
+ * styled span, in both the visible text and the measuring copy. Keep `pattern`
+ * stable (module-level) so it doesn't re-trigger measuring on every render.
  */
 const ExpandableText = ({
   text,
@@ -26,24 +31,39 @@ const ExpandableText = ({
   className = '',
   moreLabel = 'See more',
   lessLabel = 'See less',
+  highlight,
 }) => {
   const textRef = useRef(null);
   const measureRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   /** `undefined` = not measured yet, `null` = fits, number = characters to keep. */
   const [cut, setCut] = useState(undefined);
+  const highlightPattern = highlight?.pattern;
+  const highlightClass = highlight?.className || '';
 
   useEffect(() => {
     const box = measureRef.current;
     if (!box || !text) return undefined;
 
-    const textNode = document.createTextNode(text);
+    const body = document.createElement('span');
     const label = document.createElement('span');
     label.className = 'font-semibold';
     label.textContent = moreLabel;
     const suffix = document.createElement('span');
     suffix.append(`${ELLIPSIS} `, label);
-    box.replaceChildren(textNode, suffix);
+    box.replaceChildren(body, suffix);
+
+    const fill = (value) => {
+      body.replaceChildren(
+        ...splitHighlights(value, highlightPattern).map((part) => {
+          if (!part.highlight) return document.createTextNode(part.text);
+          const span = document.createElement('span');
+          span.className = highlightClass;
+          span.textContent = part.text;
+          return span;
+        }),
+      );
+    };
 
     const measure = () => {
       const style = getComputedStyle(box);
@@ -51,7 +71,7 @@ const ExpandableText = ({
         parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
       const maxHeight = lineHeight * lines + 1;
 
-      textNode.data = text;
+      fill(text);
       suffix.hidden = true;
       if (box.scrollHeight <= maxHeight) {
         setCut(null);
@@ -60,7 +80,7 @@ const ExpandableText = ({
 
       suffix.hidden = false;
       const fits = (count) => {
-        textNode.data = text.slice(0, count).trimEnd();
+        fill(text.slice(0, count).trimEnd());
         return box.scrollHeight <= maxHeight;
       };
       let low = 0;
@@ -84,7 +104,7 @@ const ExpandableText = ({
     const observer = new ResizeObserver(measure);
     observer.observe(box);
     return () => observer.disconnect();
-  }, [text, lines, moreLabel]);
+  }, [text, lines, moreLabel, highlightPattern, highlightClass]);
 
   const collapse = () => {
     setExpanded(false);
@@ -101,11 +121,22 @@ const ExpandableText = ({
   const toggleClass =
     'inline cursor-pointer font-semibold text-primary hover:underline focus-visible:underline focus-visible:outline-none';
 
-  let content = text;
+  const renderText = (value) =>
+    splitHighlights(value, highlightPattern).map((part, index) =>
+      part.highlight ? (
+        <span key={index} className={highlightClass}>
+          {part.text}
+        </span>
+      ) : (
+        <Fragment key={index}>{part.text}</Fragment>
+      ),
+    );
+
+  let content = renderText(text);
   if (expanded) {
     content = (
       <>
-        {text}{' '}
+        {renderText(text)}{' '}
         <button type="button" onClick={collapse} aria-expanded className={toggleClass}>
           {lessLabel}
         </button>
@@ -114,7 +145,7 @@ const ExpandableText = ({
   } else if (typeof cut === 'number') {
     content = (
       <>
-        {text.slice(0, cut).trimEnd()}
+        {renderText(text.slice(0, cut).trimEnd())}
         {`${ELLIPSIS} `}
         <button
           type="button"

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, ThumbsUp } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import ExpandableText from "@/components/common/ExpandableText/ExpandableText";
+import { MENTION_HIGHLIGHT } from "./mentions";
 
 const LINE = "bg-[#D0D5DD]";
 const SPINE_X = 18;
@@ -109,6 +110,7 @@ const CommentBody = ({
       <ExpandableText
         text={comment.content}
         lines={COMMENT_LINES}
+        highlight={MENTION_HIGHLIGHT}
         className="mt-1.5 text-[13px] leading-relaxed text-[#475467]"
       />
     </div>
