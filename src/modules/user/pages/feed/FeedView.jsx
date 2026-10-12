@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import Container from "@/components/ui/Container";
@@ -87,12 +93,7 @@ const FeedView = () => {
     [posts],
   );
 
-  const handlePublish = async ({
-    type,
-    content,
-    imageUrls,
-    documentUrl,
-  }) => {
+  const handlePublish = async ({ type, content, imageUrls, documentUrl }) => {
     const apiType =
       type === "question"
         ? "QUESTION"
@@ -146,15 +147,12 @@ const FeedView = () => {
   return (
     <>
       <main className="py-4 sm:py-5">
-        <Container className="flex gap-6">
+        <Container className="flex gap-8">
           <LeftSidebar />
 
-          <section className="mx-auto min-w-0 w-full max-w-[720px] flex-1 space-y-4">
+          <section className="min-w-0 w-full flex-1 space-y-4">
             <div className="hidden sm:block">
-              <FeedComposer
-                user={profileUser}
-                onCreatePost={openCreatePost}
-              />
+              <FeedComposer user={profileUser} onCreatePost={openCreatePost} />
             </div>
             <FeedFilters
               filters={feedFilters}
