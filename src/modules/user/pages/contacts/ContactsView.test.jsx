@@ -35,6 +35,9 @@ const tabs = (html) =>
     }),
   );
 
+/** Markup after the filter toolbar, so tab icons don't count as card content. */
+const cardsOf = (html) => html.slice(html.indexOf("</select>"));
+
 const loadedPage = (page, totalPages = 3) => ({
   contacts: [contact(`p${page}-a`), contact(`p${page}-b`)],
   contactsMeta: { page, pageSize: 8, total: totalPages * 8, totalPages },
@@ -108,6 +111,10 @@ describe("ContactsView pagination", () => {
       { label: "Confirm", selected: false },
       { label: "Connected", selected: false },
     ]);
+    const icons = [...html.matchAll(/role="tab"[^>]*>.*?<svg[^>]*class="lucide (lucide-[\w-]+)/g)].map(
+      ([, icon]) => icon,
+    );
+    expect(icons).toEqual(["lucide-users", "lucide-clock", "lucide-user-check", "lucide-handshake"]);
     // Only the country dropdown remains.
     expect(html.match(/<select/g)).toHaveLength(1);
     expect(html).toContain('<select aria-label="Filter by country"');
@@ -141,15 +148,15 @@ describe("ContactsView pagination", () => {
       contacts: [{ ...contact("s1"), connectionId: "c1", connectionStatus: "PENDING", connectionDirection: "outgoing" }],
       contactsMeta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
     });
-    expect(sent).toContain("lucide-clock");
-    expect(sent).not.toContain("bg-green-primary");
+    expect(cardsOf(sent)).toContain("lucide-clock");
+    expect(cardsOf(sent)).not.toContain("bg-green-primary");
 
     const received = render("/contacts?filter=requests&page=1", {
       contacts: [{ ...contact("r1"), connectionId: "c2", connectionStatus: "PENDING", connectionDirection: "incoming" }],
       contactsMeta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
     });
-    expect(received).toContain("bg-green-primary");
-    expect(received).not.toContain("lucide-clock");
+    expect(cardsOf(received)).toContain("bg-green-primary");
+    expect(cardsOf(received)).not.toContain("lucide-clock");
   });
 
   it("shows the Connected total and pagination from the filtered result", () => {

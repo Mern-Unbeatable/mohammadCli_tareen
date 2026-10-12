@@ -9,6 +9,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router";
 import { toast } from "react-toastify";
+import { Clock, Handshake, UserCheck, Users } from "lucide-react";
 import Pagination from "@/components/common/Pagination/Pagination";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import Container from "@/components/ui/Container";
@@ -44,10 +45,10 @@ import {
 const PROFILE_BASE = "/contacts";
 
 const FILTER_TABS = [
-  { id: "people", label: "People" },
-  { id: "pending", label: "Pending" },
-  { id: "requests", label: "Confirm" },
-  { id: "connected", label: "Connected" },
+  { id: "people", label: "People", icon: Users },
+  { id: "pending", label: "Pending", icon: Clock },
+  { id: "requests", label: "Confirm", icon: UserCheck },
+  { id: "connected", label: "Connected", icon: Handshake },
 ];
 
 const EMPTY_MESSAGES = {
@@ -87,22 +88,24 @@ const ContactsView = () => {
   const pendingRequests = useSelector(selectPendingRequestCount);
   const filterTabs = useMemo(
     () =>
-      FILTER_TABS.map((tab) =>
-        tab.id === "requests" && pendingRequests > 0
-          ? {
-              ...tab,
-              label: (
-                <span className="inline-flex items-center gap-1.5">
-                  {tab.label}
-                  <CountBadge
-                    count={pendingRequests}
-                    label={`${plural(pendingRequests, "request")} to confirm`}
-                  />
-                </span>
-              ),
-            }
-          : tab,
-      ),
+      FILTER_TABS.map((tab) => {
+        const Icon = tab.icon;
+        return {
+          id: tab.id,
+          label: (
+            <span className="inline-flex items-center gap-1.5">
+              <Icon aria-hidden className="hidden h-4 w-4 shrink-0 sm:block" />
+              {tab.label}
+              {tab.id === "requests" && pendingRequests > 0 && (
+                <CountBadge
+                  count={pendingRequests}
+                  label={`${plural(pendingRequests, "request")} to confirm`}
+                />
+              )}
+            </span>
+          ),
+        };
+      }),
     [pendingRequests],
   );
 
