@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 
 /**
  * Post + all of its comments in one scrollable dialog. Dialogs opened from
@@ -13,19 +13,19 @@ const FullCommentsModal = ({ open, title, onClose, children }) => {
   useEffect(() => {
     if (!open) return undefined;
     const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     dialogRef.current?.focus();
 
     const handleKey = (event) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.key !== "Escape" || event.defaultPrevented) return;
       const dialogs = document.querySelectorAll('[aria-modal="true"]');
       if (dialogs[dialogs.length - 1] !== dialogRef.current) return;
       onClose();
     };
-    document.addEventListener('keydown', handleKey);
+    document.addEventListener("keydown", handleKey);
 
     return () => {
-      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = overflow;
     };
   }, [open, onClose]);
@@ -34,14 +34,14 @@ const FullCommentsModal = ({ open, title, onClose, children }) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 sm:items-center sm:p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="flex h-[92dvh] w-full max-w-[680px] flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl outline-none sm:h-auto sm:max-h-[90dvh] sm:rounded-xl"
+        className="flex h-[92dvh] w-full max-w-[700px] flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl outline-none sm:h-auto sm:max-h-[90dvh] sm:rounded-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="full-comments-title"
@@ -64,7 +64,9 @@ const FullCommentsModal = ({ open, title, onClose, children }) => {
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

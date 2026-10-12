@@ -1,18 +1,18 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { MoreHorizontal, Repeat2, Tag } from 'lucide-react';
-import { toast } from 'react-toastify';
-import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
-import Badge from '@/components/ui/Badge';
-import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
-import { AttachmentCard, PostStats, PostActions } from './FeedShared';
-import PostComments from './PostComments';
-import SharePostModal from './SharePostModal';
-import RepostedPostCard from './RepostedPostCard';
-import PostImageGallery from './PostImageGallery';
-import OwnerActionsMenu from './OwnerActionsMenu';
-import FullCommentsModal from './FullCommentsModal';
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { MoreHorizontal, Repeat2, Tag } from "lucide-react";
+import { toast } from "react-toastify";
+import Card from "@/components/ui/Card";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import ExpandableText from "@/components/common/ExpandableText/ExpandableText";
+import { AttachmentCard, PostStats, PostActions } from "./FeedShared";
+import PostComments from "./PostComments";
+import SharePostModal from "./SharePostModal";
+import RepostedPostCard from "./RepostedPostCard";
+import PostImageGallery from "./PostImageGallery";
+import OwnerActionsMenu from "./OwnerActionsMenu";
+import FullCommentsModal from "./FullCommentsModal";
 import {
   addComment,
   editComment,
@@ -21,14 +21,14 @@ import {
   reactToPost,
   repostPost,
   undoRepost,
-} from '@/features/user/feed';
-import { toProfilePageUser } from '@/features/user/profile';
+} from "@/features/user/feed";
+import { toProfilePageUser } from "@/features/user/profile";
 
 const badgeByType = {
-  question: { variant: 'question', label: 'Question' },
-  information: { variant: 'information', label: 'Information' },
-  sponsored: { variant: 'sponsored', label: '• Sponsored' },
-  promo: { variant: 'sponsored', label: '• Sponsored' },
+  question: { variant: "question", label: "Question" },
+  information: { variant: "information", label: "Information" },
+  sponsored: { variant: "sponsored", label: "• Sponsored" },
+  promo: { variant: "sponsored", label: "• Sponsored" },
 };
 
 const COMMENT_PREVIEW_LIMIT = 4;
@@ -56,9 +56,9 @@ const PostHeader = ({
   showActions = true,
 }) => {
   const badge = badgeByType[post.type];
-  const meta = [post.author.meta, post.edited ? 'Edited' : null]
+  const meta = [post.author.meta, post.edited ? "Edited" : null]
     .filter(Boolean)
-    .join(' · ');
+    .join(" · ");
 
   return (
     <div className="flex items-start gap-2.5 p-3 pb-0 sm:gap-3 sm:p-4 sm:pb-0">
@@ -79,7 +79,7 @@ const PostHeader = ({
             </span>
           )}
           {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
-          {post.type === 'promo' && (
+          {post.type === "promo" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-secondary px-2 py-0.5 text-[10px] font-semibold text-pink-light">
               <Tag className="h-3 w-3" />
               Promotional Offer
@@ -87,11 +87,16 @@ const PostHeader = ({
           )}
         </div>
         {post.author.subtitle ? (
-          <p className="truncate text-[12px] text-[#64748B]" title={post.author.subtitle}>
+          <p
+            className="truncate text-[12px] text-[#64748B]"
+            title={post.author.subtitle}
+          >
             {post.author.subtitle}
           </p>
         ) : null}
-        {meta ? <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p> : null}
+        {meta ? (
+          <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p>
+        ) : null}
       </div>
       {!showActions ? null : isOwner && (onEdit || onDelete) ? (
         <OwnerActionsMenu
@@ -118,9 +123,13 @@ const PostHeader = ({
 const PromoPricing = ({ post }) => (
   <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
     <div className="flex items-baseline gap-2">
-      <span className="text-[28px] font-bold text-green-primary">{post.price}</span>
+      <span className="text-[28px] font-bold text-green-primary">
+        {post.price}
+      </span>
       {post.originalPrice && (
-        <span className="text-[14px] text-[#98A2B3] line-through">{post.originalPrice}</span>
+        <span className="text-[14px] text-[#98A2B3] line-through">
+          {post.originalPrice}
+        </span>
       )}
     </div>
     <div className="text-right">
@@ -152,7 +161,9 @@ const PostBody = ({ post }) =>
   ) : (
     <div className="p-3 sm:p-4">
       {post.title && (
-        <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
+        <h4 className="mb-2 text-[16px] font-bold text-deep-blue">
+          {post.title}
+        </h4>
       )}
       <ExpandableText
         text={post.content}
@@ -161,11 +172,11 @@ const PostBody = ({ post }) =>
 
       {post.attachment && <AttachmentCard attachment={post.attachment} />}
 
-      {post.type !== 'promo' && (
+      {post.type !== "promo" && (
         <PostImageGallery images={post.images} image={post.image} />
       )}
 
-      {post.type === 'promo' && post.image && (
+      {post.type === "promo" && post.image && (
         <div className="relative mt-3 overflow-hidden rounded-lg">
           <img
             src={post.image}
@@ -173,7 +184,7 @@ const PostBody = ({ post }) =>
             className="aspect-[16/9] w-full object-cover"
             loading="lazy"
           />
-          {post.discount && post.type === 'promo' && (
+          {post.discount && post.type === "promo" && (
             <>
               <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
                 {post.discount}
@@ -186,11 +197,13 @@ const PostBody = ({ post }) =>
         </div>
       )}
 
-      {post.type === 'sponsored' && post.price && (
-        <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
+      {post.type === "sponsored" && post.price && (
+        <p className="mt-3 text-[22px] font-bold text-green-primary">
+          {post.price}
+        </p>
       )}
 
-      {post.type === 'promo' && <PromoPricing post={post} />}
+      {post.type === "promo" && <PromoPricing post={post} />}
 
       {post.cta && (
         <button
@@ -221,7 +234,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
     : post.author?.id;
   const repostUnavailableReason =
     post.isRepost && !post.sharedPost
-      ? 'The original post is no longer available'
+      ? "The original post is no longer available"
       : profileUser?.id && originalAuthorId === profileUser.id
         ? "You can't repost your own post"
         : null;
@@ -269,7 +282,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
     if (reactToPost.rejected.match(result)) {
       setReactionId(prevId);
       setStats(prevStats);
-      toast.error(result.payload || 'Failed to update reaction');
+      toast.error(result.payload || "Failed to update reaction");
       return;
     }
 
@@ -324,7 +337,8 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
   const mapComments = (list, commentId, updater) =>
     (list || []).map((item) => {
       if (item.id === commentId) return updater(item);
-      if (!Array.isArray(item.replies) || item.replies.length === 0) return item;
+      if (!Array.isArray(item.replies) || item.replies.length === 0)
+        return item;
       return {
         ...item,
         replies: mapComments(item.replies, commentId, updater),
@@ -344,12 +358,10 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
       })),
     );
 
-    const result = await dispatch(
-      likeComment({ postId: post.id, commentId }),
-    );
+    const result = await dispatch(likeComment({ postId: post.id, commentId }));
     if (likeComment.rejected.match(result)) {
       setComments((prev) => mapComments(prev, commentId, () => previous));
-      toast.error(result.payload || 'Failed to like comment');
+      toast.error(result.payload || "Failed to like comment");
       return;
     }
 
@@ -370,7 +382,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
       editComment({ postId: post.id, commentId, body: text }),
     );
     if (editComment.rejected.match(result)) {
-      toast.error(result.payload || 'Failed to update comment');
+      toast.error(result.payload || "Failed to update comment");
       return false;
     }
     const content = result.payload?.comment?.content ?? text.trim();
@@ -385,7 +397,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
       removeComment({ postId: post.id, commentId }),
     );
     if (removeComment.rejected.match(result)) {
-      toast.error(result.payload || 'Failed to delete comment');
+      toast.error(result.payload || "Failed to delete comment");
       return false;
     }
 
@@ -404,11 +416,11 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
     setStats((prev) => ({
       ...prev,
       comments:
-        typeof serverCount === 'number'
+        typeof serverCount === "number"
           ? serverCount
           : Math.max(0, (prev?.comments ?? 0) - removed),
     }));
-    toast.success('Comment deleted');
+    toast.success("Comment deleted");
     return true;
   };
 
@@ -421,20 +433,20 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
       repostPost({ postId: post.id, content: caption }),
     );
     if (repostPost.fulfilled.match(result)) {
-      toast.success('Reposted to your feed');
+      toast.success("Reposted to your feed");
       return true;
     }
-    toast.error(result.payload || 'Failed to repost');
+    toast.error(result.payload || "Failed to repost");
     return false;
   };
 
   const handleUndoRepost = async () => {
     const result = await dispatch(undoRepost({ postId: post.id }));
     if (undoRepost.fulfilled.match(result)) {
-      toast.success('Repost removed');
+      toast.success("Repost removed");
       return true;
     }
-    toast.error(result.payload || 'Failed to undo repost');
+    toast.error(result.payload || "Failed to undo repost");
     return false;
   };
 
@@ -500,7 +512,10 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
           reactionId={reactionId}
           reactionCounts={reactionCounts}
         />
-        <PostComments {...commentProps} emptyText="No comments yet. Start the conversation." />
+        <PostComments
+          {...commentProps}
+          emptyText="No comments yet. Start the conversation."
+        />
       </FullCommentsModal>
 
       {shareOpen ? (

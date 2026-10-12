@@ -12,7 +12,7 @@ const SPINE_X = 18;
 const BRANCH_W = 30;
 /** Matches the `pt-3` / `space-y-3` spacing between the comment and its replies. */
 const THREAD_GAP = 12;
-const VISIBLE_REPLIES = 3;
+const VISIBLE_REPLIES = 2;
 const COMMENT_LINES = 3;
 /** Matches the server's comment length limit. */
 const MAX_COMMENT_LENGTH = 2000;
@@ -507,7 +507,7 @@ const PostComments = ({
       isLevel1 ? `${mentionFromName(comment?.author?.name)} ` : "",
     );
 
-    // Ensure target reply is visible if it's beyond the first 3
+    // Ensure target reply is visible if it's beyond the collapsed ones
     if (isLevel1 && replyCount > VISIBLE_REPLIES) {
       const index = root.replies.findIndex((r) => r.id === comment.id);
       if (index >= VISIBLE_REPLIES) {
@@ -635,7 +635,9 @@ const PostComments = ({
       </div>
 
       {comments.length === 0 && emptyText ? (
-        <p className="py-6 text-center text-[13px] text-[#64748B]">{emptyText}</p>
+        <p className="py-6 text-center text-[13px] text-[#64748B]">
+          {emptyText}
+        </p>
       ) : null}
 
       <div className="space-y-4">
@@ -666,7 +668,7 @@ const PostComments = ({
           aria-haspopup="dialog"
           className="mt-4 w-full rounded-lg border border-[#E4E7EC] py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-[#F9FAFB]"
         >
-          See full comments
+          See more comments
         </button>
       ) : null}
 
