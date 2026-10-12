@@ -126,15 +126,17 @@ const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
     .join(' · ');
 
   return (
-    <div className="flex items-start gap-3 p-4 pb-0">
+    <div className="flex items-start gap-2.5 p-3 pb-0 sm:gap-3 sm:p-4 sm:pb-0">
       <Avatar
         src={post.author.avatar}
         initials={post.author.initials}
         size="md"
       />
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-[14px] font-bold text-deep-blue">{post.author.name}</h3>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <h3 className="min-w-0 break-words text-[14px] font-bold leading-5 text-deep-blue">
+            {post.author.name}
+          </h3>
           {post.isRepost && (
             <span className="inline-flex items-center gap-1 text-[13px] text-[#64748B]">
               <Repeat2 className="h-3.5 w-3.5" />
@@ -149,8 +151,12 @@ const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
             </span>
           )}
         </div>
-        <p className="text-[12px] text-[#64748B]">{post.author.subtitle}</p>
-        <p className="text-[12px] text-[#98A2B3]">{meta}</p>
+        {post.author.subtitle ? (
+          <p className="truncate text-[12px] text-[#64748B]" title={post.author.subtitle}>
+            {post.author.subtitle}
+          </p>
+        ) : null}
+        {meta ? <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p> : null}
       </div>
       {isOwner && (onEdit || onDelete) ? (
         <OwnerPostMenu post={post} onEdit={onEdit} onDelete={onDelete} />
@@ -390,11 +396,11 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
         />
 
         {post.isRepost ? (
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             {post.content ? (
               <ExpandableText
                 text={post.content}
-                className="text-base leading-relaxed text-[#475467]"
+                className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
               />
             ) : null}
             {post.attachment && <AttachmentCard attachment={post.attachment} />}
@@ -402,13 +408,13 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
             <RepostedPostCard post={post.sharedPost} />
           </div>
         ) : (
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             {post.title && (
               <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
             )}
             <ExpandableText
               text={post.content}
-              className="text-base leading-relaxed text-[#475467]"
+              className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
             />
 
             {post.attachment && <AttachmentCard attachment={post.attachment} />}

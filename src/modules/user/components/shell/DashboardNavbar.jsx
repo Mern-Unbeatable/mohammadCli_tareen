@@ -274,7 +274,7 @@ const DashboardNavbar = () => {
               onFocus={() => setSearchOpen(true)}
               placeholder="Search..."
               aria-label="Search professionals, products, jobs"
-              className="w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] py-2 pl-9 pr-3 text-[16px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:py-2.5 sm:pl-10 sm:text-[14px]"
+              className="h-9 w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] pl-9 pr-3 text-[16px] text-deep-blue outline-none placeholder:text-[14px] placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:h-10 sm:pl-10 sm:text-[14px]"
             />
             <SearchDropdown
               open={showDropdown}
@@ -345,7 +345,7 @@ const DashboardNavbar = () => {
               onFocus={() => setSearchOpen(true)}
               placeholder="Search professionals, products, jobs..."
               aria-label="Search professionals, products, jobs"
-              className="w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] py-2 pl-10 pr-4 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-9 w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] pl-10 pr-4 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
             <SearchDropdown
               open={showDropdown}

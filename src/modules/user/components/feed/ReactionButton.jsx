@@ -140,7 +140,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
         aria-haspopup="menu"
         aria-expanded={pickerOpen}
         aria-pressed={Boolean(selected)}
-        className={`flex w-full items-center justify-center gap-2 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] ${buttonColor}`}
+        className={`flex w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-1 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] sm:gap-2 ${buttonColor}`}
       >
         {!selected ? (
           <ThumbsUp aria-hidden="true" className="h-4 w-4" />
