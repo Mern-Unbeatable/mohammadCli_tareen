@@ -26,7 +26,6 @@ import {
 } from "@/features/user/contacts";
 import SegmentedTabs from "@/components/common/SegmentedTabs/SegmentedTabs";
 import CountBadge from "@/components/ui/CountBadge";
-import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
 import { usePageParam } from "@/shared/hooks/usePageParam";
 import {
   COUNTRY_PARAM,
@@ -43,6 +42,8 @@ import {
 } from "./contactsUrlFilters";
 
 const PROFILE_BASE = "/contacts";
+/** Three full rows on the four-column desktop grid. */
+const PAGE_SIZE = 12;
 
 const FILTER_TABS = [
   { id: "people", label: "People", icon: Users },
@@ -154,7 +155,7 @@ const ContactsView = () => {
         search,
         country,
         filter,
-        pageSize: GRID_PAGE_SIZE,
+        pageSize: PAGE_SIZE,
       }),
     [page, search, country, filter],
   );
@@ -186,7 +187,7 @@ const ContactsView = () => {
   const total = contactsMeta?.total || 0;
   const totalPages = Math.max(
     1,
-    contactsMeta?.totalPages || Math.ceil(total / GRID_PAGE_SIZE) || 1,
+    contactsMeta?.totalPages || Math.ceil(total / PAGE_SIZE) || 1,
   );
   // Only trust totalPages once it belongs to the page in the URL.
   const pageOutOfRange =
@@ -299,7 +300,7 @@ const ContactsView = () => {
         {showSkeleton ? (
           <CardSkeleton
             variant="contact"
-            count={GRID_PAGE_SIZE}
+            count={PAGE_SIZE}
             className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           />
         ) : contactsError ? (
