@@ -268,9 +268,14 @@ const CommentBody = ({
         <button
           type="button"
           onClick={() => onReply(comment)}
-          className="hover:text-primary"
+          className="flex items-center gap-1 hover:text-primary"
         >
           Reply
+          {comment.replies?.length > 0 ? (
+            <span className="tabular-nums font-normal">
+              ({comment.replies.length})
+            </span>
+          ) : null}
         </button>
       </div>
 
