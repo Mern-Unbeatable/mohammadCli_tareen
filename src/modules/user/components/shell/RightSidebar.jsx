@@ -80,7 +80,7 @@ const PeopleYouMayKnow = ({ people, connectingId, onConnect, loading }) => (
                 type="button"
                 onClick={() => onConnect(person)}
                 disabled={isConnected || isPending}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold transition-colors ${
+                className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                   isConnected || isPending
                     ? "bg-green-secondary text-green-primary"
                     : "bg-primary text-white hover:opacity-90"
