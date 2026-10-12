@@ -1,20 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  Check,
-  Link2,
-  Loader2,
-  Repeat2,
-  Send,
-  X,
-} from 'lucide-react';
-import { toast } from 'react-toastify';
-import { messagesApi } from '@/features/messages';
-import RecipientPicker from '@/shared/pages/messages/RecipientPicker';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Check, Link2, Loader2, Repeat2, Send, X } from "lucide-react";
+import { toast } from "react-toastify";
+import { messagesApi } from "@/features/messages";
+import RecipientPicker from "@/shared/pages/messages/RecipientPicker";
 
 const shareOptions = [
-  { id: 'repost', label: 'Repost to your feed', icon: Repeat2, color: 'text-primary' },
-  { id: 'copy', label: 'Copy link to post', icon: Link2, color: 'text-[#475467]' },
+  {
+    id: "repost",
+    label: "Repost to your feed",
+    icon: Repeat2,
+    color: "text-primary",
+  },
+  {
+    id: "copy",
+    label: "Copy link to post",
+    icon: Link2,
+    color: "text-[#475467]",
+  },
 ];
 
 const CAPTION_MAX = 5000;
@@ -36,16 +39,16 @@ const SharePostModal = ({
   const [selectedIds, setSelectedIds] = useState([]);
   const [sending, setSending] = useState(false);
   const [composing, setComposing] = useState(false);
-  const [caption, setCaption] = useState('');
+  const [caption, setCaption] = useState("");
   const latestSearch = useRef(0);
 
   useEffect(() => {
     if (!open) return undefined;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     setCopied(false);
     setSentTo(null);
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [open]);
 
@@ -58,7 +61,9 @@ const SharePostModal = ({
     } catch (error) {
       if (requestId === latestSearch.current) {
         setRecipients([]);
-        toast.error(messagesApi.getApiErrorMessage(error, 'Failed to load contacts'));
+        toast.error(
+          messagesApi.getApiErrorMessage(error, "Failed to load contacts"),
+        );
       }
     } finally {
       if (requestId === latestSearch.current) setRecipientsLoading(false);
@@ -68,7 +73,8 @@ const SharePostModal = ({
   if (!open || !post) return null;
 
   const postUrl = `${window.location.origin}/feed?post=${post.id}`;
-  const selectedRecipient = recipients.find((r) => r.id === selectedIds[0]) || null;
+  const selectedRecipient =
+    recipients.find((r) => r.id === selectedIds[0]) || null;
   const busy = sending || reposting;
   const preview = post.isRepost && post.sharedPost ? post.sharedPost : post;
 
@@ -107,7 +113,7 @@ const SharePostModal = ({
       setSentTo(selectedRecipient.name);
       setTimeout(onClose, 1400);
     } catch (error) {
-      toast.error(messagesApi.getApiErrorMessage(error, 'Failed to send post'));
+      toast.error(messagesApi.getApiErrorMessage(error, "Failed to send post"));
     } finally {
       setSending(false);
     }
@@ -115,21 +121,34 @@ const SharePostModal = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 sm:items-center sm:p-4"
       onClick={busy ? undefined : onClose}
       role="presentation"
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-[480px] flex-col rounded-t-2xl bg-white shadow-xl sm:max-h-none sm:rounded-xl"
+        className="flex max-h-[90dvh] w-full max-w-[580px] flex-col rounded-t-2xl bg-white shadow-xl sm:max-h-none sm:rounded-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-post-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E7EC] px-4 py-3.5 sm:px-5 sm:py-4">
-          <h2 id="share-post-title" className="text-[17px] font-bold text-deep-blue sm:text-[18px]">
-            Share this post
-          </h2>
+        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E7EC] px-4 py-2 sm:px-5 sm:py-3">
+          <div>
+            <h2
+              id="share-post-title"
+              className="text-[17px] font-bold text-deep-blue sm:text-[18px]"
+            >
+              Share this post
+            </h2>
+            <p className="line-clamp-2 text-[13px] text-[#64748B]">
+              <span className="font-semibold text-deep-blue">
+                {preview.author.name}
+              </span>
+              {" · "}
+              {preview.content.slice(0, 50)}
+              {preview.content.length > 50 ? "…" : ""}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -141,7 +160,7 @@ const SharePostModal = ({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 sm:px-5">
           {copied && (
             <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-secondary px-3 py-2.5 text-[13px] font-medium text-green-primary">
               <Check className="h-4 w-4" />
@@ -156,17 +175,11 @@ const SharePostModal = ({
             </div>
           )}
 
-          <p className="mb-3 line-clamp-2 text-[13px] text-[#64748B]">
-            <span className="font-semibold text-deep-blue">{preview.author.name}</span>
-            {' · '}
-            {preview.content.slice(0, 80)}
-            {preview.content.length > 80 ? '…' : ''}
-          </p>
-
           <div className="mb-4 space-y-1">
             {shareOptions.map(({ id, label, icon: Icon, color }) => {
-              const isRepost = id === 'repost';
-              const unavailable = isRepost && !shared ? repostUnavailableReason : null;
+              const isRepost = id === "repost";
+              const unavailable =
+                isRepost && !shared ? repostUnavailableReason : null;
               return (
                 <button
                   key={id}
@@ -174,9 +187,11 @@ const SharePostModal = ({
                   onClick={isRepost ? handleRepostOption : handleCopy}
                   disabled={(isRepost && busy) || Boolean(unavailable)}
                   aria-expanded={isRepost && !shared ? composing : undefined}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
                 >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] ${color}`}>
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] ${color}`}
+                  >
                     {isRepost && reposting ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
@@ -185,10 +200,12 @@ const SharePostModal = ({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[14px] font-medium text-deep-blue">
-                      {isRepost && shared ? 'Undo repost' : label}
+                      {isRepost && shared ? "Undo repost" : label}
                     </span>
                     {unavailable ? (
-                      <span className="block text-[12px] text-[#98A2B3]">{unavailable}</span>
+                      <span className="block text-[12px] text-[#98A2B3]">
+                        {unavailable}
+                      </span>
                     ) : null}
                   </span>
                 </button>
@@ -221,8 +238,12 @@ const SharePostModal = ({
                   disabled={busy}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {reposting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Repeat2 className="h-4 w-4" />}
-                  {reposting ? 'Reposting…' : 'Repost now'}
+                  {reposting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Repeat2 className="h-4 w-4" />
+                  )}
+                  {reposting ? "Reposting…" : "Repost now"}
                 </button>
               </div>
             </div>
@@ -255,13 +276,17 @@ const SharePostModal = ({
             disabled={!selectedRecipient || sending || Boolean(sentTo)}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {sending ? 'Sending…' : 'Send'}
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {sending ? "Sending…" : "Send"}
           </button>
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
