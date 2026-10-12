@@ -13,6 +13,8 @@ const initialState = {
   contactsMeta: { page: 1, pageSize: 8, total: 0, totalPages: 1 },
   selectedContact: null,
   contactsLoading: false,
+  contactsRequestId: null,
+  contactsError: null,
   selectedContactLoading: false,
   connectingId: null,
   acceptingId: null,
@@ -62,13 +64,16 @@ const contactsSlice = createSlice({
         totalPages: 1,
       };
       state.error = null;
+      state.contactsError = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchContactsList.pending, (state) => {
+      .addCase(fetchContactsList.pending, (state, action) => {
         state.contactsLoading = true;
+        state.contactsRequestId = action.meta.requestId;
         state.error = null;
+        state.contactsError = null;
         // Drop previous tab/page results so the UI can show skeletons
         // instead of stale People cards while Requests (or vice versa) loads.
         state.contacts = [];
@@ -79,13 +84,17 @@ const contactsSlice = createSlice({
         };
       })
       .addCase(fetchContactsList.fulfilled, (state, action) => {
+        // Ignore responses for a page/filter the user has already left.
+        if (action.meta.requestId !== state.contactsRequestId) return;
         state.contactsLoading = false;
         state.contacts = action.payload.data;
         state.contactsMeta = action.payload.meta;
       })
       .addCase(fetchContactsList.rejected, (state, action) => {
+        if (action.meta.requestId !== state.contactsRequestId) return;
         state.contactsLoading = false;
         state.error = action.payload;
+        state.contactsError = action.payload || "Failed to load contacts";
       })
       .addCase(fetchContactDetails.pending, (state) => {
         state.selectedContactLoading = true;
