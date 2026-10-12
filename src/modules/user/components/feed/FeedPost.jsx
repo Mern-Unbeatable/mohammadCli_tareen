@@ -394,7 +394,6 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
             {post.content ? (
               <ExpandableText
                 text={post.content}
-                lines={5}
                 className="text-base leading-relaxed text-[#475467]"
               />
             ) : null}
@@ -409,7 +408,6 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
             )}
             <ExpandableText
               text={post.content}
-              lines={5}
               className="text-base leading-relaxed text-[#475467]"
             />
 
