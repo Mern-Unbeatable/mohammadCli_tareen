@@ -10,6 +10,10 @@ import { InfoTile } from '@/components/data-display/ProfileHero/ProfileHero';
 const ContactProfilePageContent = ({
   contact,
   posts = [],
+  postsLoading = false,
+  hasMorePosts = false,
+  loadingMorePosts = false,
+  onLoadMorePosts,
   onReport,
   connected = false,
   pending = false,
@@ -50,6 +54,10 @@ const ContactProfilePageContent = ({
 
     <ActivitySection
       posts={posts}
+      loading={postsLoading}
+      hasMore={hasMorePosts}
+      loadingMore={loadingMorePosts}
+      onLoadMore={onLoadMorePosts}
       onReport={onReport}
       emptyName={contact.name.split(' ')[0]}
     />

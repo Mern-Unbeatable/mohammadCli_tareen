@@ -15,7 +15,10 @@ export {
 } from "./feedSlice";
 export {
   fetchFeed,
+  fetchMoreFeed,
   fetchMyPosts,
+  fetchMoreMyPosts,
+  fetchAuthorPosts,
   fetchPostDetails,
   createPost,
   updatePost,
