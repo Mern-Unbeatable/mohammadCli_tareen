@@ -1,20 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
+import { useEffect, useRef, useState } from "react";
+import { Send, ThumbsUp } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 
-const LINE = 'bg-[#D0D5DD]';
+const LINE = "bg-[#D0D5DD]";
 const SPINE_X = 18;
 const BRANCH_W = 30;
+/** Matches the `pt-3` / `space-y-3` spacing between the comment and its replies. */
+const THREAD_GAP = 12;
 const VISIBLE_REPLIES = 3;
 
-const mentionFromName = (name = '') => {
+const mentionFromName = (name = "") => {
   const first = String(name).trim().split(/\s+/)[0];
-  return first ? `@${first}` : '@Member';
+  return first ? `@${first}` : "@Member";
 };
 
 const InlineReplyBox = ({
   currentUser,
-  initialValue = '',
+  initialValue = "",
   submitting,
   onSubmit,
   onCancel,
@@ -38,15 +40,15 @@ const InlineReplyBox = ({
     const text = draft.trim();
     if (!text || submitting) return;
     const ok = await onSubmit(text);
-    if (ok !== false) setDraft('');
+    if (ok !== false) setDraft("");
   };
 
   return (
     <div className="mt-2 flex gap-2">
       <Avatar
         src={currentUser?.avatar}
-        alt={currentUser?.name || 'Member'}
-        initials={currentUser?.initials || 'MB'}
+        alt={currentUser?.name || "Member"}
+        initials={currentUser?.initials || "MB"}
         size="sm"
         className="mt-1 shrink-0"
       />
@@ -76,7 +78,7 @@ const InlineReplyBox = ({
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-3 w-3" />
-            {submitting ? 'Posting...' : 'Reply'}
+            {submitting ? "Posting..." : "Reply"}
           </button>
         </div>
       </div>
@@ -111,13 +113,25 @@ const CommentBody = ({
         type="button"
         onClick={() => onLike(comment.id)}
         disabled={liking}
-        className={`inline-flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
-          comment.liked ? 'text-primary' : ''
+        aria-pressed={Boolean(comment.liked)}
+        className={`group flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
+          comment.liked ? "text-primary" : ""
         }`}
       >
-        {comment.liked ? 'Liked' : 'Like'}
+        <ThumbsUp
+          aria-hidden="true"
+          strokeWidth={2}
+          className={`h-4 w-4 transition-colors ${
+            comment.liked
+              ? "fill-primary text-primary"
+              : "text-gray-500 group-hover:text-primary"
+          }`}
+        />
+        {comment.liked ? "Liked" : "Like"}
         {comment.likeCount > 0 ? (
-          <span className="tabular-nums font-normal">({comment.likeCount})</span>
+          <span className="tabular-nums font-normal">
+            ({comment.likeCount})
+          </span>
         ) : null}
       </button>
       <button
@@ -164,24 +178,18 @@ const CommentItem = ({
   const hiddenCount = Math.max(0, nested.length - VISIBLE_REPLIES);
   const showThread = nested.length > 0;
   const replyOpenOnRoot = replyTargetId === comment.id;
-  const replyOpenInThread = nested.some((r) => r.id === replyTargetId);
 
   return (
     <div className="relative">
-      {showThread || replyOpenOnRoot ? (
-        <span
-          className={`pointer-events-none absolute z-0 w-px -translate-x-1/2 ${LINE}`}
-          style={{
-            left: SPINE_X,
-            top: 36,
-            bottom: showThread ? SPINE_X : 0,
-          }}
-          aria-hidden
-        />
-      ) : null}
-
       <div className="relative z-[1] flex gap-3">
-        <div className="relative w-9 shrink-0">
+        {showThread || replyOpenOnRoot ? (
+          <span
+            className={`pointer-events-none absolute bottom-0 top-10 z-0 w-px -translate-x-1/2 ${LINE}`}
+            style={{ left: SPINE_X }}
+            aria-hidden
+          />
+        ) : null}
+        <div className="relative z-10 w-9 shrink-0 self-start rounded-full bg-white">
           <Avatar
             src={comment.author?.avatar}
             alt={comment.author?.name}
@@ -204,32 +212,31 @@ const CommentItem = ({
       </div>
 
       {showThread ? (
-        <div className="relative space-y-3 pt-3">
+        <div className="relative space-y-2 pt-3">
           {visibleReplies.map((reply, index) => {
             const isLastVisible = index === visibleReplies.length - 1;
             const replyOpen = replyTargetId === reply.id;
-            const endOfThread =
-              isLastVisible &&
-              !replyOpen &&
-              !(hasMore && !showAllReplies) &&
-              !(hasMore && showAllReplies && replyOpenInThread);
 
             return (
               <div key={reply.id} className="relative">
                 <span
-                  className={`pointer-events-none absolute z-[1] h-px ${LINE}`}
+                  className={`pointer-events-none absolute z-0 w-px -translate-x-1/2 ${LINE}`}
+                  style={{
+                    left: SPINE_X,
+                    top: -THREAD_GAP,
+                    ...(isLastVisible
+                      ? { height: THREAD_GAP + SPINE_X }
+                      : { bottom: 0 }),
+                  }}
+                  aria-hidden
+                />
+                <span
+                  className={`pointer-events-none absolute z-0 h-px ${LINE}`}
                   style={{ left: SPINE_X, top: SPINE_X, width: BRANCH_W }}
                   aria-hidden
                 />
-                {endOfThread ? (
-                  <span
-                    className="pointer-events-none absolute z-[1] w-px -translate-x-1/2 bg-white"
-                    style={{ left: SPINE_X, top: SPINE_X, bottom: 0 }}
-                    aria-hidden
-                  />
-                ) : null}
                 <div className="flex gap-3" style={{ paddingLeft: BRANCH_W }}>
-                  <div className="relative w-9 shrink-0">
+                  <div className="relative z-10 w-9 shrink-0 self-start rounded-full bg-white">
                     <Avatar
                       src={reply.author?.avatar}
                       alt={reply.author?.name}
@@ -255,16 +262,19 @@ const CommentItem = ({
           })}
 
           {hasMore ? (
-            <div className="relative" style={{ paddingLeft: BRANCH_W + 36 + 12 }}>
+            <div
+              className="relative"
+              style={{ paddingLeft: BRANCH_W + 36 + 12 }}
+            >
               <button
                 type="button"
                 onClick={() => onToggleMoreReplies(comment.id)}
                 className="text-[12px] font-semibold text-primary hover:underline"
               >
                 {showAllReplies
-                  ? 'Hide replies'
+                  ? "Hide replies"
                   : `View ${hiddenCount} more ${
-                      hiddenCount === 1 ? 'reply' : 'replies'
+                      hiddenCount === 1 ? "reply" : "replies"
                     }`}
               </button>
             </div>
@@ -301,11 +311,11 @@ const PostComments = ({
   onLikeComment,
   likingCommentId,
 }) => {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [replyTargetId, setReplyTargetId] = useState(null);
   const [replyRootId, setReplyRootId] = useState(null);
-  const [replyInitialValue, setReplyInitialValue] = useState('');
+  const [replyInitialValue, setReplyInitialValue] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [showAllByRoot, setShowAllByRoot] = useState(() => new Set());
 
@@ -315,7 +325,7 @@ const PostComments = ({
     setSubmitting(true);
     try {
       const ok = await onAddComment(text);
-      if (ok !== false) setDraft('');
+      if (ok !== false) setDraft("");
     } finally {
       setSubmitting(false);
     }
@@ -325,7 +335,7 @@ const PostComments = ({
     if (replyTargetId === comment.id) {
       setReplyTargetId(null);
       setReplyRootId(null);
-      setReplyInitialValue('');
+      setReplyInitialValue("");
       return;
     }
 
@@ -337,7 +347,7 @@ const PostComments = ({
     setReplyTargetId(comment.id);
     setReplyRootId(rootId);
     setReplyInitialValue(
-      isLevel1 ? `${mentionFromName(comment?.author?.name)} ` : '',
+      isLevel1 ? `${mentionFromName(comment?.author?.name)} ` : "",
     );
 
     // Ensure target reply is visible if it's beyond the first 3
@@ -352,7 +362,7 @@ const PostComments = ({
   const handleCancelReply = () => {
     setReplyTargetId(null);
     setReplyRootId(null);
-    setReplyInitialValue('');
+    setReplyInitialValue("");
   };
 
   const handleSubmitReply = async (text) => {
@@ -392,8 +402,8 @@ const PostComments = ({
       <div className="mb-4 flex gap-3">
         <Avatar
           src={currentUser?.avatar}
-          alt={currentUser?.name || 'Member'}
-          initials={currentUser?.initials || 'MB'}
+          alt={currentUser?.name || "Member"}
+          initials={currentUser?.initials || "MB"}
           size="md"
           className="shrink-0"
         />
@@ -414,7 +424,7 @@ const PostComments = ({
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="h-3.5 w-3.5" />
-              {submitting ? 'Posting...' : 'Comment'}
+              {submitting ? "Posting..." : "Comment"}
             </button>
           </div>
         </div>
