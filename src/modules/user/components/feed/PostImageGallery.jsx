@@ -109,7 +109,7 @@ const PostImageGallery = ({ images: imageList, image, className = 'mt-3' }) => {
             >
               <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
               {showMore ? (
-                <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[24px] font-bold text-white">
+                <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-[24px] font-bold text-white sm:text-[28px]">
                   +{hidden}
                 </span>
               ) : null}

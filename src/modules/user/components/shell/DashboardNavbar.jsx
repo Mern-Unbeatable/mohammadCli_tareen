@@ -13,7 +13,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import logo from "@/assets/logo.png";
@@ -23,6 +23,14 @@ import CountBadge from "@/components/ui/CountBadge";
 import { useAuth } from "@/shared/auth/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
 import { navItems } from "@/modules/user/data/dashboard";
+import SearchTabs from "@/modules/user/components/search/SearchTabs";
+import SearchResultsList from "@/modules/user/components/search/SearchResultsList";
+import {
+  DEFAULT_SEARCH_TAB,
+  SEARCH_PATH,
+  buildSearchPath,
+  toSearchGroups,
+} from "@/modules/user/components/search/searchResults";
 import {
   fetchGlobalSearch,
   clearSearchResults,
@@ -54,75 +62,73 @@ const iconMap = {
   notifications: Bell,
 };
 
-const resultLabel = (item, type) => {
-  if (type === "users") {
-    return (
-      item.name ||
-      [item.firstName, item.lastName].filter(Boolean).join(" ") ||
-      item.email ||
-      "User"
-    );
-  }
-  if (type === "posts") return item.content || item.title || "Post";
-  if (type === "blogs") return item.title || item.slug || "Blog";
-  return item.title || item.name || "Result";
-};
+const SEARCH_FETCH_LIMIT = 10;
+const ALL_TAB_GROUP_LIMIT = 5;
 
-const resultHref = (item, type) => {
-  if (type === "users") return `/contacts/${item.id}`;
-  if (type === "jobs") return `/recruitment/${item.id}`;
-  if (type === "listings") return `/marketplace/${item.id}`;
-  if (type === "posts") return "/feed";
-  if (type === "blogs") return `/blogs/${item.slug || item.id}`;
-  return "#";
-};
-
-const SearchDropdown = ({ open, loading, groups, onSelect }) => {
+const SearchDropdown = ({
+  open,
+  loading,
+  groups,
+  activeTab,
+  onTabChange,
+  onSelect,
+  onSeeAll,
+}) => {
   if (!open) return null;
 
   return (
-    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] max-h-[70vh] overflow-y-auto rounded-xl border border-[#E4E7EC] bg-white py-2 shadow-lg">
-      {loading && !groups.length ? (
-        <p className="px-4 py-3 text-[13px] text-[#64748B]">Searching…</p>
-      ) : groups.length ? (
-        groups.map((group) => (
-          <div key={group.type} className="py-1">
-            <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-              {group.label}
-            </p>
-            {group.items.map((item) => {
-              const href = resultHref(item, group.type);
-              const label = resultLabel(item, group.type);
-              return (
-                <button
-                  key={`${group.type}-${item.id || item.slug || label}`}
-                  type="button"
-                  onClick={() => onSelect(href)}
-                  className="flex w-full items-start gap-2 px-4 py-2 text-left hover:bg-[#F9FAFB]"
-                >
-                  <span className="line-clamp-2 text-[13px] font-medium text-deep-blue">
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ))
-      ) : (
-        <p className="px-4 py-3 text-[13px] text-[#64748B]">No results found</p>
-      )}
+    <div className="fixed inset-x-2 top-[60px] z-[80] flex flex-col overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+6px)] sm:w-[max(100%,32rem)] sm:max-w-[calc(100vw-1rem)] xl:left-0 xl:right-auto">
+      <SearchTabs
+        activeTab={activeTab}
+        onChange={onTabChange}
+        className="px-1 sm:px-2"
+      />
+
+      <div
+        role="tabpanel"
+        className="max-h-[min(400px,calc(100dvh_-_14rem))] overflow-y-auto overscroll-contain py-2"
+      >
+        <SearchResultsList
+          groups={groups}
+          activeTab={activeTab}
+          loading={loading}
+          allTabLimit={ALL_TAB_GROUP_LIMIT}
+          onSelect={onSelect}
+          onShowAll={onTabChange}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onSeeAll}
+        className="flex shrink-0 items-center justify-center gap-2 border-t border-gray-200 px-4 py-2.5 text-[13px] font-semibold text-blue-600 hover:bg-[#F9FAFB]"
+      >
+        <Search aria-hidden="true" className="h-4 w-4" />
+        See all results
+      </button>
     </div>
   );
 };
 
 const DashboardNavbar = () => {
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  const urlQuery =
+    pathname === SEARCH_PATH ? (searchParams.get("q") ?? "") : null;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery ?? "");
+  const [syncedUrlQuery, setSyncedUrlQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(DEFAULT_SEARCH_TAB);
   const mobileSearchRef = useRef(null);
   const desktopSearchRef = useRef(null);
-  const { pathname } = useLocation();
+
+  // Mirror the /search page's ?q= into the input; clear it when leaving that page.
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    setQuery(urlQuery ?? "");
+  }
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { logout } = useAuth();
@@ -184,7 +190,9 @@ const DashboardNavbar = () => {
       return;
     }
     dispatch(clearSearchError());
-    dispatch(fetchGlobalSearch({ q: debouncedQuery, limit: 5 }));
+    dispatch(
+      fetchGlobalSearch({ q: debouncedQuery, limit: SEARCH_FETCH_LIMIT }),
+    );
   }, [dispatch, debouncedQuery]);
 
   useEffect(() => {
@@ -203,30 +211,31 @@ const DashboardNavbar = () => {
 
   const model = useMemo(() => toSearchResultsModel(results), [results]);
 
-  const groups = useMemo(() => {
-    const entries = [
-      ["users", "People", model.users],
-      ["jobs", "Jobs", model.jobs],
-      ["listings", "Listings", model.listings],
-      ["posts", "Posts", model.posts],
-      ["blogs", "Blogs", model.blogs],
-    ];
-    return entries
-      .map(([type, label, items]) => ({
-        type,
-        label,
-        items: (items || []).slice(0, 5),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [model]);
+  const groups = useMemo(() => toSearchGroups(model), [model]);
 
   const showDropdown = searchOpen && Boolean(debouncedQuery);
 
   const handleSelect = (href) => {
     setSearchOpen(false);
     setQuery("");
+    setActiveTab(DEFAULT_SEARCH_TAB);
     dispatch(clearSearchResults());
     if (href && href !== "#") navigate(href);
+  };
+
+  const submitSearch = () => {
+    const q = query.trim();
+    if (!q) return;
+    setSearchOpen(false);
+    navigate(buildSearchPath(q, activeTab));
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (!query.trim()) return;
+    submitSearch();
+    e.currentTarget.blur();
   };
 
   const onQueryChange = (value) => {
@@ -261,16 +270,20 @@ const DashboardNavbar = () => {
               type="search"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search..."
               aria-label="Search professionals, products, jobs"
-              className="w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] py-2 pl-9 pr-3 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:py-2.5 sm:pl-10 sm:text-[14px]"
+              className="h-9 w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] pl-9 pr-3 text-[16px] text-deep-blue outline-none placeholder:text-[14px] placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:h-10 sm:pl-10 sm:text-[14px]"
             />
             <SearchDropdown
               open={showDropdown}
               loading={loading}
               groups={groups}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
               onSelect={handleSelect}
+              onSeeAll={submitSearch}
             />
           </div>
 
@@ -328,16 +341,20 @@ const DashboardNavbar = () => {
               type="search"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search professionals, products, jobs..."
               aria-label="Search professionals, products, jobs"
-              className="w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] py-2 pl-10 pr-4 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-9 w-full rounded-full border border-[#E4E7EC] bg-[#F9FAFB] pl-10 pr-4 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
             <SearchDropdown
               open={showDropdown}
               loading={loading}
               groups={groups}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
               onSelect={handleSelect}
+              onSeeAll={submitSearch}
             />
           </div>
 

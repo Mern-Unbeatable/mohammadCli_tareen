@@ -19,9 +19,10 @@ const ConfirmModal = ({
 }) => {
   useEffect(() => {
     if (!open) return undefined;
+    const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = overflow;
     };
   }, [open]);
 
