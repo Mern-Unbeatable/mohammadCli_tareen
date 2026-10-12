@@ -16,6 +16,7 @@ import FeedPost from "@/modules/user/components/feed/FeedPost";
 import CreatePostModal from "@/modules/user/components/feed/CreatePostModal";
 import { DEFAULT_POST_OPTION } from "@/modules/user/components/feed/postTypeOptions";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
+import LoadMorePosts from "@/modules/user/components/feed/LoadMorePosts";
 import {
   FeedComposer,
   FeedFilters,
@@ -24,6 +25,7 @@ import { useFeedActions } from "@/modules/user/context/FeedActionsContext";
 import { usePostEditor } from "@/modules/user/hooks/usePostEditor";
 import {
   fetchFeed,
+  fetchMoreFeed,
   createPost,
   removePost,
   invalidateFeedPosts,
@@ -38,6 +40,8 @@ const feedFilters = [
   { id: "suppliers", label: "Suppliers" },
 ];
 
+const FEED_PAGE_SIZE = 20;
+
 const filterToApiType = {
   questions: "question",
   information: "information",
@@ -47,8 +51,16 @@ const filterToApiType = {
 const FeedView = () => {
   const dispatch = useDispatch();
   const { registerOpenCreatePost } = useFeedActions();
-  const { posts, postsLoading, postsError, saving, deleting, error } =
-    useSelector((state) => state.userFeed);
+  const {
+    posts,
+    postsMeta,
+    postsLoading,
+    postsLoadingMore,
+    postsError,
+    saving,
+    deleting,
+    error,
+  } = useSelector((state) => state.userFeed);
   const { user } = useSelector((state) => state.userProfile);
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
 
@@ -72,13 +84,19 @@ const FeedView = () => {
     if (!user) dispatch(fetchUserProfile());
   }, [dispatch, user]);
 
+  const feedQuery = useMemo(() => {
+    const type = filterToApiType[activeFilter];
+    return { page: 1, pageSize: FEED_PAGE_SIZE, sort: "desc", ...(type ? { type } : {}) };
+  }, [activeFilter]);
+
   const loadFeed = useCallback(() => {
     dispatch(invalidateFeedPosts());
-    const params = { page: 1, pageSize: 20, sort: "desc" };
-    const type = filterToApiType[activeFilter];
-    if (type) params.type = type;
-    dispatch(fetchFeed(params));
-  }, [dispatch, activeFilter]);
+    dispatch(fetchFeed(feedQuery));
+  }, [dispatch, feedQuery]);
+
+  const hasMorePosts = (postsMeta?.page ?? 1) < (postsMeta?.totalPages ?? 1);
+  const loadMorePosts = () =>
+    dispatch(fetchMoreFeed({ ...feedQuery, page: (postsMeta?.page ?? 1) + 1 }));
 
   useLayoutEffect(() => {
     loadFeed();
@@ -112,16 +130,7 @@ const FeedView = () => {
     if (createPost.fulfilled.match(result)) {
       toast.success("Post published");
       setCreateOpen(false);
-      dispatch(
-        fetchFeed({
-          page: 1,
-          pageSize: 20,
-          sort: "desc",
-          ...(filterToApiType[activeFilter]
-            ? { type: filterToApiType[activeFilter] }
-            : {}),
-        }),
-      );
+      dispatch(fetchFeed(feedQuery));
     } else {
       toast.error(result.payload || "Failed to publish post");
     }
@@ -193,6 +202,12 @@ const FeedView = () => {
                     onDelete={deleting ? undefined : setPendingDelete}
                   />
                 ))}
+                {hasMorePosts ? (
+                  <LoadMorePosts
+                    onClick={loadMorePosts}
+                    loading={postsLoadingMore}
+                  />
+                ) : null}
               </div>
             )}
           </section>

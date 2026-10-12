@@ -16,6 +16,9 @@ const ProfilePageContent = ({
   user = currentUser,
   posts = [],
   postsLoading = false,
+  hasMorePosts = false,
+  loadingMorePosts = false,
+  onLoadMorePosts,
   onReport,
   onEdit,
   onDelete,
@@ -42,6 +45,9 @@ const ProfilePageContent = ({
     <ActivitySection
       posts={posts}
       loading={postsLoading}
+      hasMore={hasMorePosts}
+      loadingMore={loadingMorePosts}
+      onLoadMore={onLoadMorePosts}
       onReport={onReport}
       onEdit={onEdit}
       onDelete={onDelete}
