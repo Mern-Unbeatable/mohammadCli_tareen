@@ -203,11 +203,28 @@ const feedSlice = createSlice({
       })
       .addCase(updatePost.fulfilled, (state, action) => {
         state.saving = false;
-        upsertPost(state, action.payload);
+        const updated = action.payload;
+        if (!updated?.id) return;
+        // Replace in place only, so editing from the profile doesn't add the post to a filtered feed.
+        mapAllPosts(state, (post) => {
+          if (post.id === updated.id) return updated;
+          if (post.sharedPostId === updated.id && post.sharedPost) {
+            return {
+              ...post,
+              sharedPost: {
+                ...post.sharedPost,
+                content: updated.content,
+                imageUrl: updated.imageUrl,
+                documentUrl: updated.documentUrl,
+              },
+            };
+          }
+          return post;
+        });
       })
-      .addCase(updatePost.rejected, (state, action) => {
+      // The editor shows its own error toast, so the page-level `error` toast isn't triggered.
+      .addCase(updatePost.rejected, (state) => {
         state.saving = false;
-        state.error = action.payload;
       })
       .addCase(removePost.pending, (state) => {
         state.deleting = true;

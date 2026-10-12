@@ -165,6 +165,25 @@ export function toFeedPostModel(post) {
     isRepost: Boolean(post.isRepost),
     sharedPost: post.sharedPost ? toFeedPostModel(post.sharedPost) : null,
     sharedByMe: Boolean(post.sharedByMe),
+    editedAt: post.editedAt || null,
+    edited: Boolean(post.editedAt),
     raw: post,
   };
+}
+
+/** PATCH body for `PATCH /feed/:id` holding only the fields that changed. */
+export function toUpdatePostPayload(original, values) {
+  if (!original) return {};
+  const payload = {};
+
+  const content = String(values?.content ?? "").trim();
+  if (content !== (original.content || "")) payload.content = content;
+
+  const imageUrl = values?.imageUrl || null;
+  if (imageUrl !== (original.imageUrl || null)) payload.imageUrl = imageUrl;
+  const documentUrl = values?.documentUrl || null;
+  if (documentUrl !== (original.documentUrl || null)) {
+    payload.documentUrl = documentUrl;
+  }
+  return payload;
 }

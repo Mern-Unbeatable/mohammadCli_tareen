@@ -15,6 +15,7 @@ import {
   FeedFilters,
 } from "@/modules/user/components/feed/FeedShared";
 import { useFeedActions } from "@/modules/user/context/FeedActionsContext";
+import { usePostEditor } from "@/modules/user/hooks/usePostEditor";
 import {
   fetchFeed,
   createPost,
@@ -50,6 +51,7 @@ const FeedView = () => {
   const [createPostOption, setCreatePostOption] = useState(DEFAULT_POST_OPTION);
   const [reportPost, setReportPost] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const { editingPost, openEditor, closeEditor, saveEdit } = usePostEditor();
 
   const openCreatePost = useCallback((option = DEFAULT_POST_OPTION) => {
     setCreatePostOption(option);
@@ -189,6 +191,7 @@ const FeedView = () => {
                     key={post.id}
                     post={post}
                     onReport={setReportPost}
+                    onEdit={openEditor}
                     onDelete={deleting ? undefined : setPendingDelete}
                   />
                 ))}
@@ -208,6 +211,17 @@ const FeedView = () => {
           submitting={saving}
           onPublish={handlePublish}
           initialOption={createPostOption}
+        />
+      ) : null}
+      {editingPost ? (
+        <CreatePostModal
+          open
+          mode="edit"
+          post={editingPost}
+          onClose={closeEditor}
+          user={profileUser}
+          submitting={saving}
+          onPublish={saveEdit}
         />
       ) : null}
       <ReportPostModal

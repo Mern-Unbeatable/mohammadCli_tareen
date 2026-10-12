@@ -29,6 +29,7 @@ export {
 } from "./feedThunks";
 export {
   toFeedPostModel,
+  toUpdatePostPayload,
   formatRelativeTime,
 } from "./feedMappers";
 export * as feedApi from "./feedApi";
