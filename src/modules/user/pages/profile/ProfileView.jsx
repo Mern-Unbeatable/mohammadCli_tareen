@@ -7,6 +7,8 @@ import { ProfilePageSkeleton } from "@/components/common/Skeleton";
 import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 import ProfilePageContent from "@/components/data-display/ProfilePageContent/ProfilePageContent";
 import ReportPostModal from "@/modules/user/components/feed/ReportPostModal";
+import CreatePostModal from "@/modules/user/components/feed/CreatePostModal";
+import { usePostEditor } from "@/modules/user/hooks/usePostEditor";
 import {
   SubscriptionDetailsCard,
   MyReportsCard,
@@ -43,6 +45,8 @@ const ProfileView = () => {
   } = useSelector((state) => state.userReports);
   const [reportPost, setReportPost] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const { editingPost, openEditor, closeEditor, saveEdit, saving } =
+    usePostEditor();
 
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const isPremium =
@@ -131,6 +135,7 @@ const ProfileView = () => {
             posts={activity}
             postsLoading={!myPostsLoaded && !myPostsError}
             onReport={setReportPost}
+            onEdit={openEditor}
             onDelete={deleting ? undefined : setPendingDelete}
             isPremium={isPremium}
             subscriptionSlot={
@@ -165,6 +170,18 @@ const ProfileView = () => {
         post={reportPost}
         onClose={() => setReportPost(null)}
       />
+
+      {editingPost ? (
+        <CreatePostModal
+          open
+          mode="edit"
+          post={editingPost}
+          onClose={closeEditor}
+          user={profileUser}
+          submitting={saving}
+          onPublish={saveEdit}
+        />
+      ) : null}
 
       <ConfirmModal
         open={Boolean(pendingDelete)}

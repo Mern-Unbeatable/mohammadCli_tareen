@@ -97,6 +97,31 @@ export async function uploadFile(file) {
   return data;
 }
 
+/**
+ * Upload several files in one request via /uploads/multiple.
+ * Field name must be `files` (matches multer upload.array("files", 12)).
+ */
+export async function uploadFiles(files = []) {
+  const list = Array.from(files).filter(Boolean);
+  if (!list.length) return [];
+
+  const formData = new FormData();
+  list.forEach((file) => formData.append("files", file));
+
+  const response = await crudService.upload(
+    API_ENDPOINTS.USER.UPLOADS.MULTIPLE,
+    formData,
+    null,
+    { timeout: 120000 },
+  );
+  const data = unwrapApiData(response) || response;
+  const rows = Array.isArray(data) ? data : [];
+  if (rows.length !== list.length || rows.some((row) => !row?.url)) {
+    throw new Error("Upload did not return file URLs");
+  }
+  return rows;
+}
+
 export async function updatePost(postId, payload) {
   const response = await crudService.patch(
     API_ENDPOINTS.USER.FEED.UPDATE(postId),

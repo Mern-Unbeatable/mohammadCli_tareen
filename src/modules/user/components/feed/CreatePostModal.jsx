@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Image, FileText, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import Avatar from "@/components/ui/Avatar";
@@ -20,11 +20,31 @@ const IMAGE_MIME = new Set([
   "image/gif",
 ]);
 
+/** Matches `MAX_POST_IMAGES` on the server. */
+const MAX_POST_IMAGES = 10;
+
+const toExistingImage = (url) => ({ id: url, url });
+
+const revokePreviews = (images) =>
+  images.forEach((image) => image.preview && URL.revokeObjectURL(image.preview));
+
+const sameList = (a, b) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
 const formatBytes = (bytes = 0) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
+
+/** Starting values; in edit mode they come from the post being edited. */
+const getInitialDraft = (post) => ({
+  content: post?.content || "",
+  imageUrls: post?.images || [],
+  document: post?.attachment?.url
+    ? { name: post.attachment.name, url: post.attachment.url }
+    : null,
+});
 
 const CreatePostModal = ({
   open,
@@ -33,24 +53,44 @@ const CreatePostModal = ({
   onPublish,
   submitting = false,
   initialOption = DEFAULT_POST_OPTION,
+  mode = "create",
+  post = null,
 }) => {
+  const isEdit = mode === "edit" && Boolean(post);
+  const isRepostEdit = isEdit && Boolean(post.isRepost);
+  const initial = useMemo(
+    () => getInitialDraft(isEdit ? post : null),
+    [isEdit, post],
+  );
+
   const [postOption, setPostOption] = useState(initialOption);
-  const [content, setContent] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [content, setContent] = useState(initial.content);
+  /** Ordered: existing images have `url`, newly picked ones have `file` and `preview`. */
+  const [images, setImages] = useState(() =>
+    initial.imageUrls.map(toExistingImage),
+  );
   const [documentFile, setDocumentFile] = useState(null);
+  const [existingDocument, setExistingDocument] = useState(initial.document);
   const [uploading, setUploading] = useState(false);
 
   const imageInputRef = useRef(null);
   const documentInputRef = useRef(null);
+  const imagesRef = useRef(images);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => () => revokePreviews(imagesRef.current), []);
 
   useEffect(() => {
     if (!open) {
-      setContent("");
+      revokePreviews(imagesRef.current);
+      setContent(initial.content);
       setPostOption(initialOption);
-      setImageFile(null);
-      setImagePreview(null);
+      setImages(initial.imageUrls.map(toExistingImage));
       setDocumentFile(null);
+      setExistingDocument(initial.document);
       setUploading(false);
       return undefined;
     }
@@ -58,35 +98,77 @@ const CreatePostModal = ({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open, initialOption]);
-
-  useEffect(() => {
-    if (!imageFile) {
-      setImagePreview(null);
-      return undefined;
-    }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
+  }, [open, initialOption, initial]);
 
   if (!open) return null;
 
   const displayName = user?.name || "You";
   const company = user?.company || "";
   const busy = submitting || uploading;
-  const canPublish =
-    Boolean(content.trim() || imageFile || documentFile) && !busy;
+  const hasNewImages = images.some((image) => image.file);
+  const hasImage = images.length > 0;
+  const canAddImages = images.length < MAX_POST_IMAGES;
+  const hasDocument = Boolean(documentFile || existingDocument);
+  // A repost's caption may be empty because the shared post is its content.
+  const hasBody =
+    isRepostEdit || Boolean(content.trim() || hasImage || hasDocument);
+  const hasChanges =
+    !isEdit ||
+    content.trim() !== initial.content.trim() ||
+    hasNewImages ||
+    Boolean(documentFile) ||
+    !sameList(
+      images.map((image) => image.url),
+      initial.imageUrls,
+    ) ||
+    existingDocument?.url !== initial.document?.url;
+  const canPublish = hasBody && hasChanges && !busy;
+  const shownDocument = documentFile
+    ? { name: documentFile.name, meta: formatBytes(documentFile.size) }
+    : existingDocument
+      ? { name: existingDocument.name, meta: "Current document" }
+      : null;
+  const submitLabel = isEdit
+    ? uploading && (hasNewImages || documentFile)
+      ? "Uploading…"
+      : busy
+        ? "Saving…"
+        : "Save"
+    : uploading
+      ? "Uploading…"
+      : "Publish";
+
+  const removeImage = (id) => {
+    setImages((prev) => {
+      revokePreviews(prev.filter((image) => image.id === id));
+      return prev.filter((image) => image.id !== id);
+    });
+  };
+
+  const removeDocument = () => {
+    setDocumentFile(null);
+    setExistingDocument(null);
+  };
 
   const handleImagePick = (e) => {
-    const file = e.target.files?.[0];
+    const picked = Array.from(e.target.files || []);
     e.target.value = "";
-    if (!file) return;
-    if (!IMAGE_MIME.has(file.type)) {
-      toast.error("Please choose a JPEG, PNG, WebP, or GIF image");
-      return;
+    if (!picked.length) return;
+
+    const valid = picked.filter((file) => IMAGE_MIME.has(file.type));
+    if (valid.length < picked.length) {
+      toast.error("Only JPEG, PNG, WebP, or GIF images can be added");
     }
-    setImageFile(file);
+    const room = MAX_POST_IMAGES - images.length;
+    if (valid.length > room) {
+      toast.error(`A post can have up to ${MAX_POST_IMAGES} images`);
+    }
+    const added = valid.slice(0, Math.max(room, 0)).map((file, index) => ({
+      id: `new-${Date.now()}-${index}-${file.name}`,
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    if (added.length) setImages((prev) => [...prev, ...added]);
   };
 
   const handleDocumentPick = (e) => {
@@ -103,17 +185,22 @@ const CreatePostModal = ({
   const handlePublish = async () => {
     if (!canPublish || !onPublish) return;
 
-    let imageUrl;
-    let documentUrl;
+    let documentUrl = isEdit ? existingDocument?.url || null : undefined;
     let documentMeta;
 
     try {
       setUploading(true);
 
-      if (imageFile) {
-        const uploaded = await feedApi.uploadFile(imageFile);
-        imageUrl = uploaded.url;
-      }
+      const newImages = images.filter((image) => image.file);
+      const uploadedImages = await feedApi.uploadFiles(
+        newImages.map((image) => image.file),
+      );
+      const uploadedUrls = new Map(
+        newImages.map((image, index) => [image.id, uploadedImages[index].url]),
+      );
+      const imageUrls = images.map(
+        (image) => image.url || uploadedUrls.get(image.id),
+      );
 
       if (documentFile) {
         const uploaded = await feedApi.uploadFile(documentFile);
@@ -127,7 +214,7 @@ const CreatePostModal = ({
       await onPublish({
         type: getPostTypeOption(postOption).type,
         content: content.trim(),
-        imageUrl,
+        imageUrls,
         documentUrl,
         documentMeta,
       });
@@ -156,7 +243,7 @@ const CreatePostModal = ({
             id="create-post-title"
             className="text-[17px] font-bold text-deep-blue sm:text-[18px]"
           >
-            Create Post
+            {isEdit ? "Edit Post" : "Create Post"}
           </h2>
           <button
             type="button"
@@ -184,6 +271,7 @@ const CreatePostModal = ({
             </p>
           </div>
 
+          {isEdit ? null : (
           <div className="mb-4 flex flex-wrap gap-2">
             {POST_TYPE_OPTIONS.map(({ id, label }) => (
               <button
@@ -202,62 +290,81 @@ const CreatePostModal = ({
               </button>
             ))}
           </div>
+          )}
 
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={5}
+            maxLength={5000}
             disabled={busy}
-            placeholder="Write something useful for the laboratory community..."
+            aria-label={isRepostEdit ? "Caption" : "Post content"}
+            placeholder={
+              isRepostEdit
+                ? "Add a caption (optional)"
+                : "Write something useful for the laboratory community..."
+            }
             className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10 sm:px-4 sm:py-3"
           />
 
-          {content.trim() ? (
-            <div className="mt-3 max-h-60 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-[#F9FAFB] px-3 py-3 text-[14px] leading-relaxed text-[#475467] sm:px-4">
-              {content.trim()}
-            </div>
-          ) : (
-            <div className="mt-3 rounded-lg bg-[#F9FAFB] px-3 py-5 text-center text-[13px] text-[#98A2B3] sm:px-4 sm:py-6">
-              Nothing written yet — your post will appear here as you type.
-            </div>
-          )}
-
-          {imagePreview ? (
-            <div className="relative mt-3 overflow-hidden rounded-lg border border-[#E4E7EC]">
-              <img
-                src={imagePreview}
-                alt=""
-                className="max-h-56 w-full object-cover"
-              />
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setImageFile(null)}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
-                aria-label="Remove image"
+          {hasImage ? (
+            <div className="mt-3">
+              <div
+                className={`grid gap-2 ${
+                  images.length === 1 ? "grid-cols-1" : "grid-cols-3 sm:grid-cols-4"
+                }`}
               >
-                <X className="h-4 w-4" />
-              </button>
+                {images.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className={`relative overflow-hidden rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] ${
+                      images.length === 1 ? "min-h-[56px]" : "aspect-square"
+                    }`}
+                  >
+                    <img
+                      src={image.preview || image.url}
+                      alt=""
+                      className={
+                        images.length === 1
+                          ? "max-h-56 w-full object-cover"
+                          : "h-full w-full object-cover"
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => removeImage(image.id)}
+                      className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                      aria-label={`Remove image ${index + 1}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[12px] text-[#64748B]">
+                {images.length} / {MAX_POST_IMAGES} images
+              </p>
             </div>
           ) : null}
 
-          {documentFile ? (
+          {shownDocument ? (
             <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-semibold text-deep-blue">
-                  {documentFile.name}
+                  {shownDocument.name}
                 </p>
                 <p className="text-[12px] text-[#64748B]">
-                  {formatBytes(documentFile.size)}
+                  {shownDocument.meta}
                 </p>
               </div>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setDocumentFile(null)}
+                onClick={removeDocument}
                 className="rounded-md p-1.5 text-[#64748B] hover:bg-white"
                 aria-label="Remove document"
               >
@@ -273,6 +380,7 @@ const CreatePostModal = ({
               ref={imageInputRef}
               type="file"
               accept={IMAGE_ACCEPT}
+              multiple
               className="hidden"
               onChange={handleImagePick}
             />
@@ -285,10 +393,11 @@ const CreatePostModal = ({
             />
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || !canAddImages}
+              title={canAddImages ? undefined : `Up to ${MAX_POST_IMAGES} images`}
               onClick={() => imageInputRef.current?.click()}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] sm:flex-none ${
-                imageFile
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${
+                hasImage
                   ? "border-primary bg-secondary text-primary"
                   : "border-[#E4E7EC] text-[#475467]"
               }`}
@@ -301,7 +410,7 @@ const CreatePostModal = ({
               disabled={busy}
               onClick={() => documentInputRef.current?.click()}
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] sm:flex-none ${
-                documentFile
+                hasDocument
                   ? "border-primary bg-secondary text-primary"
                   : "border-[#E4E7EC] text-[#475467]"
               }`}
@@ -317,7 +426,7 @@ const CreatePostModal = ({
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-6"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {uploading ? "Uploading…" : "Publish"}
+            {submitLabel}
           </button>
         </div>
       </div>

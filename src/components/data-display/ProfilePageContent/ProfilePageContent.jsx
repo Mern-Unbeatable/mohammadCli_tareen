@@ -17,6 +17,7 @@ const ProfilePageContent = ({
   posts = [],
   postsLoading = false,
   onReport,
+  onEdit,
   onDelete,
   isPremium = user.membershipStatus === 'premium',
   editHref = '/profile/edit',
@@ -42,6 +43,7 @@ const ProfilePageContent = ({
       posts={posts}
       loading={postsLoading}
       onReport={onReport}
+      onEdit={onEdit}
       onDelete={onDelete}
       emptyName={user.firstName || user.name}
       title={postsTitle}

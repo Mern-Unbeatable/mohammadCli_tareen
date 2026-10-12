@@ -2,6 +2,7 @@ import { Ban } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
 import { AttachmentCard } from './FeedShared';
+import PostImageGallery from './PostImageGallery';
 
 const RepostedPostCard = ({ post }) => {
   if (!post) {
@@ -42,16 +43,9 @@ const RepostedPostCard = ({ post }) => {
         ) : null}
 
         {post.attachment && <AttachmentCard attachment={post.attachment} />}
-      </div>
 
-      {post.image && (
-        <img
-          src={post.image}
-          alt=""
-          className="aspect-[16/9] w-full border-t border-[#E4E7EC] object-cover"
-          loading="lazy"
-        />
-      )}
+        <PostImageGallery images={post.images} image={post.image} />
+      </div>
     </article>
   );
 };

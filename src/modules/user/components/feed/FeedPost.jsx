@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MoreHorizontal, Repeat2, Tag, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Repeat2, Tag, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
@@ -10,6 +10,7 @@ import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
 import RepostedPostCard from './RepostedPostCard';
+import PostImageGallery from './PostImageGallery';
 import {
   addComment,
   likeComment,
@@ -40,7 +41,7 @@ const REACTION_API = {
   curious: "angry",
 };
 
-const OwnerPostMenu = ({ post, onDelete }) => {
+const OwnerPostMenu = ({ post, onEdit, onDelete }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -84,26 +85,45 @@ const OwnerPostMenu = ({ post, onDelete }) => {
           role="menu"
           className="absolute right-0 top-[calc(100%+4px)] z-[20] w-[160px] overflow-hidden rounded-lg border border-[#E4E7EC] bg-white py-1 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onDelete(post);
-            }}
-            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={1.8} />
-            Delete post
-          </button>
+          {onEdit ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onEdit(post);
+              }}
+              className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-deep-blue transition-colors hover:bg-[#F9FAFB]"
+            >
+              <Pencil className="h-4 w-4" strokeWidth={1.8} />
+              Edit post
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onDelete(post);
+              }}
+              className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+              Delete post
+            </button>
+          ) : null}
         </div>
       )}
     </div>
   );
 };
 
-const PostHeader = ({ post, onReport, onDelete, isOwner }) => {
+const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
   const badge = badgeByType[post.type];
+  const meta = [post.author.meta, post.edited ? 'Edited' : null]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="flex items-start gap-3 p-4 pb-0">
@@ -130,10 +150,10 @@ const PostHeader = ({ post, onReport, onDelete, isOwner }) => {
           )}
         </div>
         <p className="text-[12px] text-[#64748B]">{post.author.subtitle}</p>
-        <p className="text-[12px] text-[#98A2B3]">{post.author.meta}</p>
+        <p className="text-[12px] text-[#98A2B3]">{meta}</p>
       </div>
-      {isOwner && onDelete ? (
-        <OwnerPostMenu post={post} onDelete={onDelete} />
+      {isOwner && (onEdit || onDelete) ? (
+        <OwnerPostMenu post={post} onEdit={onEdit} onDelete={onDelete} />
       ) : (
         <button
           type="button"
@@ -169,7 +189,7 @@ const PromoPricing = ({ post }) => (
   </div>
 );
 
-const FeedPost = ({ post, onReport, onDelete }) => {
+const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.userProfile);
   const likingCommentId = useSelector(
@@ -364,6 +384,7 @@ const FeedPost = ({ post, onReport, onDelete }) => {
         <PostHeader
           post={post}
           onReport={onReport}
+          onEdit={onEdit}
           onDelete={onDelete}
           isOwner={isOwner}
         />
@@ -377,6 +398,8 @@ const FeedPost = ({ post, onReport, onDelete }) => {
                 className="text-base leading-relaxed text-[#475467]"
               />
             ) : null}
+            {post.attachment && <AttachmentCard attachment={post.attachment} />}
+            <PostImageGallery images={post.images} image={post.image} />
             <RepostedPostCard post={post.sharedPost} />
           </div>
         ) : (
@@ -392,7 +415,11 @@ const FeedPost = ({ post, onReport, onDelete }) => {
 
             {post.attachment && <AttachmentCard attachment={post.attachment} />}
 
-            {post.image && (
+            {post.type !== 'promo' && (
+              <PostImageGallery images={post.images} image={post.image} />
+            )}
+
+            {post.type === 'promo' && post.image && (
               <div className="relative mt-3 overflow-hidden rounded-lg">
                 <img
                   src={post.image}
