@@ -212,6 +212,10 @@ const ContactsView = () => {
     setPage(next);
   };
 
+  // The acted-on card is already gone; refetch so the next member fills this page.
+  const refreshInBackground = () =>
+    dispatch(fetchContactsList({ ...latestQueryRef.current, background: true }));
+
   const handleConnect = async (id) => {
     const card = cards.find((c) => c.id === id);
     if (!card || card.connected || card.pending || connectingId === id) return;
@@ -219,6 +223,7 @@ const ContactsView = () => {
     const result = await dispatch(requestContactConnection(id));
     if (requestContactConnection.fulfilled.match(result)) {
       toast.success("Connection request sent");
+      refreshInBackground();
     }
   };
 
@@ -228,10 +233,7 @@ const ContactsView = () => {
     const result = await dispatch(acceptConnection(connectionId));
     if (acceptConnection.fulfilled.match(result)) {
       toast.success("Connection confirmed");
-      // The card is already gone; refetch so the next member fills this page.
-      dispatch(
-        fetchContactsList({ ...latestQueryRef.current, background: true }),
-      );
+      refreshInBackground();
     }
   };
 

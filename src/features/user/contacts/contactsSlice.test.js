@@ -6,8 +6,10 @@ import reducer, {
 import {
   acceptConnection,
   declineConnection,
+  fetchContactDetails,
   fetchContactsList,
   fetchPendingRequestCount,
+  requestContactConnection,
 } from "./contactsThunks";
 import { logoutUser } from "../../auth/authThunks";
 
@@ -225,6 +227,71 @@ describe("confirming a request from the list", () => {
     expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
     expect(state.contactsError).toBeNull();
     expect(state.error).toBeNull();
+  });
+});
+
+describe("sending a request from People", () => {
+  const people = (ids, total = ids.length) => ({
+    data: ids.map((id) => ({ id, connectionStatus: null, connectionId: null })),
+    meta: { page: 1, pageSize: 8, total, totalPages: Math.ceil(total / 8) || 1 },
+  });
+  const loaded = (payload) => {
+    const state = reducer(initial, fetchContactsList.pending("load", { page: 1 }));
+    return reducer(state, fetchContactsList.fulfilled(payload, "load", { page: 1 }));
+  };
+  const sent = (addresseeId) =>
+    requestContactConnection.fulfilled(
+      { addresseeId, connection: { id: `conn-${addresseeId}`, status: "PENDING" } },
+      "connect",
+      addresseeId,
+    );
+
+  it("removes the member from People at once and fixes the page count", () => {
+    let state = loaded(people(["anna", "bob"], 9));
+    expect(state.contactsMeta.totalPages).toBe(2);
+
+    state = reducer(state, requestContactConnection.pending("connect", "anna"));
+    expect(state.connectingId).toBe("anna");
+
+    state = reducer(state, sent("anna"));
+
+    expect(state.connectingId).toBeNull();
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
+    expect(state.contactsMeta).toMatchObject({ total: 8, totalPages: 1 });
+  });
+
+  it("leaves the list and totals alone when the member is not on this page", () => {
+    let state = loaded(people(["bob"], 9));
+    state = reducer(state, sent("someone-else"));
+
+    expect(state.contacts.map((c) => c.id)).toEqual(["bob"]);
+    expect(state.contactsMeta).toMatchObject({ total: 9, totalPages: 2 });
+  });
+
+  it("keeps the card when the request fails", () => {
+    let state = loaded(people(["anna"]));
+    state = reducer(state, requestContactConnection.pending("connect", "anna"));
+    state = reducer(
+      state,
+      requestContactConnection.rejected(null, "connect", "anna", "A connection already exists"),
+    );
+
+    expect(state.contacts.map((c) => c.id)).toEqual(["anna"]);
+    expect(state.contactsMeta.total).toBe(1);
+    expect(state.connectingId).toBeNull();
+  });
+
+  it("marks an open profile as pending so it shows the sent state", () => {
+    let state = reducer(
+      initial,
+      fetchContactDetails.fulfilled({ id: "anna", connectionStatus: null }, "d", "anna"),
+    );
+    state = reducer(state, sent("anna"));
+
+    expect(state.selectedContact).toMatchObject({
+      connectionStatus: "PENDING",
+      connectionDirection: "outgoing",
+    });
   });
 });
 

@@ -46,6 +46,23 @@ const markPendingOnContact = (contact, addresseeId) => {
   };
 };
 
+/** Remove cards that no longer belong in the current tab and keep paging in sync. */
+const dropFromList = (state, shouldDrop) => {
+  const kept = state.contacts.filter((c) => !shouldDrop(c));
+  const removed = state.contacts.length - kept.length;
+  state.contacts = kept;
+  if (removed === 0 || !(state.contactsMeta?.total > 0)) return;
+  const total = Math.max(0, state.contactsMeta.total - removed);
+  state.contactsMeta = {
+    ...state.contactsMeta,
+    total,
+    totalPages: Math.max(
+      1,
+      Math.ceil(total / (state.contactsMeta.pageSize || 1)),
+    ),
+  };
+};
+
 const applyConnectionStatus = (contact, connectionId, status) => {
   if (!contact) return contact;
   const matches =
@@ -149,9 +166,8 @@ const contactsSlice = createSlice({
       .addCase(requestContactConnection.fulfilled, (state, action) => {
         state.connectingId = null;
         const { addresseeId } = action.payload;
-        state.contacts = state.contacts.map((c) =>
-          markPendingOnContact(c, addresseeId),
-        );
+        // Only People shows Connect; a sent request moves the member to Pending.
+        dropFromList(state, (c) => c.id === addresseeId);
         state.selectedContact = markPendingOnContact(
           state.selectedContact,
           addresseeId,
@@ -172,21 +188,10 @@ const contactsSlice = createSlice({
         decrementPendingRequests(state);
         const { connectionId } = action.payload;
         // Drop from Requests inbox; directory refetch will show Connected
-        state.contacts = state.contacts.filter(
-          (c) =>
-            c.connectionId !== connectionId && c.id !== connectionId,
+        dropFromList(
+          state,
+          (c) => c.connectionId === connectionId || c.id === connectionId,
         );
-        if (state.contactsMeta?.total > 0) {
-          const total = state.contactsMeta.total - 1;
-          state.contactsMeta = {
-            ...state.contactsMeta,
-            total,
-            totalPages: Math.max(
-              1,
-              Math.ceil(total / (state.contactsMeta.pageSize || 1)),
-            ),
-          };
-        }
         state.selectedContact = applyConnectionStatus(
           state.selectedContact,
           connectionId,
