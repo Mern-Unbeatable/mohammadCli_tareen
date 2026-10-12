@@ -63,9 +63,26 @@ describe("CreatePostModal edit mode", () => {
     expect(html).toContain("Edit Post");
     expect(html).toContain("Hello lab");
     expect(html).toContain('src="https://cdn.test/a.png"');
-    expect(html).toContain('aria-label="Remove image"');
+    expect(html).toContain('aria-label="Remove image 1"');
     expect(html).not.toContain("aria-pressed");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Save<\/button>/);
+  });
+
+  it("shows every existing image with its own remove button", () => {
+    const urls = ["a", "b", "c"].map((name) => `https://cdn.test/${name}.png`);
+    const html = renderEditor(originalPost({ imageUrl: urls[0], imageUrls: urls }));
+
+    urls.forEach((url) => expect(html).toContain(`src="${url}"`));
+    expect(html).toContain('aria-label="Remove image 3"');
+    expect(html).not.toContain('aria-label="Remove image 4"');
+    expect(html).toContain("3 / 10 images");
+  });
+
+  it("lets the image picker select several files", () => {
+    const html = renderToStaticMarkup(
+      <CreatePostModal open user={{ name: "Anna Berg" }} />,
+    );
+    expect(html).toMatch(/<input[^>]*accept="image\/jpeg[^"]*"[^>]*multiple=""/);
   });
 
   it("lets a repost add, replace or remove its own attachments", () => {
@@ -95,5 +112,37 @@ describe("FeedPost repost attachments", () => {
     expect(html.indexOf('src="https://cdn.test/mine.png"')).toBeLessThan(original);
     expect(html.indexOf("notes.pdf")).toBeGreaterThan(-1);
     expect(html.indexOf("notes.pdf")).toBeLessThan(original);
+  });
+});
+
+describe("FeedPost image gallery", () => {
+  const urls = (count) => Array.from({ length: count }, (_, i) => `https://cdn.test/p${i}.png`);
+
+  it("shows up to four images and a +N tile for the rest", () => {
+    const images = urls(6);
+    const html = renderPost(originalPost({ imageUrl: images[0], imageUrls: images }));
+
+    images.slice(0, 4).forEach((url) => expect(html).toContain(`src="${url}"`));
+    expect(html).not.toContain(`src="${images[4]}"`);
+    expect(html).toContain(">+2</span>");
+    expect(html).toContain('aria-label="View 2 more images"');
+  });
+
+  it("shows both images of a two-image post side by side", () => {
+    const images = urls(2);
+    const html = renderPost(originalPost({ imageUrl: images[0], imageUrls: images }));
+
+    images.forEach((url) => expect(html).toContain(`src="${url}"`));
+    expect(html).toContain("grid-cols-2");
+    expect(html).not.toContain("more images");
+  });
+
+  it("shows several images on the original inside a repost", () => {
+    const images = urls(3);
+    const html = renderPost(
+      repostOf(originalPost({ imageUrl: images[0], imageUrls: images })),
+      { viewer: { id: "sam", firstName: "Sam" } },
+    );
+    images.forEach((url) => expect(html).toContain(`src="${url}"`));
   });
 });

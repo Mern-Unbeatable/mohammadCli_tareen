@@ -10,6 +10,7 @@ import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
 import RepostedPostCard from './RepostedPostCard';
+import PostImageGallery from './PostImageGallery';
 import {
   addComment,
   likeComment,
@@ -398,16 +399,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
               />
             ) : null}
             {post.attachment && <AttachmentCard attachment={post.attachment} />}
-            {post.image && (
-              <div className="mt-3 overflow-hidden rounded-lg">
-                <img
-                  src={post.image}
-                  alt=""
-                  className="aspect-[16/9] w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            )}
+            <PostImageGallery images={post.images} image={post.image} />
             <RepostedPostCard post={post.sharedPost} />
           </div>
         ) : (
@@ -423,7 +415,11 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
 
             {post.attachment && <AttachmentCard attachment={post.attachment} />}
 
-            {post.image && (
+            {post.type !== 'promo' && (
+              <PostImageGallery images={post.images} image={post.image} />
+            )}
+
+            {post.type === 'promo' && post.image && (
               <div className="relative mt-3 overflow-hidden rounded-lg">
                 <img
                   src={post.image}

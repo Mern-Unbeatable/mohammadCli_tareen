@@ -20,6 +20,17 @@ const IMAGE_MIME = new Set([
   "image/gif",
 ]);
 
+/** Matches `MAX_POST_IMAGES` on the server. */
+const MAX_POST_IMAGES = 10;
+
+const toExistingImage = (url) => ({ id: url, url });
+
+const revokePreviews = (images) =>
+  images.forEach((image) => image.preview && URL.revokeObjectURL(image.preview));
+
+const sameList = (a, b) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
 const formatBytes = (bytes = 0) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -29,7 +40,7 @@ const formatBytes = (bytes = 0) => {
 /** Starting values; in edit mode they come from the post being edited. */
 const getInitialDraft = (post) => ({
   content: post?.content || "",
-  imageUrl: post?.image || null,
+  imageUrls: post?.images || [],
   document: post?.attachment?.url
     ? { name: post.attachment.name, url: post.attachment.url }
     : null,
@@ -54,24 +65,31 @@ const CreatePostModal = ({
 
   const [postOption, setPostOption] = useState(initialOption);
   const [content, setContent] = useState(initial.content);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  /** Ordered: existing images have `url`, newly picked ones have `file` and `preview`. */
+  const [images, setImages] = useState(() =>
+    initial.imageUrls.map(toExistingImage),
+  );
   const [documentFile, setDocumentFile] = useState(null);
-  const [existingImageUrl, setExistingImageUrl] = useState(initial.imageUrl);
   const [existingDocument, setExistingDocument] = useState(initial.document);
   const [uploading, setUploading] = useState(false);
 
   const imageInputRef = useRef(null);
   const documentInputRef = useRef(null);
+  const imagesRef = useRef(images);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => () => revokePreviews(imagesRef.current), []);
 
   useEffect(() => {
     if (!open) {
+      revokePreviews(imagesRef.current);
       setContent(initial.content);
       setPostOption(initialOption);
-      setImageFile(null);
-      setImagePreview(null);
+      setImages(initial.imageUrls.map(toExistingImage));
       setDocumentFile(null);
-      setExistingImageUrl(initial.imageUrl);
       setExistingDocument(initial.document);
       setUploading(false);
       return undefined;
@@ -82,22 +100,14 @@ const CreatePostModal = ({
     };
   }, [open, initialOption, initial]);
 
-  useEffect(() => {
-    if (!imageFile) {
-      setImagePreview(null);
-      return undefined;
-    }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
-
   if (!open) return null;
 
   const displayName = user?.name || "You";
   const company = user?.company || "";
   const busy = submitting || uploading;
-  const hasImage = Boolean(imageFile || existingImageUrl);
+  const hasNewImages = images.some((image) => image.file);
+  const hasImage = images.length > 0;
+  const canAddImages = images.length < MAX_POST_IMAGES;
   const hasDocument = Boolean(documentFile || existingDocument);
   // A repost's caption may be empty because the shared post is its content.
   const hasBody =
@@ -105,18 +115,21 @@ const CreatePostModal = ({
   const hasChanges =
     !isEdit ||
     content.trim() !== initial.content.trim() ||
-    Boolean(imageFile || documentFile) ||
-    existingImageUrl !== initial.imageUrl ||
+    hasNewImages ||
+    Boolean(documentFile) ||
+    !sameList(
+      images.map((image) => image.url),
+      initial.imageUrls,
+    ) ||
     existingDocument?.url !== initial.document?.url;
   const canPublish = hasBody && hasChanges && !busy;
-  const shownImage = imagePreview || existingImageUrl;
   const shownDocument = documentFile
     ? { name: documentFile.name, meta: formatBytes(documentFile.size) }
     : existingDocument
       ? { name: existingDocument.name, meta: "Current document" }
       : null;
   const submitLabel = isEdit
-    ? uploading && (imageFile || documentFile)
+    ? uploading && (hasNewImages || documentFile)
       ? "Uploading…"
       : busy
         ? "Saving…"
@@ -125,9 +138,11 @@ const CreatePostModal = ({
       ? "Uploading…"
       : "Publish";
 
-  const removeImage = () => {
-    setImageFile(null);
-    setExistingImageUrl(null);
+  const removeImage = (id) => {
+    setImages((prev) => {
+      revokePreviews(prev.filter((image) => image.id === id));
+      return prev.filter((image) => image.id !== id);
+    });
   };
 
   const removeDocument = () => {
@@ -136,14 +151,24 @@ const CreatePostModal = ({
   };
 
   const handleImagePick = (e) => {
-    const file = e.target.files?.[0];
+    const picked = Array.from(e.target.files || []);
     e.target.value = "";
-    if (!file) return;
-    if (!IMAGE_MIME.has(file.type)) {
-      toast.error("Please choose a JPEG, PNG, WebP, or GIF image");
-      return;
+    if (!picked.length) return;
+
+    const valid = picked.filter((file) => IMAGE_MIME.has(file.type));
+    if (valid.length < picked.length) {
+      toast.error("Only JPEG, PNG, WebP, or GIF images can be added");
     }
-    setImageFile(file);
+    const room = MAX_POST_IMAGES - images.length;
+    if (valid.length > room) {
+      toast.error(`A post can have up to ${MAX_POST_IMAGES} images`);
+    }
+    const added = valid.slice(0, Math.max(room, 0)).map((file, index) => ({
+      id: `new-${Date.now()}-${index}-${file.name}`,
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    if (added.length) setImages((prev) => [...prev, ...added]);
   };
 
   const handleDocumentPick = (e) => {
@@ -160,17 +185,22 @@ const CreatePostModal = ({
   const handlePublish = async () => {
     if (!canPublish || !onPublish) return;
 
-    let imageUrl = isEdit ? existingImageUrl : undefined;
     let documentUrl = isEdit ? existingDocument?.url || null : undefined;
     let documentMeta;
 
     try {
       setUploading(true);
 
-      if (imageFile) {
-        const uploaded = await feedApi.uploadFile(imageFile);
-        imageUrl = uploaded.url;
-      }
+      const newImages = images.filter((image) => image.file);
+      const uploadedImages = await feedApi.uploadFiles(
+        newImages.map((image) => image.file),
+      );
+      const uploadedUrls = new Map(
+        newImages.map((image, index) => [image.id, uploadedImages[index].url]),
+      );
+      const imageUrls = images.map(
+        (image) => image.url || uploadedUrls.get(image.id),
+      );
 
       if (documentFile) {
         const uploaded = await feedApi.uploadFile(documentFile);
@@ -184,7 +214,7 @@ const CreatePostModal = ({
       await onPublish({
         type: getPostTypeOption(postOption).type,
         content: content.trim(),
-        imageUrl,
+        imageUrls,
         documentUrl,
         documentMeta,
       });
@@ -277,22 +307,44 @@ const CreatePostModal = ({
             className="w-full resize-none rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10 sm:px-4 sm:py-3"
           />
 
-          {shownImage ? (
-            <div className="relative mt-3 min-h-[56px] overflow-hidden rounded-lg border border-[#E4E7EC] bg-[#F9FAFB]">
-              <img
-                src={shownImage}
-                alt=""
-                className="max-h-56 w-full object-cover"
-              />
-              <button
-                type="button"
-                disabled={busy}
-                onClick={removeImage}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
-                aria-label="Remove image"
+          {hasImage ? (
+            <div className="mt-3">
+              <div
+                className={`grid gap-2 ${
+                  images.length === 1 ? "grid-cols-1" : "grid-cols-3 sm:grid-cols-4"
+                }`}
               >
-                <X className="h-4 w-4" />
-              </button>
+                {images.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className={`relative overflow-hidden rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] ${
+                      images.length === 1 ? "min-h-[56px]" : "aspect-square"
+                    }`}
+                  >
+                    <img
+                      src={image.preview || image.url}
+                      alt=""
+                      className={
+                        images.length === 1
+                          ? "max-h-56 w-full object-cover"
+                          : "h-full w-full object-cover"
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => removeImage(image.id)}
+                      className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                      aria-label={`Remove image ${index + 1}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[12px] text-[#64748B]">
+                {images.length} / {MAX_POST_IMAGES} images
+              </p>
             </div>
           ) : null}
 
@@ -328,6 +380,7 @@ const CreatePostModal = ({
               ref={imageInputRef}
               type="file"
               accept={IMAGE_ACCEPT}
+              multiple
               className="hidden"
               onChange={handleImagePick}
             />
@@ -340,9 +393,10 @@ const CreatePostModal = ({
             />
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || !canAddImages}
+              title={canAddImages ? undefined : `Up to ${MAX_POST_IMAGES} images`}
               onClick={() => imageInputRef.current?.click()}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] sm:flex-none ${
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${
                 hasImage
                   ? "border-primary bg-secondary text-primary"
                   : "border-[#E4E7EC] text-[#475467]"

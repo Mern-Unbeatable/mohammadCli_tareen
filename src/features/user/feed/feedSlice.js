@@ -215,6 +215,7 @@ const feedSlice = createSlice({
                 ...post.sharedPost,
                 content: updated.content,
                 imageUrl: updated.imageUrl,
+                imageUrls: updated.imageUrls,
                 documentUrl: updated.documentUrl,
               },
             };

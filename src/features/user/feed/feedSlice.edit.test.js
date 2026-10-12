@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import reducer from "./feedSlice";
 import { fetchFeed, fetchMyPosts, updatePost } from "./feedThunks";
-import { toFeedPostModel, toUpdatePostPayload } from "./feedMappers";
+import { getPostImageUrls, toFeedPostModel, toUpdatePostPayload } from "./feedMappers";
 import { originalPost, repostOf } from "./feedRepostFixtures";
 
 const meta = { page: 1, pageSize: 20, total: 1, totalPages: 1 };
@@ -49,12 +49,16 @@ describe("feed post edit state", () => {
   it("refreshes the original shown inside reposts", () => {
     const state = reducer(
       loaded([repostOf(originalPost()), originalPost()]),
-      updatePost.fulfilled(edited({ imageUrl: "https://cdn/x.png" }), "u1", args),
+      updatePost.fulfilled(
+        edited({ imageUrl: "https://cdn/x.png", imageUrls: ["https://cdn/x.png", "https://cdn/y.png"] }),
+        "u1",
+        args,
+      ),
     );
     const repost = state.posts.find((post) => post.id === "rep");
     expect(repost.content).toBe("Worth a read");
     expect(repost.sharedPost.content).toBe("Edited");
-    expect(repost.sharedPost.imageUrl).toBe("https://cdn/x.png");
+    expect(repost.sharedPost.imageUrls).toEqual(["https://cdn/x.png", "https://cdn/y.png"]);
     expect(repost.sharedPost.author.id).toBe("anna");
   });
 
@@ -77,17 +81,33 @@ describe("toFeedPostModel edited flag", () => {
   });
 });
 
+describe("post images", () => {
+  it("maps every image and keeps the first as the cover", () => {
+    const model = toFeedPostModel(
+      originalPost({ imageUrl: "https://cdn/a.png", imageUrls: ["https://cdn/a.png", "https://cdn/b.png"] }),
+    );
+    expect(model.images).toEqual(["https://cdn/a.png", "https://cdn/b.png"]);
+    expect(model.image).toBe("https://cdn/a.png");
+  });
+
+  it("falls back to the older single imageUrl", () => {
+    expect(getPostImageUrls(originalPost({ imageUrl: "https://cdn/old.png" }))).toEqual([
+      "https://cdn/old.png",
+    ]);
+    expect(getPostImageUrls(originalPost())).toEqual([]);
+  });
+});
+
 describe("toUpdatePostPayload", () => {
+  const A = "https://cdn/a.png";
+  const B = "https://cdn/b.png";
   const original = originalPost({
     content: "Hello",
-    imageUrl: "https://cdn/a.png",
+    imageUrl: A,
+    imageUrls: [A, B],
     documentUrl: "https://cdn/a.pdf",
   });
-  const same = {
-    content: "Hello",
-    imageUrl: "https://cdn/a.png",
-    documentUrl: "https://cdn/a.pdf",
-  };
+  const same = { content: "Hello", imageUrls: [A, B], documentUrl: "https://cdn/a.pdf" };
 
   it("is empty when nothing changed", () => {
     expect(toUpdatePostPayload(original, { ...same, content: "  Hello " })).toEqual({});
@@ -98,14 +118,21 @@ describe("toUpdatePostPayload", () => {
       content: "Hi",
     });
     expect(
-      toUpdatePostPayload(original, { ...same, imageUrl: "https://cdn/b.png" }),
-    ).toEqual({ imageUrl: "https://cdn/b.png" });
+      toUpdatePostPayload(original, { ...same, imageUrls: [A, B, "https://cdn/c.png"] }),
+    ).toEqual({ imageUrls: [A, B, "https://cdn/c.png"] });
   });
 
-  it("sends null for a removed attachment", () => {
+  it("sends the new list when an image is removed or reordered", () => {
+    expect(toUpdatePostPayload(original, { ...same, imageUrls: [B] })).toEqual({ imageUrls: [B] });
+    expect(toUpdatePostPayload(original, { ...same, imageUrls: [B, A] })).toEqual({
+      imageUrls: [B, A],
+    });
+  });
+
+  it("sends an empty list and null when every attachment is removed", () => {
     expect(
-      toUpdatePostPayload(original, { content: "Hello", imageUrl: null, documentUrl: null }),
-    ).toEqual({ imageUrl: null, documentUrl: null });
+      toUpdatePostPayload(original, { content: "Hello", imageUrls: [], documentUrl: null }),
+    ).toEqual({ imageUrls: [], documentUrl: null });
   });
 
   it("sends a repost's caption and attachment changes", () => {
@@ -113,14 +140,14 @@ describe("toUpdatePostPayload", () => {
     expect(
       toUpdatePostPayload(repost, {
         content: "",
-        imageUrl: "https://cdn/b.png",
+        imageUrls: [B],
         documentUrl: "https://cdn/b.pdf",
       }),
-    ).toEqual({ content: "", imageUrl: "https://cdn/b.png", documentUrl: "https://cdn/b.pdf" });
+    ).toEqual({ content: "", imageUrls: [B], documentUrl: "https://cdn/b.pdf" });
 
-    const withImage = repostOf(originalPost(), { imageUrl: "https://cdn/b.png" });
+    const withImage = repostOf(originalPost(), { imageUrl: B, imageUrls: [B] });
     expect(
-      toUpdatePostPayload(withImage, { content: "Worth a read", imageUrl: null }),
-    ).toEqual({ imageUrl: null });
+      toUpdatePostPayload(withImage, { content: "Worth a read", imageUrls: [] }),
+    ).toEqual({ imageUrls: [] });
   });
 });

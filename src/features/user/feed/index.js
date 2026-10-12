@@ -30,6 +30,7 @@ export {
 export {
   toFeedPostModel,
   toUpdatePostPayload,
+  getPostImageUrls,
   formatRelativeTime,
 } from "./feedMappers";
 export * as feedApi from "./feedApi";

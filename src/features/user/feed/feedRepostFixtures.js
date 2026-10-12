@@ -36,6 +36,7 @@ export const repostOf = (original, overrides = {}) => ({
     type: original.type,
     content: original.content,
     imageUrl: original.imageUrl,
+    imageUrls: original.imageUrls ?? (original.imageUrl ? [original.imageUrl] : []),
     documentUrl: original.documentUrl,
     createdAt: original.createdAt,
     author: original.author,

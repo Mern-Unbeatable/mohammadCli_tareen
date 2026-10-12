@@ -90,7 +90,7 @@ const FeedView = () => {
   const handlePublish = async ({
     type,
     content,
-    imageUrl,
+    imageUrls,
     documentUrl,
   }) => {
     const apiType =
@@ -104,7 +104,7 @@ const FeedView = () => {
       type: apiType,
       content: (content || "").trim(),
     };
-    if (imageUrl) payload.imageUrl = imageUrl;
+    if (imageUrls?.length) payload.imageUrls = imageUrls;
     if (documentUrl) payload.documentUrl = documentUrl;
 
     const result = await dispatch(createPost(payload));
