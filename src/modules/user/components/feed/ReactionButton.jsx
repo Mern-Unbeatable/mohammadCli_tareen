@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ThumbsUp } from "lucide-react";
 import { getReaction, reactions } from "@/modules/user/data/reactions";
 
-const OPEN_DELAY_MS = 350;
+const OPEN_DELAY_MS = 200;
 /** Grace period for moving the cursor from the button up to the panel. */
-const CLOSE_DELAY_MS = 300;
+const CLOSE_DELAY_MS = 200;
 const LONG_PRESS_MS = 450;
 
 const ReactionButton = ({ reactionId, onReact }) => {
@@ -105,19 +105,13 @@ const ReactionButton = ({ reactionId, onReact }) => {
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
     >
-      {/* pb-2 keeps the gap above the button inside the hover area. */}
-      <div
-        role="menu"
-        aria-label="Reactions"
-        aria-hidden={!pickerOpen}
-        className={`absolute bottom-full left-2 z-30 pb-2 transition-all duration-150 ease-out ${
-          pickerOpen
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-1 scale-95 opacity-0"
-        }`}
-        style={{ transformOrigin: "bottom left" }}
-      >
-        <div className="flex items-center gap-0.5 rounded-full border border-[#E4E7EC] bg-white px-2 py-1.5 shadow-[0_8px_24px_rgba(10,26,68,0.15)] sm:gap-1">
+      {pickerOpen ? (
+        // The ::before strip fills the mb-2 gap so the cursor stays "inside" on its way up.
+        <div
+          role="menu"
+          aria-label="Reactions"
+          className="absolute bottom-full left-0 z-50 mb-2 flex origin-bottom-left animate-fade-in-up gap-2 rounded-full border border-gray-100 bg-white p-2 shadow-xl before:absolute before:inset-x-0 before:top-full before:h-2 before:content-['']"
+        >
           {reactions.map((reaction) => (
             <button
               key={reaction.id}
@@ -125,7 +119,6 @@ const ReactionButton = ({ reactionId, onReact }) => {
               role="menuitem"
               title={reaction.label}
               aria-label={reaction.label}
-              tabIndex={pickerOpen ? 0 : -1}
               onClick={() => handleSelect(reaction.id)}
               className={`flex h-9 w-9 items-center justify-center rounded-full text-[22px] transition-transform duration-150 hover:-translate-y-1 hover:scale-125 sm:h-10 sm:w-10 sm:text-[26px] ${
                 reaction.id === selected?.id ? "bg-[#F2F4F7]" : ""
@@ -135,7 +128,7 @@ const ReactionButton = ({ reactionId, onReact }) => {
             </button>
           ))}
         </div>
-      </div>
+      ) : null}
 
       <button
         type="button"
@@ -149,11 +142,8 @@ const ReactionButton = ({ reactionId, onReact }) => {
         aria-pressed={Boolean(selected)}
         className={`flex w-full items-center justify-center gap-2 py-3 text-[13px] font-medium transition-colors hover:bg-[#F9FAFB] ${buttonColor}`}
       >
-        {!selected || isLike ? (
-          <ThumbsUp
-            aria-hidden="true"
-            className={`h-4 w-4 ${isLike ? "fill-current" : ""}`}
-          />
+        {!selected ? (
+          <ThumbsUp aria-hidden="true" className="h-4 w-4" />
         ) : (
           <span aria-hidden="true" className="text-[16px] leading-none">
             {selected.emoji}
