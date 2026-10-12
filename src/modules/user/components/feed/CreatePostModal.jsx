@@ -26,7 +26,9 @@ const MAX_POST_IMAGES = 10;
 const toExistingImage = (url) => ({ id: url, url });
 
 const revokePreviews = (images) =>
-  images.forEach((image) => image.preview && URL.revokeObjectURL(image.preview));
+  images.forEach(
+    (image) => image.preview && URL.revokeObjectURL(image.preview),
+  );
 
 const sameList = (a, b) =>
   a.length === b.length && a.every((value, index) => value === b[index]);
@@ -227,29 +229,41 @@ const CreatePostModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-start sm:overflow-y-auto sm:p-4 sm:pt-[8vh]"
-      onClick={busy ? undefined : onClose}
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 sm:items-center sm:p-4"
       role="presentation"
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-[560px] flex-col rounded-t-2xl bg-white shadow-xl sm:max-h-none sm:rounded-xl"
+        className="flex max-h-[90vh] w-full max-w-[720px] flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-post-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E7EC] px-4 py-3.5 sm:px-5 sm:py-4">
-          <h2
-            id="create-post-title"
-            className="text-[17px] font-bold text-deep-blue sm:text-[18px]"
-          >
+        <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-[#E4E7EC] bg-white px-4 py-3 sm:px-5">
+          <h2 id="create-post-title" className="sr-only">
             {isEdit ? "Edit Post" : "Create Post"}
           </h2>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar
+              src={user?.avatar}
+              alt={displayName}
+              initials={user?.initials || "U"}
+              size="md"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-semibold text-deep-blue">
+                {displayName}
+              </p>
+              {company ? (
+                <p className="truncate text-[12px] text-[#64748B]">{company}</p>
+              ) : null}
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-md p-1.5 text-[#64748B] hover:bg-[#F9FAFB] disabled:opacity-50"
+            className="shrink-0 rounded-md p-1.5 text-[#64748B] hover:bg-[#F9FAFB] disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -257,39 +271,25 @@ const CreatePostModal = ({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-          <div className="mb-4 flex items-center gap-3">
-            <Avatar
-              src={user?.avatar}
-              alt={displayName}
-              initials={user?.initials || "U"}
-              size="md"
-            />
-            <p className="text-[13px] text-[#64748B]">
-              Posting as{" "}
-              <span className="font-semibold text-deep-blue">{displayName}</span>
-              {company ? ` · ${company}` : null}
-            </p>
-          </div>
-
           {isEdit ? null : (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {POST_TYPE_OPTIONS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setPostOption(id)}
-                disabled={busy}
-                aria-pressed={postOption === id}
-                className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:px-3.5 sm:text-[12px] ${
-                  postOption === id
-                    ? "border-primary bg-secondary text-primary"
-                    : "border-[#E4E7EC] text-[#475467] hover:border-primary/40"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {POST_TYPE_OPTIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPostOption(id)}
+                  disabled={busy}
+                  aria-pressed={postOption === id}
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:px-3.5 sm:text-[12px] ${
+                    postOption === id
+                      ? "border-primary bg-secondary text-primary"
+                      : "border-[#E4E7EC] text-[#475467] hover:border-primary/40"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
 
           <textarea
@@ -311,7 +311,7 @@ const CreatePostModal = ({
             <div className="mt-3">
               <div
                 className={`grid gap-2 ${
-                  images.length === 1 ? "grid-cols-1" : "grid-cols-3 sm:grid-cols-4"
+                  images.length === 1 ? "grid-cols-1" : "grid-cols-5"
                 }`}
               >
                 {images.map((image, index) => (
@@ -334,7 +334,7 @@ const CreatePostModal = ({
                       type="button"
                       disabled={busy}
                       onClick={() => removeImage(image.id)}
-                      className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
                       aria-label={`Remove image ${index + 1}`}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -374,7 +374,7 @@ const CreatePostModal = ({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 border-t border-[#E4E7EC] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4 sm:pb-4">
+        <div className="sticky bottom-0 z-10 flex shrink-0 flex-col gap-3 border-t border-[#E4E7EC] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4 sm:pb-4">
           <div className="flex gap-2">
             <input
               ref={imageInputRef}
@@ -394,7 +394,9 @@ const CreatePostModal = ({
             <button
               type="button"
               disabled={busy || !canAddImages}
-              title={canAddImages ? undefined : `Up to ${MAX_POST_IMAGES} images`}
+              title={
+                canAddImages ? undefined : `Up to ${MAX_POST_IMAGES} images`
+              }
               onClick={() => imageInputRef.current?.click()}
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-[13px] font-medium hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${
                 hasImage
@@ -419,15 +421,25 @@ const CreatePostModal = ({
               Document
             </button>
           </div>
-          <button
-            type="button"
-            disabled={!canPublish}
-            onClick={handlePublish}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-6"
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {submitLabel}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onClose}
+              className="inline-flex flex-1 items-center justify-center rounded-md border border-[#E4E7EC] py-2.5 text-[14px] font-semibold text-[#475467] hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canPublish}
+              onClick={handlePublish}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-[14px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:px-6"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {submitLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>

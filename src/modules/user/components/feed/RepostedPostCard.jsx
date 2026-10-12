@@ -37,7 +37,6 @@ const RepostedPostCard = ({ post }) => {
         {post.content ? (
           <ExpandableText
             text={post.content}
-            lines={4}
             className="mt-3 text-[14px] leading-relaxed text-[#475467]"
           />
         ) : null}
