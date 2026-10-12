@@ -162,6 +162,9 @@ export function toFeedPostModel(post) {
         ? String(post.reaction).toLowerCase()
         : null,
     reactionCounts: post.reactionCounts || null,
+    isRepost: Boolean(post.isRepost),
+    sharedPost: post.sharedPost ? toFeedPostModel(post.sharedPost) : null,
+    sharedByMe: Boolean(post.sharedByMe),
     raw: post,
   };
 }

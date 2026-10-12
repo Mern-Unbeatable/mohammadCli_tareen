@@ -138,6 +138,32 @@ export const reactToPost = createAsyncThunk(
   },
 );
 
+export const repostPost = createAsyncThunk(
+  "userFeed/repostPost",
+  async ({ postId, content }, { rejectWithValue }) => {
+    try {
+      return await feedApi.repostPost(postId, content);
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to repost"),
+      );
+    }
+  },
+);
+
+export const undoRepost = createAsyncThunk(
+  "userFeed/undoRepost",
+  async ({ postId }, { rejectWithValue }) => {
+    try {
+      return await feedApi.undoRepost(postId);
+    } catch (err) {
+      return rejectWithValue(
+        feedApi.getApiErrorMessage(err, "Failed to undo repost"),
+      );
+    }
+  },
+);
+
 export const likeComment = createAsyncThunk(
   "userFeed/likeComment",
   async ({ postId, commentId }, { rejectWithValue }) => {

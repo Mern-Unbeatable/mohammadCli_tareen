@@ -151,6 +151,21 @@ export async function reactToPost(postId, type) {
   return unwrapApiData(response) || response;
 }
 
+export async function repostPost(postId, content = "") {
+  const response = await crudService.post(
+    API_ENDPOINTS.USER.FEED.REPOST(postId),
+    { content: String(content).trim() },
+  );
+  return unwrapApiData(response) || response;
+}
+
+export async function undoRepost(postId) {
+  const response = await crudService.del(
+    API_ENDPOINTS.USER.FEED.REPOST(postId),
+  );
+  return unwrapApiData(response) || response;
+}
+
 export async function likeComment(postId, commentId) {
   const response = await crudService.post(
     API_ENDPOINTS.USER.FEED.COMMENT_LIKE(postId, commentId),

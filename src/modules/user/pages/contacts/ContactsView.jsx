@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router";
 import { toast } from "react-toastify";
 import Pagination from "@/components/common/Pagination/Pagination";
 import { CardSkeleton } from "@/components/common/Skeleton";
@@ -15,6 +16,18 @@ import {
   toContactCardModel,
 } from "@/features/user/contacts";
 import { GRID_PAGE_SIZE } from "@/shared/hooks/usePaginatedList";
+import { usePageParam } from "@/shared/hooks/usePageParam";
+import {
+  COUNTRY_PARAM,
+  FILTER_PARAM,
+  SEARCH_MAX_LENGTH,
+  SEARCH_PARAM,
+  applyFilterChanges,
+  parseCountryParam,
+  parseFilterParam,
+  parseSearchParam,
+  withoutInvalidFilters,
+} from "./contactsUrlFilters";
 
 const PROFILE_BASE = "/contacts";
 
@@ -70,43 +83,68 @@ const ContactsView = () => {
     contacts,
     contactsMeta,
     contactsLoading,
+    contactsError,
     connectingId,
     acceptingId,
     error,
   } = useSelector((state) => state.userContacts);
 
-  const [filter, setFilter] = useState("people");
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [country, setCountry] = useState("All countries");
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = parseFilterParam(searchParams.get(FILTER_PARAM));
+  const country = parseCountryParam(searchParams.get(COUNTRY_PARAM));
+  const search = parseSearchParam(searchParams.get(SEARCH_PARAM));
+  const [page, setPage] = usePageParam();
+
+  const [query, setQuery] = useState(search);
+  const [syncedSearch, setSyncedSearch] = useState(search);
+  // Back/Forward can change `q`; mirror it into the search box.
+  if (search !== syncedSearch) {
+    setSyncedSearch(search);
+    setQuery(search);
+  }
 
   const isRequests = filter === "requests";
 
+  const updateFilters = useCallback(
+    (changes, { replace = false } = {}) => {
+      dispatch(invalidateContactsList());
+      setSearchParams((prev) => applyFilterChanges(prev, changes), { replace });
+    },
+    [dispatch, setSearchParams],
+  );
+
+  useEffect(() => {
+    const next = withoutInvalidFilters(searchParams);
+    if (next) setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query === debouncedQuery) return;
-      dispatch(invalidateContactsList());
-      setDebouncedQuery(query);
-      setPage(1);
+      const nextSearch = query.trim() ? query : "";
+      if (nextSearch === search) return;
+      updateFilters({ [SEARCH_PARAM]: nextSearch }, { replace: true });
     }, 350);
     return () => clearTimeout(timer);
-  }, [query, debouncedQuery, dispatch]);
+  }, [query, search, updateFilters]);
 
-  // Run before paint so skeletons replace stale cards immediately on filter/page change
-  useLayoutEffect(() => {
+  const loadContacts = useCallback(() => {
     dispatch(clearContactsError());
     dispatch(
       fetchContactsList(
         buildContactsQuery({
           page,
-          search: debouncedQuery,
+          search,
           country,
           filter,
         }),
       ),
     );
-  }, [dispatch, page, debouncedQuery, country, filter]);
+  }, [dispatch, page, search, country, filter]);
+
+  // Run before paint so skeletons replace stale cards immediately on filter/page change
+  useLayoutEffect(() => {
+    loadContacts();
+  }, [loadContacts]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -122,24 +160,30 @@ const ContactsView = () => {
     1,
     contactsMeta?.totalPages || Math.ceil(total / GRID_PAGE_SIZE) || 1,
   );
+  // Only trust totalPages once it belongs to the page in the URL.
+  const pageOutOfRange =
+    !contactsLoading &&
+    !contactsError &&
+    Number(contactsMeta?.page) === page &&
+    page > totalPages;
+  const showSkeleton = contactsLoading || pageOutOfRange;
+
+  useEffect(() => {
+    if (pageOutOfRange) setPage(totalPages, { replace: true });
+  }, [pageOutOfRange, totalPages, setPage]);
 
   const handleFilterChange = (next) => {
     if (next === filter) return;
-    dispatch(invalidateContactsList());
-    setFilter(next);
-    setPage(1);
+    updateFilters({ [FILTER_PARAM]: next });
   };
 
   const handleCountryChange = (next) => {
     if (next === country) return;
-    dispatch(invalidateContactsList());
-    setCountry(next);
-    setPage(1);
+    updateFilters({ [COUNTRY_PARAM]: next });
   };
 
   const handlePageChange = (next) => {
     if (next === page) return;
-    dispatch(invalidateContactsList());
     setPage(next);
   };
 
@@ -180,6 +224,7 @@ const ContactsView = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            maxLength={SEARCH_MAX_LENGTH}
             placeholder="Search by name, laboratory or position..."
             className="flex-1 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-[14px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:ring-2 focus:ring-primary/10"
           />
@@ -212,15 +257,30 @@ const ContactsView = () => {
         </div>
 
         <p className="mb-5 text-[13px] text-[#64748B]">
-          {contactsLoading ? "Loading…" : countLabel(filter, total)}
+          {showSkeleton
+            ? "Loading…"
+            : contactsError
+              ? "Contacts unavailable"
+              : countLabel(filter, total)}
         </p>
 
-        {contactsLoading ? (
+        {showSkeleton ? (
           <CardSkeleton
             variant="contact"
             count={GRID_PAGE_SIZE}
             className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           />
+        ) : contactsError ? (
+          <div className="rounded-xl border border-dashed border-[#D0D5DD] bg-white px-6 py-10 text-center">
+            <p className="text-[14px] text-[#64748B]">Couldn&apos;t load contacts.</p>
+            <button
+              type="button"
+              onClick={loadContacts}
+              className="mt-2 text-[14px] font-semibold text-primary hover:underline"
+            >
+              Try again
+            </button>
+          </div>
         ) : cards.length ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cards.map((contact) => (

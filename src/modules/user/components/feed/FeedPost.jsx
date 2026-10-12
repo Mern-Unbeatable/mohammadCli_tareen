@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MoreHorizontal, Tag, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Repeat2, Tag, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
@@ -9,7 +9,14 @@ import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
 import { AttachmentCard, PostStats, PostActions } from './FeedShared';
 import PostComments from './PostComments';
 import SharePostModal from './SharePostModal';
-import { addComment, likeComment, reactToPost } from '@/features/user/feed';
+import RepostedPostCard from './RepostedPostCard';
+import {
+  addComment,
+  likeComment,
+  reactToPost,
+  repostPost,
+  undoRepost,
+} from '@/features/user/feed';
 import { toProfilePageUser } from '@/features/user/profile';
 
 const badgeByType = {
@@ -108,6 +115,12 @@ const PostHeader = ({ post, onReport, onDelete, isOwner }) => {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[14px] font-bold text-deep-blue">{post.author.name}</h3>
+          {post.isRepost && (
+            <span className="inline-flex items-center gap-1 text-[13px] text-[#64748B]">
+              <Repeat2 className="h-3.5 w-3.5" />
+              shared a post
+            </span>
+          )}
           {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
           {post.type === 'promo' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-secondary px-2 py-0.5 text-[10px] font-semibold text-pink-light">
@@ -162,17 +175,28 @@ const FeedPost = ({ post, onReport, onDelete }) => {
   const likingCommentId = useSelector(
     (state) => state.userFeed.likingCommentId,
   );
+  const reposting = useSelector(
+    (state) => state.userFeed.repostingId === post.id,
+  );
   const profileUser = useMemo(() => toProfilePageUser(user), [user]);
   const isOwner = Boolean(
     profileUser?.id && post.author?.id && profileUser.id === post.author.id,
   );
+  const originalAuthorId = post.isRepost
+    ? post.sharedPost?.author?.id
+    : post.author?.id;
+  const repostUnavailableReason =
+    post.isRepost && !post.sharedPost
+      ? 'The original post is no longer available'
+      : profileUser?.id && originalAuthorId === profileUser.id
+        ? "You can't repost your own post"
+        : null;
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reactionId, setReactionId] = useState(
     post.myReaction ? String(post.myReaction).toLowerCase() : null,
   );
-  const [shared, setShared] = useState(false);
   const [stats, setStats] = useState(post.stats);
   const [reactionCounts, setReactionCounts] = useState(
     post.reactionCounts || null,
@@ -310,11 +334,26 @@ const FeedPost = ({ post, onReport, onDelete }) => {
     setShareOpen(true);
   };
 
-  const handleShareComplete = () => {
-    if (!shared) {
-      setStats((prev) => ({ ...prev, shares: prev.shares + 1 }));
+  const handleRepost = async (caption) => {
+    const result = await dispatch(
+      repostPost({ postId: post.id, content: caption }),
+    );
+    if (repostPost.fulfilled.match(result)) {
+      toast.success('Reposted to your feed');
+      return true;
     }
-    setShared(true);
+    toast.error(result.payload || 'Failed to repost');
+    return false;
+  };
+
+  const handleUndoRepost = async () => {
+    const result = await dispatch(undoRepost({ postId: post.id }));
+    if (undoRepost.fulfilled.match(result)) {
+      toast.success('Repost removed');
+      return true;
+    }
+    toast.error(result.payload || 'Failed to undo repost');
+    return false;
   };
 
   const toggleComments = () => setCommentsOpen((prev) => !prev);
@@ -329,54 +368,67 @@ const FeedPost = ({ post, onReport, onDelete }) => {
           isOwner={isOwner}
         />
 
-        <div className="p-4">
-          {post.title && (
-            <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
-          )}
-          <ExpandableText
-            text={post.content}
-            lines={5}
-            className="text-base leading-relaxed text-[#475467]"
-          />
-
-          {post.attachment && <AttachmentCard attachment={post.attachment} />}
-
-          {post.image && (
-            <div className="relative mt-3 overflow-hidden rounded-lg">
-              <img
-                src={post.image}
-                alt=""
-                className="aspect-[16/9] w-full object-cover"
-                loading="lazy"
+        {post.isRepost ? (
+          <div className="p-4">
+            {post.content ? (
+              <ExpandableText
+                text={post.content}
+                lines={5}
+                className="text-base leading-relaxed text-[#475467]"
               />
-              {post.discount && post.type === 'promo' && (
-                <>
-                  <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                    {post.discount}
-                  </span>
-                  <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                    Ends in 29 days
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+            ) : null}
+            <RepostedPostCard post={post.sharedPost} />
+          </div>
+        ) : (
+          <div className="p-4">
+            {post.title && (
+              <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
+            )}
+            <ExpandableText
+              text={post.content}
+              lines={5}
+              className="text-base leading-relaxed text-[#475467]"
+            />
 
-          {post.type === 'sponsored' && post.price && (
-            <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
-          )}
+            {post.attachment && <AttachmentCard attachment={post.attachment} />}
 
-          {post.type === 'promo' && <PromoPricing post={post} />}
+            {post.image && (
+              <div className="relative mt-3 overflow-hidden rounded-lg">
+                <img
+                  src={post.image}
+                  alt=""
+                  className="aspect-[16/9] w-full object-cover"
+                  loading="lazy"
+                />
+                {post.discount && post.type === 'promo' && (
+                  <>
+                    <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                      {post.discount}
+                    </span>
+                    <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                      Ends in 29 days
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
-          {post.cta && (
-            <button
-              type="button"
-              className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              {post.cta}
-            </button>
-          )}
-        </div>
+            {post.type === 'sponsored' && post.price && (
+              <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
+            )}
+
+            {post.type === 'promo' && <PromoPricing post={post} />}
+
+            {post.cta && (
+              <button
+                type="button"
+                className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                {post.cta}
+              </button>
+            )}
+          </div>
+        )}
 
         <PostStats
           stats={stats}
@@ -390,7 +442,7 @@ const FeedPost = ({ post, onReport, onDelete }) => {
           onToggleComments={toggleComments}
           commentCount={stats?.comments ?? 0}
           onShare={handleShare}
-          shared={shared}
+          shared={post.sharedByMe}
         />
 
         {commentsOpen && (
@@ -404,12 +456,18 @@ const FeedPost = ({ post, onReport, onDelete }) => {
         )}
       </Card>
 
-      <SharePostModal
-        open={shareOpen}
-        post={post}
-        onClose={() => setShareOpen(false)}
-        onShare={handleShareComplete}
-      />
+      {shareOpen ? (
+        <SharePostModal
+          open
+          post={post}
+          onClose={() => setShareOpen(false)}
+          shared={post.sharedByMe}
+          reposting={reposting}
+          repostUnavailableReason={repostUnavailableReason}
+          onRepost={handleRepost}
+          onUndoRepost={handleUndoRepost}
+        />
+      ) : null}
     </>
   );
 };
