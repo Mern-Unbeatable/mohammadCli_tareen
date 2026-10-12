@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { MoreHorizontal, Repeat2, Tag } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -12,6 +12,7 @@ import SharePostModal from './SharePostModal';
 import RepostedPostCard from './RepostedPostCard';
 import PostImageGallery from './PostImageGallery';
 import OwnerActionsMenu from './OwnerActionsMenu';
+import FullCommentsModal from './FullCommentsModal';
 import {
   addComment,
   editComment,
@@ -30,6 +31,8 @@ const badgeByType = {
   promo: { variant: 'sponsored', label: '• Sponsored' },
 };
 
+const COMMENT_PREVIEW_LIMIT = 4;
+
 const REACTION_API = {
   like: "like",
   love: "love",
@@ -44,7 +47,14 @@ const REACTION_API = {
   curious: "angry",
 };
 
-const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
+const PostHeader = ({
+  post,
+  onReport,
+  onEdit,
+  onDelete,
+  isOwner,
+  showActions = true,
+}) => {
   const badge = badgeByType[post.type];
   const meta = [post.author.meta, post.edited ? 'Edited' : null]
     .filter(Boolean)
@@ -83,7 +93,7 @@ const PostHeader = ({ post, onReport, onEdit, onDelete, isOwner }) => {
         ) : null}
         {meta ? <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p> : null}
       </div>
-      {isOwner && (onEdit || onDelete) ? (
+      {!showActions ? null : isOwner && (onEdit || onDelete) ? (
         <OwnerActionsMenu
           label="Post options"
           editLabel="Edit post"
@@ -126,6 +136,73 @@ const PromoPricing = ({ post }) => (
   </div>
 );
 
+const PostBody = ({ post }) =>
+  post.isRepost ? (
+    <div className="p-3 sm:p-4">
+      {post.content ? (
+        <ExpandableText
+          text={post.content}
+          className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
+        />
+      ) : null}
+      {post.attachment && <AttachmentCard attachment={post.attachment} />}
+      <PostImageGallery images={post.images} image={post.image} />
+      <RepostedPostCard post={post.sharedPost} />
+    </div>
+  ) : (
+    <div className="p-3 sm:p-4">
+      {post.title && (
+        <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
+      )}
+      <ExpandableText
+        text={post.content}
+        className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
+      />
+
+      {post.attachment && <AttachmentCard attachment={post.attachment} />}
+
+      {post.type !== 'promo' && (
+        <PostImageGallery images={post.images} image={post.image} />
+      )}
+
+      {post.type === 'promo' && post.image && (
+        <div className="relative mt-3 overflow-hidden rounded-lg">
+          <img
+            src={post.image}
+            alt=""
+            className="aspect-[16/9] w-full object-cover"
+            loading="lazy"
+          />
+          {post.discount && post.type === 'promo' && (
+            <>
+              <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                {post.discount}
+              </span>
+              <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
+                Ends in 29 days
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {post.type === 'sponsored' && post.price && (
+        <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
+      )}
+
+      {post.type === 'promo' && <PromoPricing post={post} />}
+
+      {post.cta && (
+        <button
+          type="button"
+          className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          {post.cta}
+        </button>
+      )}
+    </div>
+  );
+
 const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.userProfile);
@@ -150,6 +227,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
         : null;
 
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [fullCommentsOpen, setFullCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reactionId, setReactionId] = useState(
     post.myReaction ? String(post.myReaction).toLowerCase() : null,
@@ -361,6 +439,17 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
   };
 
   const toggleComments = () => setCommentsOpen((prev) => !prev);
+  const closeFullComments = useCallback(() => setFullCommentsOpen(false), []);
+
+  const commentProps = {
+    comments,
+    currentUser: profileUser,
+    onAddComment: handleAddComment,
+    onLikeComment: handleLikeComment,
+    onEditComment: handleEditComment,
+    onDeleteComment: handleDeleteComment,
+    likingCommentId,
+  };
 
   return (
     <>
@@ -373,71 +462,7 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
           isOwner={isOwner}
         />
 
-        {post.isRepost ? (
-          <div className="p-3 sm:p-4">
-            {post.content ? (
-              <ExpandableText
-                text={post.content}
-                className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
-              />
-            ) : null}
-            {post.attachment && <AttachmentCard attachment={post.attachment} />}
-            <PostImageGallery images={post.images} image={post.image} />
-            <RepostedPostCard post={post.sharedPost} />
-          </div>
-        ) : (
-          <div className="p-3 sm:p-4">
-            {post.title && (
-              <h4 className="mb-2 text-[16px] font-bold text-deep-blue">{post.title}</h4>
-            )}
-            <ExpandableText
-              text={post.content}
-              className="text-[15px] leading-relaxed text-[#475467] sm:text-base"
-            />
-
-            {post.attachment && <AttachmentCard attachment={post.attachment} />}
-
-            {post.type !== 'promo' && (
-              <PostImageGallery images={post.images} image={post.image} />
-            )}
-
-            {post.type === 'promo' && post.image && (
-              <div className="relative mt-3 overflow-hidden rounded-lg">
-                <img
-                  src={post.image}
-                  alt=""
-                  className="aspect-[16/9] w-full object-cover"
-                  loading="lazy"
-                />
-                {post.discount && post.type === 'promo' && (
-                  <>
-                    <span className="absolute left-3 top-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                      {post.discount}
-                    </span>
-                    <span className="absolute bottom-3 left-3 rounded-md bg-[#E67E22] px-2 py-1 text-[11px] font-bold text-white">
-                      Ends in 29 days
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
-
-            {post.type === 'sponsored' && post.price && (
-              <p className="mt-3 text-[22px] font-bold text-green-primary">{post.price}</p>
-            )}
-
-            {post.type === 'promo' && <PromoPricing post={post} />}
-
-            {post.cta && (
-              <button
-                type="button"
-                className="mt-4 w-full rounded-md bg-pink-light py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                {post.cta}
-              </button>
-            )}
-          </div>
-        )}
+        <PostBody post={post} />
 
         <PostStats
           stats={stats}
@@ -456,16 +481,27 @@ const FeedPost = ({ post, onReport, onEdit, onDelete }) => {
 
         {commentsOpen && (
           <PostComments
-            comments={comments}
-            currentUser={profileUser}
-            onAddComment={handleAddComment}
-            onLikeComment={handleLikeComment}
-            onEditComment={handleEditComment}
-            onDeleteComment={handleDeleteComment}
-            likingCommentId={likingCommentId}
+            {...commentProps}
+            previewLimit={COMMENT_PREVIEW_LIMIT}
+            onShowAll={() => setFullCommentsOpen(true)}
           />
         )}
       </Card>
+
+      <FullCommentsModal
+        open={fullCommentsOpen}
+        title={`${post.author.name}'s post`}
+        onClose={closeFullComments}
+      >
+        <PostHeader post={post} showActions={false} />
+        <PostBody post={post} />
+        <PostStats
+          stats={stats}
+          reactionId={reactionId}
+          reactionCounts={reactionCounts}
+        />
+        <PostComments {...commentProps} emptyText="No comments yet. Start the conversation." />
+      </FullCommentsModal>
 
       {shareOpen ? (
         <SharePostModal

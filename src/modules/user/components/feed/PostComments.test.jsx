@@ -54,3 +54,49 @@ describe("PostComments owner actions", () => {
     expect(render()).not.toContain("Delete comment?");
   });
 });
+
+describe("PostComments preview", () => {
+  const roots = (count) =>
+    Array.from({ length: count }, (_, i) =>
+      comment(`c${i + 1}`, "other", {
+        replies: i === 0 ? [comment("reply-of-c1", "me")] : [],
+      }),
+    );
+  const shown = (html) => [...html.matchAll(/Comment (c\d+|reply-of-c1)/g)].map((m) => m[1]);
+  const preview = (count, props = {}) =>
+    render({ comments: roots(count), previewLimit: 4, onShowAll: noop, ...props });
+
+  it("shows nothing extra for a post with no comments", () => {
+    const html = preview(0);
+    expect(shown(html)).toEqual([]);
+    expect(html).not.toContain("See full comments");
+    expect(html).toContain("Add a professional comment");
+  });
+
+  it("shows 1-4 comments in full without a See full comments button", () => {
+    expect(shown(preview(1))).toEqual(["c1", "reply-of-c1"]);
+    const html = preview(4);
+    expect(shown(html)).toEqual(["c1", "reply-of-c1", "c2", "c3", "c4"]);
+    expect(html).not.toContain("See full comments");
+  });
+
+  it("limits longer threads to the 4 oldest comments, keeping their replies, and offers the rest", () => {
+    const html = preview(7);
+    expect(shown(html)).toEqual(["c1", "reply-of-c1", "c2", "c3", "c4"]);
+    expect(html).toContain("See full comments");
+  });
+
+  it("shows every comment, in order, without the button when not previewing", () => {
+    const html = render({ comments: roots(7) });
+    expect(shown(html)).toEqual(["c1", "reply-of-c1", "c2", "c3", "c4", "c5", "c6", "c7"]);
+    expect(html).not.toContain("See full comments");
+  });
+
+  it("shows the empty message only where requested", () => {
+    expect(render({ comments: [], emptyText: "No comments yet." })).toContain("No comments yet.");
+    expect(render({ comments: [] })).not.toContain("No comments yet.");
+    expect(render({ comments: roots(2), emptyText: "No comments yet." })).not.toContain(
+      "No comments yet.",
+    );
+  });
+});

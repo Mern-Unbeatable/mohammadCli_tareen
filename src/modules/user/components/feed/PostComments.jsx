@@ -425,6 +425,16 @@ const countAll = (list = []) =>
     0,
   );
 
+/**
+ * The oldest `limit` top-level comments, plus the newest `pinned` ones so a
+ * comment just posted from the preview doesn't vanish past the cut.
+ */
+const selectPreview = (comments, limit, pinned = 0) => {
+  if (!limit || comments.length <= limit) return comments;
+  const tailStart = Math.max(limit, comments.length - pinned);
+  return [...comments.slice(0, limit), ...comments.slice(tailStart)];
+};
+
 const findRootId = (comments, commentId) => {
   for (const root of comments || []) {
     if (root.id === commentId) return root.id;
@@ -446,8 +456,12 @@ const PostComments = ({
   onEditComment,
   onDeleteComment,
   likingCommentId,
+  previewLimit,
+  onShowAll,
+  emptyText,
 }) => {
   const [draft, setDraft] = useState("");
+  const [addedHere, setAddedHere] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -465,7 +479,10 @@ const PostComments = ({
     setSubmitting(true);
     try {
       const ok = await onAddComment(text);
-      if (ok !== false) setDraft("");
+      if (ok !== false) {
+        setDraft("");
+        setAddedHere((count) => count + 1);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -568,6 +585,9 @@ const PostComments = ({
     onRequestDelete: onDeleteComment ? setPendingDelete : undefined,
   };
 
+  const visibleComments = selectPreview(comments, previewLimit, addedHere);
+  const hasMore = visibleComments.length < comments.length;
+
   const handleToggleMoreReplies = (commentId) => {
     setShowAllByRoot((prev) => {
       const next = new Set(prev);
@@ -614,8 +634,12 @@ const PostComments = ({
         </div>
       </div>
 
+      {comments.length === 0 && emptyText ? (
+        <p className="py-6 text-center text-[13px] text-[#64748B]">{emptyText}</p>
+      ) : null}
+
       <div className="space-y-4">
-        {comments.map((comment) => (
+        {visibleComments.map((comment) => (
           <CommentItem
             key={comment.id}
             comment={comment}
@@ -634,6 +658,17 @@ const PostComments = ({
           />
         ))}
       </div>
+
+      {hasMore && onShowAll ? (
+        <button
+          type="button"
+          onClick={onShowAll}
+          aria-haspopup="dialog"
+          className="mt-4 w-full rounded-lg border border-[#E4E7EC] py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-[#F9FAFB]"
+        >
+          See full comments
+        </button>
+      ) : null}
 
       <ConfirmModal
         open={Boolean(pendingDelete)}
