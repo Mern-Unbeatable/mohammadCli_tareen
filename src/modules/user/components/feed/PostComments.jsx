@@ -114,13 +114,13 @@ const CommentBody = ({
         className="mt-1.5 text-[13px] leading-relaxed text-[#475467]"
       />
     </div>
-    <div className="mt-1 flex flex-wrap items-center gap-3 px-1 text-[12px] font-semibold text-[#64748B]">
+    <div className="mt-1 flex flex-wrap items-center gap-2 px-1 text-[12px] font-semibold text-[#64748B]">
       <button
         type="button"
         onClick={() => onLike(comment.id)}
         disabled={liking}
         aria-pressed={Boolean(comment.liked)}
-        className={`group flex items-center gap-1 hover:text-primary disabled:opacity-60 ${
+        className={`group flex gap-1 items-center hover:text-primary disabled:opacity-60 ${
           comment.liked ? "text-primary" : ""
         }`}
       >
@@ -133,13 +133,14 @@ const CommentBody = ({
               : "text-gray-500 group-hover:text-primary"
           }`}
         />
-        {comment.liked ? "Liked" : "Like"}
+        {/* {comment.liked ? "Liked" : "Like"} */}
         {comment.likeCount > 0 ? (
           <span className="tabular-nums font-normal">
             ({comment.likeCount})
           </span>
         ) : null}
       </button>
+      •
       <button
         type="button"
         onClick={() => onReply(comment)}
@@ -147,7 +148,7 @@ const CommentBody = ({
       >
         Reply
       </button>
-      <span className="font-normal text-[#98A2B3]">{comment.time}</span>
+      •<span className="font-normal text-[#98A2B3]">{comment.time}</span>
     </div>
 
     {showInlineReply ? (
@@ -401,9 +402,9 @@ const PostComments = ({
 
   return (
     <div className="border-t border-[#E4E7EC] px-4 py-4">
-      <p className="mb-4 text-[14px] font-bold text-deep-blue">
+      {/* <p className="mb-4 text-[14px] font-bold text-deep-blue">
         Comments ({countAll(comments)})
-      </p>
+      </p> */}
 
       <div className="mb-4 flex gap-3">
         <Avatar
