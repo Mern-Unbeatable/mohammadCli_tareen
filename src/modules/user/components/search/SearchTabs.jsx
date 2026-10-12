@@ -6,7 +6,7 @@ const tabClass = (vertical, active) => {
       active ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
     }`;
   }
-  return `-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2.5 text-[13px] transition-colors ${
+  return `-mb-px flex flex-1 shrink-0 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-[13px] transition-colors sm:flex-none sm:px-2.5 ${
     active
       ? "border-blue-600 font-semibold text-blue-600"
       : "border-transparent font-medium text-gray-500 hover:text-gray-700"
@@ -43,7 +43,10 @@ const SearchTabs = ({
             onClick={() => onChange(tab.id)}
             className={tabClass(vertical, active)}
           >
-            <TabIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
+            <TabIcon
+              aria-hidden="true"
+              className={`h-4 w-4 shrink-0 ${vertical ? "" : "hidden min-[420px]:block"}`}
+            />
             {tab.label}
           </button>
         );

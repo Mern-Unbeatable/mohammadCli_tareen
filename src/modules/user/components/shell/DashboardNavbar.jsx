@@ -77,14 +77,17 @@ const SearchDropdown = ({
   if (!open) return null;
 
   return (
-    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] flex flex-col overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-lg sm:left-auto sm:w-[max(100%,32rem)] sm:max-w-[calc(100vw-1rem)] xl:left-0 xl:right-auto">
+    <div className="fixed inset-x-2 top-[60px] z-[80] flex flex-col overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+6px)] sm:w-[max(100%,32rem)] sm:max-w-[calc(100vw-1rem)] xl:left-0 xl:right-auto">
       <SearchTabs
         activeTab={activeTab}
         onChange={onTabChange}
-        className="px-2"
+        className="px-1 sm:px-2"
       />
 
-      <div role="tabpanel" className="max-h-[400px] overflow-y-auto py-2">
+      <div
+        role="tabpanel"
+        className="max-h-[min(400px,calc(100dvh_-_14rem))] overflow-y-auto overscroll-contain py-2"
+      >
         <SearchResultsList
           groups={groups}
           activeTab={activeTab}
@@ -271,7 +274,7 @@ const DashboardNavbar = () => {
               onFocus={() => setSearchOpen(true)}
               placeholder="Search..."
               aria-label="Search professionals, products, jobs"
-              className="w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] py-2 pl-9 pr-3 text-[13px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:py-2.5 sm:pl-10 sm:text-[14px]"
+              className="w-full rounded-full border border-[#E4E7EC] bg-[#F3F4F6] py-2 pl-9 pr-3 text-[16px] text-deep-blue outline-none placeholder:text-[#98A2B3] focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 sm:py-2.5 sm:pl-10 sm:text-[14px]"
             />
             <SearchDropdown
               open={showDropdown}
