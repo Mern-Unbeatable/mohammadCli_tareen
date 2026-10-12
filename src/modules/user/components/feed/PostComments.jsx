@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, ThumbsUp } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import ExpandableText from "@/components/common/ExpandableText/ExpandableText";
 
 const LINE = "bg-[#D0D5DD]";
 const SPINE_X = 18;
@@ -8,6 +9,7 @@ const BRANCH_W = 30;
 /** Matches the `pt-3` / `space-y-3` spacing between the comment and its replies. */
 const THREAD_GAP = 12;
 const VISIBLE_REPLIES = 3;
+const COMMENT_LINES = 3;
 
 const mentionFromName = (name = "") => {
   const first = String(name).trim().split(/\s+/)[0];
@@ -104,9 +106,11 @@ const CommentBody = ({
         {comment.author?.name}
       </p>
       <p className="text-[11px] text-[#64748B]">{comment.author?.subtitle}</p>
-      <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-[#475467]">
-        {comment.content}
-      </p>
+      <ExpandableText
+        text={comment.content}
+        lines={COMMENT_LINES}
+        className="mt-1.5 text-[13px] leading-relaxed text-[#475467]"
+      />
     </div>
     <div className="mt-1 flex flex-wrap items-center gap-3 px-1 text-[12px] font-semibold text-[#64748B]">
       <button
