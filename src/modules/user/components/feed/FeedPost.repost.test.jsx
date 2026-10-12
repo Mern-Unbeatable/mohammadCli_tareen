@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router";
 import { configureStore } from "@reduxjs/toolkit";
 import ActivitySection from "@/components/data-display/ActivitySection/ActivitySection";
 import { fetchFeed, fetchMyPosts, toFeedPostModel, userFeedReducer } from "@/features/user/feed";
@@ -23,7 +24,9 @@ const reloadWith = ({ feed = [], mine = [] }) => {
 const render = (store, list) =>
   renderToStaticMarkup(
     <Provider store={store}>
-      <ActivitySection posts={store.getState().userFeed[list].map(toFeedPostModel)} />
+      <MemoryRouter>
+        <ActivitySection posts={store.getState().userFeed[list].map(toFeedPostModel)} />
+      </MemoryRouter>
     </Provider>,
   );
 

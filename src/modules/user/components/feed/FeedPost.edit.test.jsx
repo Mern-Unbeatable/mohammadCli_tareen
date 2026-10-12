@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router";
 import { configureStore } from "@reduxjs/toolkit";
 import FeedPost from "./FeedPost";
 import CreatePostModal from "./CreatePostModal";
@@ -19,7 +20,9 @@ const storeFor = (viewer) =>
 const renderPost = (post, { viewer = anna, ...props } = {}) =>
   renderToStaticMarkup(
     <Provider store={storeFor(viewer)}>
-      <FeedPost post={toFeedPostModel(post)} {...props} />
+      <MemoryRouter>
+        <FeedPost post={toFeedPostModel(post)} {...props} />
+      </MemoryRouter>
     </Provider>,
   );
 
@@ -144,5 +147,47 @@ describe("FeedPost image gallery", () => {
       { viewer: { id: "sam", firstName: "Sam" } },
     );
     images.forEach((url) => expect(html).toContain(`src="${url}"`));
+  });
+});
+
+describe("FeedPost author links", () => {
+  const authorLinks = (html) =>
+    [...html.matchAll(/<a [^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/g)].map(([tag, href, inner]) => ({
+      href,
+      decorative: tag.includes('tabindex="-1"') && tag.includes('aria-hidden="true"'),
+      text: inner.replace(/<[^>]+>/g, ""),
+    }));
+
+  it("links another member's picture and name to their contact profile", () => {
+    const html = renderPost(originalPost(), { viewer: { id: "sam", firstName: "Sam" } });
+
+    expect(authorLinks(html)).toEqual([
+      { href: "/contacts/anna", decorative: true, text: "A" },
+      { href: "/contacts/anna", decorative: false, text: "Anna Berg" },
+    ]);
+  });
+
+  it("links your own picture and name to your profile page", () => {
+    const html = renderPost(originalPost(), { viewer: anna });
+
+    expect(authorLinks(html).map((l) => l.href)).toEqual(["/profile", "/profile"]);
+  });
+
+  it("links the reposter and the original author to their own profiles", () => {
+    const html = renderPost(repostOf(originalPost()), { viewer: { id: "viewer", firstName: "Vi" } });
+
+    expect(authorLinks(html).filter((l) => !l.decorative)).toEqual([
+      { href: "/contacts/sam", decorative: false, text: "Sam Reed" },
+      { href: "/contacts/anna", decorative: false, text: "Anna Berg" },
+    ]);
+  });
+
+  it("leaves the name as plain text when the author id is missing", () => {
+    const html = renderPost(originalPost({ author: { firstName: "Ghost", lastName: "User" } }), {
+      viewer: { id: "sam", firstName: "Sam" },
+    });
+
+    expect(html).toContain("Ghost User");
+    expect(html).not.toContain('href="/contacts/');
   });
 });

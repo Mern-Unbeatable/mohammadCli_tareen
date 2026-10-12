@@ -20,6 +20,7 @@ import {
 } from "@/features/user/profile";
 import {
   fetchMyPosts,
+  fetchMoreMyPosts,
   removePost,
   toFeedPostModel,
 } from "@/features/user/feed";
@@ -36,8 +37,15 @@ const ProfileView = () => {
     loading,
     error: profileError,
   } = useSelector((state) => state.userProfile);
-  const { myPosts, myPostsLoaded, myPostsStale, myPostsError, deleting } =
-    useSelector((state) => state.userFeed);
+  const {
+    myPosts,
+    myPostsMeta,
+    myPostsLoaded,
+    myPostsLoadingMore,
+    myPostsStale,
+    myPostsError,
+    deleting,
+  } = useSelector((state) => state.userFeed);
   const {
     reports,
     reportsLoading,
@@ -59,9 +67,11 @@ const ProfileView = () => {
     ["premium", "trial", "cancelled"].includes(profileUser?.membershipStatus);
 
   const activity = useMemo(
-    () => (myPosts || []).map(toFeedPostModel).filter(Boolean).slice(0, 4),
+    () => (myPosts || []).map(toFeedPostModel).filter(Boolean),
     [myPosts],
   );
+  const hasMorePosts =
+    (myPostsMeta?.page ?? 1) < (myPostsMeta?.totalPages ?? 1);
 
   const myReports = useMemo(
     () => (reports || []).map(toMyReportModel).filter(Boolean),
@@ -134,6 +144,9 @@ const ProfileView = () => {
             user={profileUser}
             posts={activity}
             postsLoading={!myPostsLoaded && !myPostsError}
+            hasMorePosts={hasMorePosts}
+            loadingMorePosts={myPostsLoadingMore}
+            onLoadMorePosts={() => dispatch(fetchMoreMyPosts())}
             onReport={setReportPost}
             onEdit={openEditor}
             onDelete={deleting ? undefined : setPendingDelete}

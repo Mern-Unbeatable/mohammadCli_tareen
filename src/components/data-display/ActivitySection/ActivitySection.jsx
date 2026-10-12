@@ -2,6 +2,7 @@ import { Activity } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import { CardSkeleton } from '@/components/common/Skeleton';
 import FeedPost from '@/modules/user/components/feed/FeedPost';
+import LoadMorePosts from '@/modules/user/components/feed/LoadMorePosts';
 
 const EmptyActivity = ({ name }) => (
   <Card>
@@ -27,6 +28,9 @@ const ActivitySection = ({
   emptyName = 'This member',
   title = 'Activity',
   className = '',
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }) => (
   <section className={className}>
     <h2 className="mb-4 px-1 text-[18px] font-bold text-deep-blue">{title}</h2>
@@ -34,15 +38,20 @@ const ActivitySection = ({
       {loading && !posts.length ? (
         <CardSkeleton variant="feedPost" count={2} className="space-y-4" />
       ) : posts.length > 0 ? (
-        posts.map((post) => (
-          <FeedPost
-            key={post.id}
-            post={post}
-            onReport={onReport}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))
+        <>
+          {posts.map((post) => (
+            <FeedPost
+              key={post.id}
+              post={post}
+              onReport={onReport}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+          {hasMore && onLoadMore ? (
+            <LoadMorePosts onClick={onLoadMore} loading={loadingMore} />
+          ) : null}
+        </>
       ) : (
         <EmptyActivity name={emptyName} />
       )}

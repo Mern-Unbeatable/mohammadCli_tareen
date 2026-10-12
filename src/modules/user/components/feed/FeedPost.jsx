@@ -13,6 +13,7 @@ import RepostedPostCard from "./RepostedPostCard";
 import PostImageGallery from "./PostImageGallery";
 import OwnerActionsMenu from "./OwnerActionsMenu";
 import FullCommentsModal from "./FullCommentsModal";
+import AuthorLink from "./AuthorLink";
 import {
   addComment,
   editComment,
@@ -62,15 +63,27 @@ const PostHeader = ({
 
   return (
     <div className="flex items-start gap-2.5 p-3 pb-0 sm:gap-3 sm:p-4 sm:pb-0">
-      <Avatar
-        src={post.author.avatar}
-        initials={post.author.initials}
-        size="md"
-      />
+      <AuthorLink
+        author={post.author}
+        decorative
+        className="shrink-0 rounded-full transition-opacity hover:opacity-90"
+      >
+        <Avatar
+          src={post.author.avatar}
+          alt={post.author.name}
+          initials={post.author.initials}
+          size="md"
+        />
+      </AuthorLink>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <h3 className="min-w-0 break-words text-[14px] font-bold leading-5 text-deep-blue">
-            {post.author.name}
+            <AuthorLink
+              author={post.author}
+              className="rounded-sm hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {post.author.name}
+            </AuthorLink>
           </h3>
           {post.isRepost && (
             <span className="inline-flex items-center gap-1 text-[13px] text-[#64748B]">

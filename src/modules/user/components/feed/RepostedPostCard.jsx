@@ -3,6 +3,7 @@ import Avatar from '@/components/ui/Avatar';
 import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
 import { AttachmentCard } from './FeedShared';
 import PostImageGallery from './PostImageGallery';
+import AuthorLink from './AuthorLink';
 
 const RepostedPostCard = ({ post }) => {
   if (!post) {
@@ -26,9 +27,27 @@ const RepostedPostCard = ({ post }) => {
     >
       <div className="p-3 sm:p-4">
         <div className="flex items-start gap-3">
-          <Avatar src={post.author.avatar} initials={post.author.initials} size="sm" />
+          <AuthorLink
+            author={post.author}
+            decorative
+            className="shrink-0 rounded-full transition-opacity hover:opacity-90"
+          >
+            <Avatar
+              src={post.author.avatar}
+              alt={post.author.name}
+              initials={post.author.initials}
+              size="sm"
+            />
+          </AuthorLink>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-bold text-deep-blue">{post.author.name}</p>
+            <p className="truncate text-[14px] font-bold text-deep-blue">
+              <AuthorLink
+                author={post.author}
+                className="rounded-sm hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                {post.author.name}
+              </AuthorLink>
+            </p>
             <p className="truncate text-[12px] text-[#64748B]">{post.author.subtitle}</p>
             <p className="text-[12px] text-[#98A2B3]">{post.author.meta}</p>
           </div>

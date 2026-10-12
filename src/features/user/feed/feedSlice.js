@@ -2,7 +2,11 @@ import { createSlice } from "@reduxjs/toolkit";
 import { loginUser, logoutUser, registerUser } from "@/features/auth/authThunks";
 import {
   fetchFeed,
+  fetchMoreFeed,
   fetchMyPosts,
+  fetchMoreMyPosts,
+  fetchAuthorPosts,
+  AUTHOR_POSTS_PAGE_SIZE,
   fetchPostDetails,
   createPost,
   updatePost,
@@ -22,13 +26,29 @@ const initialState = {
   selectedPost: null,
   postsLoading: false,
   postsRequestId: null,
+  postsLoadingMore: false,
+  postsMoreRequestId: null,
   postsError: null,
   myPosts: [],
   myPostsMeta: { page: 1, pageSize: 5, total: 0, totalPages: 1 },
   myPostsLoading: false,
+  myPostsLoadingMore: false,
   myPostsLoaded: false,
   myPostsStale: false,
   myPostsError: null,
+  /** Posts on another member's profile page. */
+  authorPosts: [],
+  authorPostsAuthorId: null,
+  authorPostsMeta: {
+    page: 1,
+    pageSize: AUTHOR_POSTS_PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  },
+  authorPostsLoading: false,
+  authorPostsLoadingMore: false,
+  authorPostsRequestId: null,
+  authorPostsError: null,
   selectedPostLoading: false,
   saving: false,
   deleting: false,
@@ -47,12 +67,32 @@ const upsertPost = (state, post) => {
   if (state.selectedPost?.id === post.id) state.selectedPost = post;
   const mineIndex = state.myPosts.findIndex((row) => row.id === post.id);
   if (mineIndex >= 0) state.myPosts[mineIndex] = post;
+  const authorIndex = state.authorPosts.findIndex((row) => row.id === post.id);
+  if (authorIndex >= 0) state.authorPosts[authorIndex] = post;
 };
 
 const mapAllPosts = (state, mapper) => {
   state.posts = state.posts.map(mapper);
   state.myPosts = state.myPosts.map(mapper);
+  state.authorPosts = state.authorPosts.map(mapper);
   state.selectedPost = state.selectedPost ? mapper(state.selectedPost) : null;
+};
+
+/** Offset pages shift when posts are added meanwhile, so skip rows already shown. */
+const appendUnique = (list, incoming) => {
+  const seen = new Set(list.map((post) => post.id));
+  return [...list, ...(incoming || []).filter((post) => !seen.has(post.id))];
+};
+
+/** Show the viewer's new post or repost on a profile page that lists their posts. */
+const prependToAuthorPosts = (state, post) => {
+  if (!post?.id || post.author?.id !== state.authorPostsAuthorId) return;
+  if (state.authorPosts.some((row) => row.id === post.id)) return;
+  state.authorPosts = [post, ...state.authorPosts];
+  state.authorPostsMeta = {
+    ...state.authorPostsMeta,
+    total: (state.authorPostsMeta.total || 0) + 1,
+  };
 };
 
 /** Sync the original's share count and every card's "Shared" state for it. */
@@ -87,16 +127,41 @@ const removePostFromLists = (state, postId) => {
     state.myPosts = state.myPosts.filter((post) => post.id !== postId);
     state.myPostsStale = true;
   }
+  const authorBefore = state.authorPosts.length;
+  state.authorPosts = state.authorPosts.filter((post) => post.id !== postId);
+  if (state.authorPosts.length < authorBefore) {
+    state.authorPostsMeta = {
+      ...state.authorPostsMeta,
+      total: Math.max(0, (state.authorPostsMeta.total || 0) - 1),
+    };
+  }
   if (state.selectedPost?.id === postId) state.selectedPost = null;
+};
+
+const resetAuthorPosts = (state) => {
+  state.authorPosts = [];
+  state.authorPostsAuthorId = null;
+  state.authorPostsMeta = initialState.authorPostsMeta;
+  state.authorPostsLoading = false;
+  state.authorPostsLoadingMore = false;
+  state.authorPostsRequestId = null;
+  state.authorPostsError = null;
 };
 
 const resetMyPosts = (state) => {
   state.myPosts = [];
   state.myPostsMeta = initialState.myPostsMeta;
   state.myPostsLoading = false;
+  state.myPostsLoadingMore = false;
   state.myPostsLoaded = false;
   state.myPostsStale = false;
   state.myPostsError = null;
+};
+
+/** Per-viewer lists must not survive a change of signed-in user. */
+const resetViewerLists = (state) => {
+  resetMyPosts(state);
+  resetAuthorPosts(state);
 };
 
 const feedSlice = createSlice({
@@ -126,6 +191,9 @@ const feedSlice = createSlice({
       .addCase(fetchFeed.pending, (state, action) => {
         state.postsLoading = true;
         state.postsRequestId = action.meta.requestId;
+        // A fresh first page supersedes any "load more" still in flight.
+        state.postsLoadingMore = false;
+        state.postsMoreRequestId = null;
         state.error = null;
         state.postsError = null;
       })
@@ -140,6 +208,23 @@ const feedSlice = createSlice({
         state.postsLoading = false;
         state.error = action.payload;
         state.postsError = action.payload || "Failed to load feed";
+      })
+      .addCase(fetchMoreFeed.pending, (state, action) => {
+        state.postsLoadingMore = true;
+        state.postsMoreRequestId = action.meta.requestId;
+      })
+      .addCase(fetchMoreFeed.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.postsMoreRequestId) return;
+        state.postsLoadingMore = false;
+        state.postsMoreRequestId = null;
+        state.posts = appendUnique(state.posts, action.payload.data);
+        state.postsMeta = action.payload.meta;
+      })
+      .addCase(fetchMoreFeed.rejected, (state, action) => {
+        if (action.meta.requestId !== state.postsMoreRequestId) return;
+        state.postsLoadingMore = false;
+        state.postsMoreRequestId = null;
+        state.error = action.payload || "Failed to load more posts";
       })
       .addCase(fetchMyPosts.pending, (state) => {
         state.myPostsLoading = true;
@@ -156,10 +241,55 @@ const feedSlice = createSlice({
         state.myPostsLoading = false;
         state.myPostsError = action.payload || "Failed to load your posts";
       })
-      .addCase(logoutUser.fulfilled, resetMyPosts)
-      .addCase(logoutUser.rejected, resetMyPosts)
-      .addCase(loginUser.fulfilled, resetMyPosts)
-      .addCase(registerUser.fulfilled, resetMyPosts)
+      .addCase(fetchMoreMyPosts.pending, (state) => {
+        state.myPostsLoadingMore = true;
+      })
+      .addCase(fetchMoreMyPosts.fulfilled, (state, action) => {
+        state.myPostsLoadingMore = false;
+        state.myPosts = appendUnique(state.myPosts, action.payload.data);
+        state.myPostsMeta = action.payload.meta;
+      })
+      .addCase(fetchMoreMyPosts.rejected, (state, action) => {
+        state.myPostsLoadingMore = false;
+        state.error = action.payload || "Failed to load more posts";
+      })
+      .addCase(fetchAuthorPosts.pending, (state, action) => {
+        const { authorId, page = 1 } = action.meta.arg;
+        state.authorPostsRequestId = action.meta.requestId;
+        state.authorPostsError = null;
+        if (page > 1) {
+          state.authorPostsLoadingMore = true;
+          return;
+        }
+        if (state.authorPostsAuthorId !== authorId) {
+          state.authorPosts = [];
+          state.authorPostsMeta = initialState.authorPostsMeta;
+        }
+        state.authorPostsAuthorId = authorId;
+        state.authorPostsLoading = true;
+        state.authorPostsLoadingMore = false;
+      })
+      .addCase(fetchAuthorPosts.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.authorPostsRequestId) return;
+        const { page = 1 } = action.meta.arg;
+        state.authorPostsLoading = false;
+        state.authorPostsLoadingMore = false;
+        state.authorPosts =
+          page > 1
+            ? appendUnique(state.authorPosts, action.payload.data)
+            : action.payload.data;
+        state.authorPostsMeta = action.payload.meta;
+      })
+      .addCase(fetchAuthorPosts.rejected, (state, action) => {
+        if (action.meta.requestId !== state.authorPostsRequestId) return;
+        state.authorPostsLoading = false;
+        state.authorPostsLoadingMore = false;
+        state.authorPostsError = action.payload || "Failed to load posts";
+      })
+      .addCase(logoutUser.fulfilled, resetViewerLists)
+      .addCase(logoutUser.rejected, resetViewerLists)
+      .addCase(loginUser.fulfilled, resetViewerLists)
+      .addCase(registerUser.fulfilled, resetViewerLists)
       .addCase(fetchPostDetails.pending, (state) => {
         state.selectedPostLoading = true;
         state.error = null;
@@ -192,6 +322,7 @@ const feedSlice = createSlice({
             ];
             state.myPostsStale = true;
           }
+          prependToAuthorPosts(state, action.payload);
         }
       })
       .addCase(createPost.rejected, (state, action) => {
@@ -235,11 +366,10 @@ const feedSlice = createSlice({
       .addCase(removePost.fulfilled, (state, action) => {
         state.deleting = false;
         const removedId = action.payload.postId;
-        const removed = [...state.posts, ...state.myPosts].find(
-          (post) => post.id === removedId,
-        );
+        const loaded = [...state.posts, ...state.myPosts, ...state.authorPosts];
+        const removed = loaded.find((post) => post.id === removedId);
         if (removed?.isRepost && removed.sharedPostId) {
-          const original = [...state.posts, ...state.myPosts].find(
+          const original = loaded.find(
             (post) => post.id === removed.sharedPostId,
           );
           applyRepostStatus(state, removed.sharedPostId, {
@@ -261,6 +391,9 @@ const feedSlice = createSlice({
           );
           state.myPostsStale = true;
         }
+        state.authorPosts = state.authorPosts.filter(
+          (post) => post.id !== action.payload.postId,
+        );
         if (state.selectedPost?.id === action.payload.postId) {
           state.selectedPost = null;
         }
@@ -329,9 +462,7 @@ const feedSlice = createSlice({
             },
           };
         };
-        state.posts = state.posts.map(insertComment);
-        state.myPosts = state.myPosts.map(insertComment);
-        state.selectedPost = insertComment(state.selectedPost);
+        mapAllPosts(state, insertComment);
       })
       .addCase(addComment.rejected, (state, action) => {
         state.commenting = false;
@@ -412,9 +543,7 @@ const feedSlice = createSlice({
             },
           };
         };
-        state.posts = state.posts.map(stripComment);
-        state.myPosts = state.myPosts.map(stripComment);
-        state.selectedPost = stripComment(state.selectedPost);
+        mapAllPosts(state, stripComment);
       })
       .addCase(removeComment.rejected, (state) => {
         state.commenting = false;
@@ -458,9 +587,7 @@ const feedSlice = createSlice({
             },
           };
         };
-        state.posts = state.posts.map(applyReaction);
-        state.myPosts = state.myPosts.map(applyReaction);
-        state.selectedPost = applyReaction(state.selectedPost);
+        mapAllPosts(state, applyReaction);
       })
       .addCase(reactToPost.rejected, (state, action) => {
         state.reactingId = null;
@@ -487,6 +614,7 @@ const feedSlice = createSlice({
           state.myPosts = [post, ...state.myPosts];
           state.myPostsStale = true;
         }
+        prependToAuthorPosts(state, post);
         applyRepostStatus(state, originalPostId, { shares, sharedByMe: true });
       })
       .addCase(repostPost.rejected, (state) => {
@@ -547,9 +675,7 @@ const feedSlice = createSlice({
             comments: patchTree(post.comments),
           };
         };
-        state.posts = state.posts.map(applyLike);
-        state.myPosts = state.myPosts.map(applyLike);
-        state.selectedPost = applyLike(state.selectedPost);
+        mapAllPosts(state, applyLike);
       })
       .addCase(likeComment.rejected, (state, action) => {
         state.likingCommentId = null;

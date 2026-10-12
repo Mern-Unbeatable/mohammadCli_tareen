@@ -56,6 +56,7 @@ export async function getFeed(params = {}) {
   if (!query.type) delete query.type;
   if (!query.search) delete query.search;
   if (query.mine === undefined || query.mine === null) delete query.mine;
+  if (!query.authorId) delete query.authorId;
 
   const response = await crudService.get(API_ENDPOINTS.USER.FEED.LIST, query);
   return parseListResponse(response, query);
