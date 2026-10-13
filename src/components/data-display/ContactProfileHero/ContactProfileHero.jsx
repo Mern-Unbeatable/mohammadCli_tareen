@@ -10,8 +10,8 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router";
-import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
+import ZoomableAvatar from "@/components/data-display/ZoomableAvatar/ZoomableAvatar";
 import { MetaItem } from "@/components/data-display/ProfileHero/ProfileHero";
 import { coverGradientClass } from "@/shared/utils/coverGradient";
 
@@ -52,12 +52,13 @@ const ContactProfileHero = ({
       <div className="relative px-4 pb-5 pt-3 sm:px-6 sm:pb-6 sm:pt-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-5 sm:text-left">
-            <Avatar
+            <ZoomableAvatar
               src={contact.avatar}
               alt={contact.name}
               initials={contact.initials}
               size="xl"
-              className={`-mt-[4rem] shrink-0 border-[3px] border-white shadow-sm sm:-mt-[3rem] ${contact.avatarClass || ""}`}
+              className="-mt-[4rem] shrink-0 sm:-mt-[3rem]"
+              avatarClassName={`border-[3px] border-white shadow-sm ${contact.avatarClass || ""}`}
             />
 
             <div className="w-full min-w-0 sm:w-auto">
