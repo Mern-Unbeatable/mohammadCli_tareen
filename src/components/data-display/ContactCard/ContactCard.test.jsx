@@ -44,6 +44,20 @@ describe("ContactCard actions", () => {
     expect(buttons(html)).toBe(1);
   });
 
+  it("uses the same brand cover colour for every member without a cover photo", () => {
+    const brand = "bg-gradient-to-br from-deep-blue via-[#0B4F8A] to-primary";
+    const html = render({});
+    const other = render({ contact: { ...contact, id: "someone-else", name: "Other" } });
+    expect(html).toContain(brand);
+    expect(other).toContain(brand);
+    expect(html).not.toContain("<img");
+  });
+
+  it("shows the cover photo when the member has one", () => {
+    const html = render({ contact: { ...contact, coverPhoto: "https://example.com/c.png" } });
+    expect(html).toContain('src="https://example.com/c.png"');
+  });
+
   it("shows an enabled Confirm for an incoming request", () => {
     const html = render({ pending: true, incoming: true });
     expect(html).toContain("Confirm");
