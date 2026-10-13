@@ -15,6 +15,7 @@ import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import { quickLinks } from "@/modules/user/data/dashboard";
 import { toProfilePageUser } from "@/features/user/profile";
+import { coverGradientClass } from "@/shared/utils/coverGradient";
 
 const iconMap = {
   package: Package,
@@ -48,7 +49,9 @@ const ProfileCard = ({ user }) => {
   return (
     <Card className="text-center">
       <Link to="/profile" className="block">
-        <div className="h-16 overflow-hidden bg-[#E8F3FB]">
+        <div
+          className={`h-16 overflow-hidden ${coverGradientClass(user.id || user.name)}`}
+        >
           {showCover ? (
             <img
               src={user.coverPhoto}

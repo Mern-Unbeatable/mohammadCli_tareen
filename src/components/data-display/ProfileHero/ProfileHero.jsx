@@ -15,6 +15,7 @@ import {
 import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
 import { currentUser } from '@/modules/user/data/dashboard';
+import { coverGradientClass } from '@/shared/utils/coverGradient';
 
 export const InfoTile = ({ icon, label, value }) => {
   const Icon = icon;
@@ -24,14 +25,14 @@ export const InfoTile = ({ icon, label, value }) => {
         <Icon className="h-4 w-4" strokeWidth={2} />
       </div>
       <p className="text-[12px] font-medium leading-none text-[#64748B]">{label}</p>
-      <p className="mt-2 text-[14px] font-semibold leading-snug text-deep-blue">{value}</p>
+      <p className="mt-2 break-words text-[14px] font-semibold leading-snug text-deep-blue">{value}</p>
     </div>
   );
 };
 
 const hasText = (value) => typeof value === 'string' && value.trim() !== '';
 
-const MetaItem = ({ icon, children }) => {
+export const MetaItem = ({ icon, children }) => {
   const Icon = icon;
   return (
     <li className="inline-flex min-w-0 items-center gap-1.5">
@@ -70,7 +71,9 @@ const ProfileHero = ({
 
   return (
     <Card>
-      <div className="relative h-32 overflow-hidden bg-gradient-to-br from-deep-blue via-deep-blue to-primary sm:h-36">
+      <div
+        className={`relative h-32 overflow-hidden sm:h-36 ${coverGradientClass(user.id || user.name)}`}
+      >
         {showCover ? (
           <img
             src={user.coverPhoto}

@@ -78,7 +78,7 @@ const ContactProfileView = () => {
   if (selectedContactLoading || (!selectedContact && !error)) {
     return (
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
+        <Container className="max-w-7xl">
           <div className="mb-4 h-5 w-36 animate-pulse rounded-md bg-[#E4E7EC]" />
           <ContactProfilePageSkeleton />
         </Container>
@@ -102,7 +102,7 @@ const ContactProfileView = () => {
   return (
     <>
       <main className="pt-6 pb-5 sm:pt-8 sm:pb-8">
-        <Container className="max-w-6xl">
+        <Container className="max-w-7xl">
           <Link
             to="/contacts"
             className="mb-4 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] font-medium text-[#64748B] transition-colors hover:text-primary"
