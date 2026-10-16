@@ -6,7 +6,12 @@ import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import ExpandableText from "@/components/common/ExpandableText/ExpandableText";
-import { AttachmentCard, PostStats, PostActions } from "./FeedShared";
+import {
+  AttachmentCard,
+  PostMeta,
+  PostStats,
+  PostActions,
+} from "./FeedShared";
 import PostComments from "./PostComments";
 import SharePostModal from "./SharePostModal";
 import RepostedPostCard from "./RepostedPostCard";
@@ -57,9 +62,6 @@ const PostHeader = ({
   showActions = true,
 }) => {
   const badge = badgeByType[post.type];
-  const meta = [post.author.meta, post.edited ? "Edited" : null]
-    .filter(Boolean)
-    .join(" · ");
 
   return (
     <div className="flex items-start gap-2.5 p-3 pb-0 sm:gap-3 sm:p-4 sm:pb-0">
@@ -107,9 +109,7 @@ const PostHeader = ({
             {post.author.subtitle}
           </p>
         ) : null}
-        {meta ? (
-          <p className="truncate text-[12px] text-[#98A2B3]">{meta}</p>
-        ) : null}
+        <PostMeta post={post} />
       </div>
       {!showActions ? null : isOwner && (onEdit || onDelete) ? (
         <OwnerActionsMenu

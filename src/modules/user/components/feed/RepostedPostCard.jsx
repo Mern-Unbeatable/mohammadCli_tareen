@@ -1,7 +1,7 @@
 import { Ban } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import ExpandableText from '@/components/common/ExpandableText/ExpandableText';
-import { AttachmentCard } from './FeedShared';
+import { AttachmentCard, PostMeta } from './FeedShared';
 import PostImageGallery from './PostImageGallery';
 import AuthorLink from './AuthorLink';
 
@@ -49,7 +49,7 @@ const RepostedPostCard = ({ post }) => {
               </AuthorLink>
             </p>
             <p className="truncate text-[12px] text-[#64748B]">{post.author.subtitle}</p>
-            <p className="text-[12px] text-[#98A2B3]">{post.author.meta}</p>
+            <PostMeta post={post} />
           </div>
         </div>
 
