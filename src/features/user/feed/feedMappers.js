@@ -121,21 +121,15 @@ export function toFeedPostModel(post) {
 
   const shareCount = post.stats?.shares ?? post.shareCount ?? 0;
 
-  const country = post.author?.country || post.author?.location || "";
-  const postedAgo = formatRelativeTime(post.createdAt);
   const images = getPostImageUrls(post);
 
   return {
     id: post.id,
     type,
     filter: type === "question" ? "questions" : type,
-    author: {
-      ...author,
-      meta:
-        author.meta ||
-        [country, postedAgo].filter(Boolean).join(" · ") ||
-        postedAgo,
-    },
+    author,
+    createdAt: post.createdAt || null,
+    postedAgo: formatRelativeTime(post.createdAt),
     content: post.content || post.body || post.text || "",
     images,
     image: images[0] || null,
